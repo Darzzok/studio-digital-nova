@@ -15,6 +15,7 @@ const NAV_ITEMS = [
   { label: "Ma méthode", href: "/#ma-methode" },
   { label: "Tarifs", href: "/#tarifs" },
   { label: "Cas client", href: "/#cas-client" },
+  { label: "Blog", href: "/blog" },
   { label: "FAQ", href: "/faq" },
   { label: "Contact", href: "/#contact" },
 ]

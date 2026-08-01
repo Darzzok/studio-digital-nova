@@ -4,4 +4,4 @@ export const siteConfig = {
   url: process.env.NEXT_PUBLIC_SITE_URL ?? "https://studio-digital-nova.com",
 } as const;
 
-export const siteRoutes = ["/", "/faq", "/mentions-legales", "/confidentialite"] as const;
+export const siteRoutes = ["/", "/blog", "/faq", "/mentions-legales", "/confidentialite"] as const;

@@ -1,0 +1,453 @@
+"use client"
+
+import { useState } from "react"
+import Link from "next/link"
+import { motion, useReducedMotion } from "framer-motion"
+import {
+  ArrowRight,
+  BarChart3,
+  BookOpen,
+  Calendar,
+  Clock,
+  Code2,
+  Compass,
+  FileText,
+  Layers,
+  Mail,
+  Palette,
+  Search,
+  Sparkles,
+} from "lucide-react"
+
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Card } from "@/components/ui/card"
+import { Heading } from "@/components/ui/heading"
+import { Icon } from "@/components/ui/icon"
+import { Input } from "@/components/ui/input"
+import { Section } from "@/components/ui/section"
+import { ARTICLES, CATEGORY_GRADIENT, CATEGORY_ICON, type Article } from "@/lib/articles"
+import { EASE_NOVA } from "@/lib/motion"
+import { cn } from "@/lib/utils"
+
+type FloatFrom = { x?: number; y?: number; rotate?: number; scale?: number }
+type FloatOptions = { stiffness?: number; damping?: number; mass?: number; opacityDuration?: number }
+
+function floatIn(delay: number, from: FloatFrom, options?: FloatOptions) {
+  const { stiffness = 110, damping = 15, mass = 1, opacityDuration = 0.4 } = options ?? {}
+  return {
+    hidden: {
+      opacity: 0,
+      x: from.x ?? 0,
+      y: from.y ?? 0,
+      rotate: from.rotate ?? 0,
+      scale: from.scale ?? 1,
+    },
+    visible: {
+      opacity: 1,
+      x: 0,
+      y: 0,
+      rotate: 0,
+      scale: 1,
+      transition: {
+        type: "spring" as const,
+        stiffness,
+        damping,
+        mass,
+        delay,
+        opacity: { duration: opacityDuration, delay },
+      },
+    },
+  }
+}
+
+/* ------------------------------------------------------------------------ */
+/* Contenu — à remplacer par de vrais articles quand ils seront prêts.       */
+/* ------------------------------------------------------------------------ */
+
+const STATS = [
+  { icon: FileText, value: String(ARTICLES.length), label: "Articles" },
+  { icon: Layers, value: "6", label: "Catégories" },
+  { icon: Clock, value: "8 min", label: "Temps de lecture moyen" },
+  { icon: Compass, value: "À venir", label: "Guides" },
+]
+
+const CATEGORIES = [
+  "Tous",
+  "Création de site",
+  "SEO",
+  "Webdesign",
+  "Marketing",
+  "Conseils PME",
+  "Actualités",
+]
+
+/* ------------------------------------------------------------------------ */
+/* Sous-composants                                                          */
+/* ------------------------------------------------------------------------ */
+
+const BUBBLES = [
+  { icon: Code2, className: "bg-primary/15 text-primary", pos: "-left-6 top-4", from: { x: -60, y: -30, rotate: -10 } },
+  { icon: Search, className: "bg-accent-green/15 text-accent-green", pos: "-right-6 top-16", from: { x: 60, y: -20, rotate: 10 } },
+  { icon: Palette, className: "bg-accent-purple/15 text-accent-purple", pos: "-left-8 bottom-14", from: { x: -60, y: 30, rotate: -8 } },
+  { icon: BarChart3, className: "bg-warning/15 text-warning", pos: "-right-4 -bottom-2", from: { x: 60, y: 30, rotate: 8 } },
+]
+
+function BlogHeroIllustration({ reduce }: { reduce: boolean }) {
+  return (
+    <div className="relative mx-auto w-full max-w-sm">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute left-1/2 top-1/2 h-72 w-72 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/10 blur-3xl"
+      />
+
+      <Card className="relative p-4">
+        <div className="flex items-center gap-1.5 border-b border-border pb-3">
+          <span className="size-2.5 rounded-full bg-error/40" />
+          <span className="size-2.5 rounded-full bg-warning/40" />
+          <span className="size-2.5 rounded-full bg-success/40" />
+        </div>
+        <div className="mt-4 space-y-3">
+          <div
+            className="h-28 w-full rounded-xl"
+            style={{ backgroundImage: "linear-gradient(135deg, var(--color-primary), var(--color-accent-purple))" }}
+          />
+          <div className="h-2.5 w-3/4 rounded-full bg-border" />
+          <div className="h-2.5 w-1/2 rounded-full bg-border" />
+        </div>
+      </Card>
+
+      {BUBBLES.map((bubble, index) => (
+        <motion.div
+          key={bubble.pos}
+          className={cn("absolute", bubble.pos)}
+          initial={reduce ? false : "hidden"}
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.6 }}
+          variants={floatIn(0.3 + index * 0.1, bubble.from, { stiffness: 170, damping: 14, mass: 0.6 })}
+        >
+          <span className={cn("flex size-12 items-center justify-center rounded-full shadow-sm", bubble.className)}>
+            <Icon icon={bubble.icon} className="size-5" />
+          </span>
+        </motion.div>
+      ))}
+    </div>
+  )
+}
+
+function BlogHero() {
+  const reduce = Boolean(useReducedMotion())
+
+  return (
+    <Section spacing="lg">
+      <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-2 lg:gap-16">
+        <div className="flex flex-col items-center text-center lg:items-start lg:text-left">
+          <motion.div
+            className="mb-4"
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.4 }}
+            variants={floatIn(0, { y: -40, scale: 0.85 })}
+          >
+            <Badge variant="outline" className="gap-2 py-1.5">
+              <Icon icon={BookOpen} className="size-3.5" />
+              Conseils &amp; Ressources
+            </Badge>
+          </motion.div>
+
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.4 }}
+            variants={floatIn(0.12, { y: -60, scale: 0.94 })}
+          >
+            <Heading variant="h1">Le blog Studio Digital Nova</Heading>
+          </motion.div>
+
+          <motion.p
+            className="mt-6 max-w-xl text-body text-text-secondary"
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.4 }}
+            variants={floatIn(0.22, { y: 40 })}
+          >
+            Découvrez des conseils pratiques, des guides et des ressources pour développer votre
+            présence en ligne et faire évoluer votre activité.
+          </motion.p>
+        </div>
+
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.2 }}
+          variants={floatIn(0.15, { x: 100, rotate: 3 }, { damping: 30, mass: 4 })}
+        >
+          <BlogHeroIllustration reduce={reduce} />
+        </motion.div>
+      </div>
+    </Section>
+  )
+}
+
+function StatsRow() {
+  return (
+    <div className="grid grid-cols-2 gap-4 lg:grid-cols-4 lg:gap-6">
+      {STATS.map((stat, index) => (
+        <motion.div
+          key={stat.label}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.4 }}
+          variants={floatIn(index * 0.1, { y: 40, scale: 0.9 }, { damping: 30, mass: 4 })}
+        >
+          <Card className="flex flex-col items-center gap-2 p-6 text-center">
+            <span className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <Icon icon={stat.icon} className="size-5" />
+            </span>
+            <p className="text-h3 font-heading font-bold text-text">{stat.value}</p>
+            <p className="text-small text-text-secondary">{stat.label}</p>
+          </Card>
+        </motion.div>
+      ))}
+    </div>
+  )
+}
+
+function SearchBar() {
+  return (
+    <motion.div
+      className="relative mx-auto w-full max-w-xl"
+      initial="hidden"
+      whileInView="visible"
+      viewport={{ once: true, amount: 0.4 }}
+      variants={floatIn(0.1, { y: 30 })}
+    >
+      <Icon
+        icon={Search}
+        className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-text-secondary"
+      />
+      <Input type="search" placeholder="Rechercher un article..." className="h-14 pl-12" />
+    </motion.div>
+  )
+}
+
+function CategoryFilters() {
+  const [active, setActive] = useState<string>("Tous")
+
+  return (
+    <motion.div
+      className="flex flex-wrap justify-center gap-3"
+      initial="hidden"
+      whileInView="visible"
+      viewport={{ once: true, amount: 0.4 }}
+      variants={floatIn(0.18, { y: 30 })}
+    >
+      {CATEGORIES.map((category) => (
+        <Button
+          key={category}
+          type="button"
+          variant={active === category ? "primary" : "outline"}
+          className="h-10 px-5 text-small"
+          onClick={() => setActive(category)}
+        >
+          {category}
+        </Button>
+      ))}
+    </motion.div>
+  )
+}
+
+function ArticleCard({ article, index }: { article: Article; index: number }) {
+  const column = index % 3
+  const from: FloatFrom =
+    column === 0 ? { x: -160, rotate: -5 } : column === 2 ? { x: 160, rotate: 5 } : { y: 90 }
+
+  const gradient = CATEGORY_GRADIENT[article.category]
+  const icon = CATEGORY_ICON[article.category]
+
+  return (
+    <motion.div
+      initial="hidden"
+      whileInView="visible"
+      viewport={{ once: true, amount: 0.3 }}
+      variants={floatIn(index * 0.1, from, { damping: 30, mass: 4 })}
+    >
+      <Card className="group relative flex h-full flex-col gap-0 overflow-hidden p-0">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -inset-8 -z-10 rounded-[2rem] bg-primary/0 blur-2xl transition-colors duration-300 ease-nova group-hover:bg-primary/15"
+        />
+
+        <div className="relative h-40 w-full overflow-hidden">
+          <div
+            className="absolute inset-0 transition-transform duration-300 ease-nova group-hover:scale-110"
+            style={{ backgroundImage: `linear-gradient(135deg, ${gradient.from}, ${gradient.to})` }}
+          />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <Icon icon={icon} className="size-10 text-primary-foreground/90" />
+          </div>
+        </div>
+
+        <div className="flex flex-1 flex-col items-center gap-3 p-6 text-center">
+          <Badge variant="outline">{article.category}</Badge>
+          <p className="text-h3 font-heading font-semibold text-text">{article.title}</p>
+          <p className="flex-1 text-small text-text-secondary">{article.excerpt}</p>
+          <div className="flex items-center justify-center gap-4 text-small text-text-secondary">
+            <span className="flex items-center gap-1.5">
+              <Icon icon={Clock} className="size-3.5" />
+              {article.readingTime}
+            </span>
+            <span className="flex items-center gap-1.5">
+              <Icon icon={Calendar} className="size-3.5" />
+              {article.date}
+            </span>
+          </div>
+          <Link href={`/blog/${article.slug}`} className="mt-2 block">
+            <Button variant="outline" className="h-11 w-full text-small">
+              Lire l&apos;article
+              <Icon icon={ArrowRight} className="size-4" />
+            </Button>
+          </Link>
+        </div>
+      </Card>
+    </motion.div>
+  )
+}
+
+function EmptyState() {
+  return (
+    <div className="mx-auto flex max-w-md flex-col items-center gap-6 py-16 text-center">
+      <span className="flex size-20 items-center justify-center rounded-full bg-primary/10 text-primary">
+        <Icon icon={Sparkles} className="size-8" />
+      </span>
+      <div>
+        <Heading variant="h3">Les premiers articles arrivent bientôt.</Heading>
+        <p className="mt-3 text-body text-text-secondary">
+          Je prépare actuellement une collection de guides et d&apos;articles pour vous
+          accompagner dans le développement de votre activité.
+        </p>
+      </div>
+    </div>
+  )
+}
+
+function Newsletter() {
+  return (
+    <motion.div
+      initial="hidden"
+      whileInView="visible"
+      viewport={{ once: true, amount: 0.3 }}
+      variants={floatIn(0, { y: 60, scale: 0.95 }, { damping: 30, mass: 4 })}
+    >
+      <Card className="flex flex-col items-center gap-4 p-10 text-center sm:p-14">
+        <span className="flex size-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+          <Icon icon={Mail} className="size-6" />
+        </span>
+        <div>
+          <Heading variant="h2">Ne manquez aucun conseil.</Heading>
+          <p className="mt-3 text-body text-text-secondary">
+            Recevez les nouveaux articles directement dans votre boîte mail.
+          </p>
+        </div>
+        <div className="mt-2 flex w-full max-w-md flex-col gap-3 sm:flex-row">
+          <Input type="email" placeholder="vous@exemple.com" className="flex-1" />
+          <Button type="button" variant="primary" className="sm:w-auto">
+            S&apos;abonner
+          </Button>
+        </div>
+      </Card>
+    </motion.div>
+  )
+}
+
+function FinalCta() {
+  return (
+    <div className="mx-auto flex max-w-2xl flex-col items-center text-center md:max-w-3xl">
+      <motion.div
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.4 }}
+        variants={floatIn(0, { y: -60, scale: 0.94 })}
+      >
+        <Heading variant="h2">Un projet en tête ?</Heading>
+      </motion.div>
+
+      <motion.p
+        className="mt-6 max-w-xl text-body text-text-secondary"
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.4 }}
+        variants={floatIn(0.12, { y: 40 })}
+      >
+        Construisons ensemble un site internet moderne, performant et pensé pour développer votre
+        activité.
+      </motion.p>
+
+      <div className="mt-10 flex flex-col gap-4 sm:flex-row">
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.4 }}
+          variants={floatIn(0.22, { x: -160, rotate: -6 })}
+        >
+          <a href="/#contact">
+            <Button variant="primary">🚀 Construisons votre projet</Button>
+          </a>
+        </motion.div>
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.4 }}
+          variants={floatIn(0.3, { x: 160, rotate: 6 })}
+        >
+          <a href="/#services">
+            <Button variant="outline">Découvrir mes services</Button>
+          </a>
+        </motion.div>
+      </div>
+    </div>
+  )
+}
+
+/* ------------------------------------------------------------------------ */
+/* Page                                                                     */
+/* ------------------------------------------------------------------------ */
+
+function BlogContent() {
+  return (
+    <>
+      <BlogHero />
+
+      <Section>
+        <div className="flex flex-col gap-10">
+          <StatsRow />
+
+          <div className="flex flex-col gap-6">
+            <SearchBar />
+            <CategoryFilters />
+          </div>
+
+          {ARTICLES.length > 0 ? (
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {ARTICLES.map((article, index) => (
+                <ArticleCard key={article.slug} article={article} index={index} />
+              ))}
+            </div>
+          ) : (
+            <EmptyState />
+          )}
+        </div>
+      </Section>
+
+      <Section spacing="sm">
+        <Newsletter />
+      </Section>
+
+      <Section>
+        <FinalCta />
+      </Section>
+    </>
+  )
+}
+
+export { BlogContent }
