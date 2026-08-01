@@ -1,0 +1,140 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+  Studio Digital Nova — Design System tokens.
+  Single source of truth for color, type, radius and shadow.
+  Every future section must consume these tokens — never hard-coded values.
+*/
+
+@theme inline {
+  /* ---- Base / shadcn-compatible semantic colors ---- */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* ---- Direct design-token colors (ticket naming) ---- */
+  --color-surface: var(--surface);
+  --color-primary-hover: var(--primary-hover);
+  --color-accent-green: var(--accent-green);
+  --color-accent-purple: var(--accent-purple);
+  --color-text: var(--text);
+  --color-text-secondary: var(--text-secondary);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-error: var(--error);
+
+  /* ---- Fonts ---- */
+  --font-sans: var(--font-sans-body);
+  --font-heading: var(--font-serif-heading);
+
+  /* ---- Typography scale (Display / H1 / H2 / H3 / Body / Small) ---- */
+  --text-display: 4rem;
+  --text-display--line-height: 1.05;
+  --text-display--letter-spacing: -0.02em;
+  --text-display--font-weight: 700;
+
+  --text-h1: 3rem;
+  --text-h1--line-height: 1.1;
+  --text-h1--letter-spacing: -0.02em;
+  --text-h1--font-weight: 700;
+
+  --text-h2: 2.25rem;
+  --text-h2--line-height: 1.15;
+  --text-h2--letter-spacing: -0.01em;
+  --text-h2--font-weight: 700;
+
+  --text-h3: 1.5rem;
+  --text-h3--line-height: 1.3;
+  --text-h3--letter-spacing: -0.01em;
+  --text-h3--font-weight: 600;
+
+  --text-body: 1rem;
+  --text-body--line-height: 1.6;
+  --text-body--font-weight: 400;
+
+  --text-small: 0.875rem;
+  --text-small--line-height: 1.5;
+  --text-small--font-weight: 400;
+
+  /* ---- Soft shadow scale (Small / Medium / Large) ---- */
+  --shadow-sm: 0 1px 2px 0 rgba(15, 23, 42, 0.06), 0 1px 1px 0 rgba(15, 23, 42, 0.04);
+  --shadow-md: 0 12px 24px -8px rgba(21, 45, 71, 0.16), 0 4px 8px -2px rgba(15, 23, 42, 0.06);
+  --shadow-lg: 0 24px 48px -12px rgba(21, 45, 71, 0.22), 0 8px 16px -4px rgba(15, 23, 42, 0.08);
+
+  /* ---- Motion easing shared by every animation ---- */
+  --ease-nova: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+:root {
+  /* Base — neutral surfaces with enough contrast for cards to lift off the page */
+  --background: #eef1f5;
+  --foreground: #1f2937;
+  --surface: #ffffff;
+  --card: var(--surface);
+  --card-foreground: var(--foreground);
+  --popover: var(--surface);
+  --popover-foreground: var(--foreground);
+
+  /* Brand — confident corporate navy, plus two real supporting hues (brass + teal) instead of washed-out grays */
+  --primary: #1f4e79;
+  --primary-hover: #163a5c;
+  --primary-foreground: #ffffff;
+  --accent-purple: #a8783f;
+  --accent-green: #2f6f6b;
+
+  /* Secondary = soft brand tint, reused from primary */
+  --secondary: color-mix(in oklab, var(--primary) 12%, var(--surface));
+  --secondary-foreground: var(--primary-hover);
+
+  /* Text */
+  --text: #1f2937;
+  --text-secondary: #5b6472;
+
+  /* Neutral surfaces reuse background/text tokens */
+  --muted: var(--background);
+  --muted-foreground: var(--text-secondary);
+  --accent: var(--accent-purple);
+  --accent-foreground: #ffffff;
+
+  /* Borders / focus */
+  --border: #dde2e8;
+  --input: var(--border);
+  --ring: var(--primary);
+
+  /* Status — legible, still restrained */
+  --success: #22764f;
+  --warning: #b07a1e;
+  --error: #b3413a;
+  --destructive: var(--error);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-text;
+  }
+  html {
+    @apply font-sans;
+  }
+}

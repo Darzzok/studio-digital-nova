@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx --yes create-next-app@latest tmp-app --typescript --tailwind --eslint --app --src-dir --import-alias \"@/*\" --use-npm --turbopack --yes)",
+      "Bash(npx --yes shadcn@latest init -d -b neutral)",
+      "Bash(npx --yes shadcn@latest init --help)",
+      "Bash(npx --yes shadcn@latest init -d)",
+      "Bash(npx --yes shadcn@latest add card badge input -y)",
+      "Bash(npx tsc *)",
+      "Bash(npm run *)",
+      "Bash(mkdir -p src/styles)",
+      "Bash(git mv *)",
+      "Bash(mv src/app/globals.css src/styles/globals.css)",
+      "Bash(node -e \"console.log\\(require\\('./package.json'\\).dependencies\\)\")",
+      "Bash(node -e ' *)",
+      "Bash(xargs -I{} ls -la {})",
+      "Bash(sort -k6,7)"
+    ]
+  }
+}
