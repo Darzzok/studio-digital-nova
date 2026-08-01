@@ -38,7 +38,13 @@ function floatIn(delay: number, from: FloatFrom, options?: FloatOptions) {
   }
 }
 
-const NAV_ITEMS = ["Accueil", "Mes offres", "Réalisations", "À propos", "Contact"]
+const NAV_ITEMS = [
+  { label: "Accueil", href: "/" },
+  { label: "Mes offres", href: "/#tarifs" },
+  { label: "Réalisations", href: "/#cas-client" },
+  { label: "À propos", href: "/#a-propos" },
+  { label: "Contact", href: "/#contact" },
+]
 
 const CONTACT_ITEMS = [
   { icon: Mail, label: "contact@studiodigitalnova.fr", href: "mailto:contact@studiodigitalnova.fr" },
@@ -109,12 +115,12 @@ function Footer() {
             <p className="text-small font-semibold text-text">Navigation</p>
             <ul className="mt-4 flex flex-col gap-3">
               {NAV_ITEMS.map((item) => (
-                <li key={item}>
+                <li key={item.label}>
                   <a
-                    href="#"
+                    href={item.href}
                     className="text-body text-text-secondary transition-colors duration-150 ease-nova hover:text-primary"
                   >
-                    {item}
+                    {item.label}
                   </a>
                 </li>
               ))}

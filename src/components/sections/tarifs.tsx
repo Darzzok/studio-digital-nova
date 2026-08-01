@@ -212,12 +212,14 @@ function Tarifs() {
                   {plan.idealFor}
                 </p>
 
-                <Button
-                  variant={plan.featured ? "primary" : "outline"}
-                  className="relative h-11 w-full text-small"
-                >
-                  Demander un devis
-                </Button>
+                <a href="/#contact" className="relative w-full">
+                  <Button
+                    variant={plan.featured ? "primary" : "outline"}
+                    className="h-11 w-full text-small"
+                  >
+                    Demander un devis
+                  </Button>
+                </a>
               </Card>
             </motion.div>
           )

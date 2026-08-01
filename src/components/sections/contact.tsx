@@ -381,7 +381,7 @@ function StepOffer({ value, onSelect }: { value: OfferId | null; onSelect: (id: 
                   <Icon icon={offer.icon} className="size-5" />
                 </span>
                 <p className="relative text-h3 font-heading font-semibold text-text">{offer.name}</p>
-                <p className="relative text-body font-semibold text-text">{offer.price}</p>
+                <p className="relative whitespace-nowrap text-body font-semibold text-text">{offer.price}</p>
                 <AnimatePresence>
                   {selected && (
                     <motion.span

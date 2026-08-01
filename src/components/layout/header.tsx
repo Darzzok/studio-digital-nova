@@ -17,7 +17,6 @@ const NAV_ITEMS = [
   { label: "Cas client", href: "/#cas-client" },
   { label: "Blog", href: "/blog" },
   { label: "FAQ", href: "/faq" },
-  { label: "Contact", href: "/#contact" },
 ]
 
 function Header() {
@@ -84,7 +83,7 @@ function Header() {
             <motion.a
               key={item.label}
               href={item.href}
-              className="text-body font-medium text-text-secondary transition-colors duration-150 ease-nova hover:text-primary"
+              className="group relative text-body font-medium text-text-secondary transition-colors duration-200 ease-nova hover:text-text"
               initial={initial}
               animate="visible"
               variants={{
@@ -103,6 +102,10 @@ function Header() {
                 },
               }}
             >
+              <span
+                aria-hidden
+                className="pointer-events-none absolute -inset-x-3 -inset-y-2 -z-10 rounded-full bg-primary opacity-0 transition-opacity duration-200 ease-nova group-hover:opacity-[0.06]"
+              />
               {item.label}
             </motion.a>
           ))}
@@ -130,10 +133,12 @@ function Header() {
             },
           }}
         >
-          <Button variant="primary" className="h-11 px-6 text-small hidden sm:inline-flex">
-            Demander un devis
-            <Icon icon={ArrowRight} className="size-4" />
-          </Button>
+          <a href="/#contact" className="hidden sm:inline-flex">
+            <Button variant="primary" className="h-11 px-6 text-small">
+              Demander un devis
+              <Icon icon={ArrowRight} className="size-4" />
+            </Button>
+          </a>
         </motion.div>
       </Container>
     </header>

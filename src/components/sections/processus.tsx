@@ -1,7 +1,7 @@
 "use client"
 
 import { useRef } from "react"
-import { Route } from "lucide-react"
+import { ClipboardCheck, Code2, Palette, Route, Rocket, Search, Zap } from "lucide-react"
 import { motion, useInView, useReducedMotion } from "framer-motion"
 
 import { Badge } from "@/components/ui/badge"
@@ -46,6 +46,7 @@ const STEPS = [
   {
     number: "01",
     title: "Découverte",
+    icon: Search,
     description: (
       <>
         J&apos;échange avec vous sur{" "}
@@ -57,6 +58,7 @@ const STEPS = [
   {
     number: "02",
     title: "Maquette",
+    icon: Palette,
     description: (
       <>
         Je conçois un design <strong className="font-semibold text-text">sur mesure</strong> qui
@@ -67,6 +69,7 @@ const STEPS = [
   {
     number: "03",
     title: "Développement",
+    icon: Code2,
     description: (
       <>
         Le site prend vie avec un code{" "}
@@ -77,6 +80,7 @@ const STEPS = [
   {
     number: "04",
     title: "Optimisation",
+    icon: Zap,
     description: (
       <>
         <strong className="font-semibold text-text">SEO, vitesse et accessibilité</strong> sont
@@ -87,6 +91,7 @@ const STEPS = [
   {
     number: "05",
     title: "Validation",
+    icon: ClipboardCheck,
     description: (
       <>
         Vous testez et validez{" "}
@@ -98,6 +103,7 @@ const STEPS = [
   {
     number: "06",
     title: "Mise en ligne",
+    icon: Rocket,
     description: (
       <>
         Votre site est publié et prêt à{" "}
@@ -286,7 +292,10 @@ function StepCard({ index, inView, reduce }: PulseProps) {
         animate={{ opacity: glowSeq.animate.value }}
         transition={glowSeq.transition}
       />
-      <Card className="flex flex-col items-center gap-2 p-6 text-center">
+      <Card className="flex flex-col items-center gap-3 p-6 text-center">
+        <span className="flex size-11 items-center justify-center rounded-2xl bg-primary/10 text-primary shadow-sm">
+          <Icon icon={step.icon} className="size-5" />
+        </span>
         <p className="text-h3 font-heading font-semibold text-text">{step.title}</p>
         <p className="text-small text-text-secondary">{step.description}</p>
       </Card>
@@ -452,6 +461,9 @@ function Processus() {
                   />
                   <Card className="flex flex-col items-center gap-3 p-6 text-center">
                     <Capsule index={index} inView={inView} reduce={reduce} />
+                    <span className="flex size-11 items-center justify-center rounded-2xl bg-primary/10 text-primary shadow-sm">
+                      <Icon icon={step.icon} className="size-5" />
+                    </span>
                     <p className="text-h3 font-heading font-semibold text-text">{step.title}</p>
                     <p className="text-small text-text-secondary">{step.description}</p>
                   </Card>

@@ -2,13 +2,12 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion"
+import { motion, useReducedMotion } from "framer-motion"
 import {
   ArrowLeft,
   ArrowRight,
   Calendar,
   Check,
-  ChevronDown,
   Circle,
   Clock,
   ListTree,
@@ -22,7 +21,6 @@ import { Card } from "@/components/ui/card"
 import { Heading } from "@/components/ui/heading"
 import { Icon } from "@/components/ui/icon"
 import { Section } from "@/components/ui/section"
-import { EASE_NOVA } from "@/lib/motion"
 import { cn } from "@/lib/utils"
 import {
   CATEGORY_GRADIENT,
@@ -242,51 +240,6 @@ function ArticleBlockRenderer({ block }: { block: ArticleBlock }) {
   }
 }
 
-function FaqAccordion({ faq }: { faq: Article["faq"] }) {
-  const [openIndex, setOpenIndex] = useState<number | null>(null)
-
-  return (
-    <div className="flex flex-col gap-4">
-      {faq.map((item, index) => {
-        const isOpen = openIndex === index
-        return (
-          <Card key={item.question} className="overflow-hidden p-0">
-            <button
-              type="button"
-              onClick={() => setOpenIndex(isOpen ? null : index)}
-              aria-expanded={isOpen}
-              className="flex w-full items-center justify-between gap-4 p-6 text-left"
-            >
-              <span className="text-body font-semibold text-text">{item.question}</span>
-              <motion.span
-                animate={{ rotate: isOpen ? 180 : 0 }}
-                transition={{ duration: 0.2, ease: EASE_NOVA }}
-                className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary"
-              >
-                <Icon icon={ChevronDown} className="size-4" />
-              </motion.span>
-            </button>
-            <AnimatePresence initial={false}>
-              {isOpen && (
-                <motion.div
-                  key="content"
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: "auto", opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.3, ease: EASE_NOVA }}
-                  className="overflow-hidden"
-                >
-                  <p className="px-6 pb-6 text-body text-text-secondary">{item.answer}</p>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </Card>
-        )
-      })}
-    </div>
-  )
-}
-
 function RelatedArticleCard({ article, index }: { article: Article; index: number }) {
   const gradient = CATEGORY_GRADIENT[article.category]
   const icon = CATEGORY_ICON[article.category]
@@ -459,13 +412,6 @@ function ArticleContent({ article }: { article: Article }) {
                 <ArticleBlockRenderer block={block} />
               </motion.div>
             ))}
-
-            <div className="mt-6">
-              <Heading variant="h2">Questions fréquentes</Heading>
-              <div className="mt-6">
-                <FaqAccordion faq={article.faq} />
-              </div>
-            </div>
 
             <div className="mt-6">
               <ArticleConversionCta />

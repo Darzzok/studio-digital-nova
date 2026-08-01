@@ -1,10 +1,11 @@
 "use client"
 
 import { useState } from "react"
-import { ChevronDown, HelpCircle } from "lucide-react"
+import { ArrowRight, ChevronDown, HelpCircle } from "lucide-react"
 import { AnimatePresence, motion } from "framer-motion"
 
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Heading } from "@/components/ui/heading"
 import { Icon } from "@/components/ui/icon"
@@ -133,6 +134,37 @@ const QUESTIONS = [
   },
 ]
 
+function FaqCta() {
+  return (
+    <motion.div
+      initial="hidden"
+      whileInView="visible"
+      viewport={{ once: true, amount: 0.4 }}
+      variants={floatIn(0, { y: 60, scale: 0.94 })}
+    >
+      <Card className="relative mx-auto max-w-3xl overflow-hidden text-center">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -inset-x-10 -top-24 h-56 rounded-full bg-primary/15 blur-3xl"
+        />
+        <div className="relative flex flex-col items-center gap-4 py-4">
+          <Heading variant="h2">Une autre question ?</Heading>
+          <p className="max-w-xl text-body text-text-secondary">
+            Je réponds personnellement à chaque message. Parlons de votre projet et voyons
+            ensemble comment je peux vous aider.
+          </p>
+          <a href="/#contact">
+            <Button variant="primary">
+              Construisons votre projet
+              <Icon icon={ArrowRight} className="size-4" />
+            </Button>
+          </a>
+        </div>
+      </Card>
+    </motion.div>
+  )
+}
+
 function FAQ() {
   const [openIndex, setOpenIndex] = useState<number | null>(null)
 
@@ -227,4 +259,4 @@ function FAQ() {
   )
 }
 
-export { FAQ }
+export { FAQ, FaqCta }

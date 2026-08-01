@@ -13,7 +13,6 @@ import {
   Compass,
   FileText,
   Layers,
-  Mail,
   Palette,
   Search,
   Sparkles,
@@ -331,81 +330,58 @@ function EmptyState() {
   )
 }
 
-function Newsletter() {
-  return (
-    <motion.div
-      initial="hidden"
-      whileInView="visible"
-      viewport={{ once: true, amount: 0.3 }}
-      variants={floatIn(0, { y: 60, scale: 0.95 }, { damping: 30, mass: 4 })}
-    >
-      <Card className="flex flex-col items-center gap-4 p-10 text-center sm:p-14">
-        <span className="flex size-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-          <Icon icon={Mail} className="size-6" />
-        </span>
-        <div>
-          <Heading variant="h2">Ne manquez aucun conseil.</Heading>
-          <p className="mt-3 text-body text-text-secondary">
-            Recevez les nouveaux articles directement dans votre boîte mail.
-          </p>
-        </div>
-        <div className="mt-2 flex w-full max-w-md flex-col gap-3 sm:flex-row">
-          <Input type="email" placeholder="vous@exemple.com" className="flex-1" />
-          <Button type="button" variant="primary" className="sm:w-auto">
-            S&apos;abonner
-          </Button>
-        </div>
-      </Card>
-    </motion.div>
-  )
-}
-
 function FinalCta() {
   return (
-    <div className="mx-auto flex max-w-2xl flex-col items-center text-center md:max-w-3xl">
-      <motion.div
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true, amount: 0.4 }}
-        variants={floatIn(0, { y: -60, scale: 0.94 })}
-      >
-        <Heading variant="h2">Un projet en tête ?</Heading>
-      </motion.div>
-
-      <motion.p
-        className="mt-6 max-w-xl text-body text-text-secondary"
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true, amount: 0.4 }}
-        variants={floatIn(0.12, { y: 40 })}
-      >
-        Construisons ensemble un site internet moderne, performant et pensé pour développer votre
-        activité.
-      </motion.p>
-
-      <div className="mt-10 flex flex-col gap-4 sm:flex-row">
+    <Card className="relative mx-auto max-w-3xl overflow-hidden text-center">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -inset-x-10 -top-24 h-56 rounded-full bg-primary/15 blur-3xl"
+      />
+      <div className="relative flex flex-col items-center">
         <motion.div
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, amount: 0.4 }}
-          variants={floatIn(0.22, { x: -160, rotate: -6 })}
+          variants={floatIn(0, { y: -60, scale: 0.94 })}
         >
-          <a href="/#contact">
-            <Button variant="primary">🚀 Construisons votre projet</Button>
-          </a>
+          <Heading variant="h2">🚀 Un projet en tête ?</Heading>
         </motion.div>
-        <motion.div
+
+        <motion.p
+          className="mt-6 max-w-xl text-body text-text-secondary"
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, amount: 0.4 }}
-          variants={floatIn(0.3, { x: 160, rotate: 6 })}
+          variants={floatIn(0.12, { y: 40 })}
         >
-          <a href="/#services">
-            <Button variant="outline">Découvrir mes services</Button>
-          </a>
-        </motion.div>
+          Construisons ensemble un site internet moderne, performant et pensé pour développer
+          votre activité.
+        </motion.p>
+
+        <div className="mt-10 flex flex-col gap-4 sm:flex-row">
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.4 }}
+            variants={floatIn(0.22, { x: -160, rotate: -6 })}
+          >
+            <a href="/#contact">
+              <Button variant="primary">🚀 Construisons votre projet</Button>
+            </a>
+          </motion.div>
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.4 }}
+            variants={floatIn(0.3, { x: 160, rotate: 6 })}
+          >
+            <a href="/#services">
+              <Button variant="outline">Découvrir mes services</Button>
+            </a>
+          </motion.div>
+        </div>
       </div>
-    </div>
+    </Card>
   )
 }
 
@@ -437,10 +413,6 @@ function BlogContent() {
             <EmptyState />
           )}
         </div>
-      </Section>
-
-      <Section spacing="sm">
-        <Newsletter />
       </Section>
 
       <Section>

@@ -306,17 +306,21 @@ function Hero() {
               initial={initial}
               animate="visible"
             >
-              <Button variant="primary">
-                Demander un devis
-                <Icon icon={ArrowRight} className="size-4" />
-              </Button>
+              <a href="/#contact">
+                <Button variant="primary">
+                  Demander un devis
+                  <Icon icon={ArrowRight} className="size-4" />
+                </Button>
+              </a>
             </motion.div>
             <motion.div
               variants={floatIn(1.45, { x: 160, rotate: 6 })}
               initial={initial}
               animate="visible"
             >
-              <Button variant="outline">Découvrir mes offres</Button>
+              <a href="/#tarifs">
+                <Button variant="outline">Découvrir mes offres</Button>
+              </a>
             </motion.div>
           </div>
         </div>

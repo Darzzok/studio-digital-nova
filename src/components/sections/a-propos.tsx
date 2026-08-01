@@ -189,10 +189,12 @@ function APropos() {
             viewport={{ once: true, amount: 0.4 }}
             variants={floatIn(0.75, { x: -160, rotate: -6 })}
           >
-            <Button variant="primary">
-              Parlons de votre projet
-              <Icon icon={ArrowRight} className="size-4" />
-            </Button>
+            <a href="/#contact">
+              <Button variant="primary">
+                Parlons de votre projet
+                <Icon icon={ArrowRight} className="size-4" />
+              </Button>
+            </a>
           </motion.div>
         </div>
       </div>
