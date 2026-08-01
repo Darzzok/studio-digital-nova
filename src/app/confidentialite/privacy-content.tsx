@@ -40,8 +40,14 @@ function floatIn(delay: number, from: FloatFrom, options?: FloatOptions) {
 const SECTIONS = [
   {
     title: "Responsable du traitement",
-    content:
-      "En tant qu'entrepreneur individuel exerçant sous le nom Studio Digital Nova, je suis responsable du traitement des données collectées sur ce site. Pour toute question, contactez-moi à contact@studiodigitalnova.fr.",
+    content: (
+      <>
+        En tant qu&apos;entrepreneur individuel exerçant sous le nom Studio Digital Nova, je suis
+        responsable du traitement des données collectées sur ce site. Pour toute question,
+        contactez-moi à{" "}
+        <strong className="font-semibold text-text">contact@studiodigitalnova.fr</strong>.
+      </>
+    ),
   },
   {
     title: "Données collectées",
@@ -50,8 +56,15 @@ const SECTIONS = [
   },
   {
     title: "Finalité du traitement",
-    content:
-      "Ces informations sont utilisées uniquement pour répondre à votre demande de devis et échanger avec vous sur votre projet. Elles ne sont ni vendues, ni partagées avec des tiers.",
+    content: (
+      <>
+        Ces informations sont utilisées uniquement pour répondre à votre demande de devis et
+        échanger avec vous sur votre projet.{" "}
+        <strong className="font-semibold text-text">
+          Elles ne sont ni vendues, ni partagées avec des tiers.
+        </strong>
+      </>
+    ),
   },
   {
     title: "Conservation des données",
@@ -60,13 +73,26 @@ const SECTIONS = [
   },
   {
     title: "Cookies",
-    content:
-      "Ce site n'utilise aucun cookie de suivi ni outil de mesure d'audience tiers. Aucune donnée de navigation n'est collectée à des fins publicitaires.",
+    content: (
+      <>
+        Ce site{" "}
+        <strong className="font-semibold text-text">
+          n&apos;utilise aucun cookie de suivi ni outil de mesure d&apos;audience tiers
+        </strong>
+        . Aucune donnée de navigation n&apos;est collectée à des fins publicitaires.
+      </>
+    ),
   },
   {
     title: "Vos droits",
-    content:
-      "Conformément au RGPD, vous disposez d'un droit d'accès, de rectification et de suppression de vos données. Pour exercer ce droit, contactez-moi à contact@studiodigitalnova.fr.",
+    content: (
+      <>
+        Conformément au <strong className="font-semibold text-text">RGPD</strong>, vous disposez
+        d&apos;un droit d&apos;accès, de rectification et de suppression de vos données. Pour
+        exercer ce droit, contactez-moi à{" "}
+        <strong className="font-semibold text-text">contact@studiodigitalnova.fr</strong>.
+      </>
+    ),
   },
 ];
 

@@ -43,12 +43,68 @@ function floatIn(delay: number, from: FloatFrom, options?: FloatOptions) {
 }
 
 const STEPS = [
-  { number: "01", title: "Découverte", description: "J'échange avec vous sur vos besoins, vos objectifs et votre marché." },
-  { number: "02", title: "Maquette", description: "Je conçois un design sur mesure qui vous ressemble." },
-  { number: "03", title: "Développement", description: "Le site prend vie avec un code propre et performant." },
-  { number: "04", title: "Optimisation", description: "SEO, vitesse et accessibilité sont peaufinés en détail." },
-  { number: "05", title: "Validation", description: "Vous testez et validez chaque détail avant la mise en ligne." },
-  { number: "06", title: "Mise en ligne", description: "Votre site est publié et prêt à convertir vos visiteurs." },
+  {
+    number: "01",
+    title: "Découverte",
+    description: (
+      <>
+        J&apos;échange avec vous sur{" "}
+        <strong className="font-semibold text-text">vos besoins, vos objectifs</strong> et votre
+        marché.
+      </>
+    ),
+  },
+  {
+    number: "02",
+    title: "Maquette",
+    description: (
+      <>
+        Je conçois un design <strong className="font-semibold text-text">sur mesure</strong> qui
+        vous ressemble.
+      </>
+    ),
+  },
+  {
+    number: "03",
+    title: "Développement",
+    description: (
+      <>
+        Le site prend vie avec un code{" "}
+        <strong className="font-semibold text-text">propre et performant</strong>.
+      </>
+    ),
+  },
+  {
+    number: "04",
+    title: "Optimisation",
+    description: (
+      <>
+        <strong className="font-semibold text-text">SEO, vitesse et accessibilité</strong> sont
+        peaufinés en détail.
+      </>
+    ),
+  },
+  {
+    number: "05",
+    title: "Validation",
+    description: (
+      <>
+        Vous testez et validez{" "}
+        <strong className="font-semibold text-text">chaque détail</strong> avant la mise en
+        ligne.
+      </>
+    ),
+  },
+  {
+    number: "06",
+    title: "Mise en ligne",
+    description: (
+      <>
+        Votre site est publié et prêt à{" "}
+        <strong className="font-semibold text-text">convertir vos visiteurs</strong>.
+      </>
+    ),
+  },
 ]
 
 const STEP_COUNT = STEPS.length
@@ -56,7 +112,7 @@ const LAST_INDEX = STEP_COUNT - 1
 const centerOf = (index: number) => ((index + 0.5) / STEP_COUNT) * 100
 
 // ---- Minuterie de la progression (une capsule à la fois, puis la ligne, puis la suivante) ----
-const ENTRANCE_SETTLE = 1.6 // laisse le temps à l'animation d'entrée existante de se terminer
+const ENTRANCE_SETTLE = 2 // laisse le temps à l'animation d'entrée (désormais plus lente) de se terminer
 const CAPSULE_FILL = 0.7
 const LINE_FILL = 0.45
 const STEP_CYCLE = CAPSULE_FILL + LINE_FILL
@@ -244,7 +300,7 @@ function Processus() {
   const inView = useInView(gridRef, { once: true, amount: 0.3 })
 
   return (
-    <Section>
+    <Section id="ma-methode" className="scroll-mt-24">
       <div className="mx-auto flex max-w-2xl flex-col items-center text-center md:max-w-3xl">
         <motion.div
           className="mb-4"
@@ -275,8 +331,9 @@ function Processus() {
           viewport={{ once: true, amount: 0.4 }}
           variants={floatIn(0.22, { y: 40 })}
         >
-          Un processus clair et éprouvé, de la première idée à la mise en ligne de votre site.
-          Vous savez toujours où vous en êtes, sans jargon ni mauvaise surprise.
+          Un <strong className="font-semibold text-text">processus clair et éprouvé</strong>, de
+          la première idée à la mise en ligne de votre site. Vous savez toujours où vous en êtes,
+          sans jargon ni mauvaise surprise.
         </motion.p>
       </div>
 
@@ -354,7 +411,7 @@ function Processus() {
               initial="hidden"
               whileInView="visible"
               viewport={{ once: true, amount: 0.4 }}
-              variants={floatIn(index * 0.12, { y: index % 2 === 0 ? -70 : 70, scale: 0.85 })}
+              variants={floatIn(index * 0.12, { y: index % 2 === 0 ? -70 : 70, scale: 0.85 }, { damping: 32, mass: 3.6 })}
             >
               <StepCard index={index} inView={inView} reduce={reduce} />
             </motion.div>
@@ -377,7 +434,7 @@ function Processus() {
                 initial="hidden"
                 whileInView="visible"
                 viewport={{ once: true, amount: 0.4 }}
-                variants={floatIn(index * 0.1, { y: 60, scale: 0.9 })}
+                variants={floatIn(index * 0.1, { y: 60, scale: 0.9 }, { damping: 32, mass: 3.6 })}
               >
                 <motion.div
                   className="relative"

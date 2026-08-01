@@ -10,12 +10,13 @@ import { Icon } from "@/components/ui/icon"
 import { cn } from "@/lib/utils"
 
 const NAV_ITEMS = [
-  { label: "Accueil", href: "#" },
-  { label: "Mes offres", href: "#" },
-  { label: "Réalisations", href: "#" },
-  { label: "À propos", href: "#" },
+  { label: "Mes services", href: "/#services" },
+  { label: "À propos", href: "/#a-propos" },
+  { label: "Ma méthode", href: "/#ma-methode" },
+  { label: "Tarifs", href: "/#tarifs" },
+  { label: "Cas client", href: "/#cas-client" },
   { label: "FAQ", href: "/faq" },
-  { label: "Contact", href: "#" },
+  { label: "Contact", href: "/#contact" },
 ]
 
 function Header() {

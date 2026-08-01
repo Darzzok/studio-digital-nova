@@ -266,7 +266,12 @@ function ServerPreview({ reduce }: PreviewProps) {
 const SERVICES = [
   {
     title: "Site One Page",
-    description: "Une page unique et percutante pour présenter votre activité rapidement.",
+    description: (
+      <>
+        Une page unique et percutante pour présenter votre activité{" "}
+        <strong className="font-semibold text-text">rapidement</strong>.
+      </>
+    ),
     icon: LayoutTemplate,
     className: "bg-primary/10 text-primary",
     features: [
@@ -278,7 +283,12 @@ const SERVICES = [
   },
   {
     title: "Site Vitrine",
-    description: "Un site multi-pages complet pour présenter votre entreprise en détail.",
+    description: (
+      <>
+        Un site <strong className="font-semibold text-text">multi-pages complet</strong> pour
+        présenter votre entreprise en détail.
+      </>
+    ),
     icon: Globe,
     className: "bg-accent-purple/15 text-accent-purple",
     features: [
@@ -290,7 +300,12 @@ const SERVICES = [
   },
   {
     title: "Refonte de site",
-    description: "Redonnez une seconde vie à votre site avec un design moderne.",
+    description: (
+      <>
+        Redonnez <strong className="font-semibold text-text">une seconde vie</strong> à votre
+        site avec un design moderne.
+      </>
+    ),
     icon: RefreshCw,
     className: "bg-accent-green/15 text-accent-green",
     features: [
@@ -302,7 +317,12 @@ const SERVICES = [
   },
   {
     title: "SEO",
-    description: "Une optimisation fine pour être mieux référencé sur Google.",
+    description: (
+      <>
+        Une optimisation fine pour être{" "}
+        <strong className="font-semibold text-text">mieux référencé sur Google</strong>.
+      </>
+    ),
     icon: Search,
     className: "bg-warning/15 text-warning",
     features: [
@@ -314,7 +334,12 @@ const SERVICES = [
   },
   {
     title: "Maintenance",
-    description: "Mises à jour et suivi technique pour un site toujours performant.",
+    description: (
+      <>
+        Mises à jour et suivi technique pour un site{" "}
+        <strong className="font-semibold text-text">toujours performant</strong>.
+      </>
+    ),
     icon: Wrench,
     className: "bg-primary/10 text-primary",
     features: [
@@ -326,7 +351,12 @@ const SERVICES = [
   },
   {
     title: "Hébergement & mise en ligne",
-    description: "Un hébergement fiable et sécurisé, avec une mise en ligne rapide.",
+    description: (
+      <>
+        Un hébergement <strong className="font-semibold text-text">fiable et sécurisé</strong>,
+        avec une mise en ligne rapide.
+      </>
+    ),
     icon: Server,
     className: "bg-accent-purple/15 text-accent-purple",
     features: [
@@ -342,7 +372,7 @@ function Services() {
   const reduce = useReducedMotion()
 
   return (
-    <Section>
+    <Section id="services" className="scroll-mt-24">
       <div className="mx-auto flex max-w-2xl flex-col items-center text-center md:max-w-3xl">
         <motion.div
           className="mb-4"
@@ -374,8 +404,8 @@ function Services() {
           variants={floatIn(0.22, { y: 40 })}
         >
           Du site vitrine à la refonte complète, je vous accompagne à chaque étape de votre
-          présence en ligne. Chaque prestation est pensée pour rester simple, efficace et sans
-          mauvaise surprise.
+          présence en ligne. Chaque prestation est pensée pour rester{" "}
+          <strong className="font-semibold text-text">simple, efficace et sans mauvaise surprise</strong>.
         </motion.p>
       </div>
 
@@ -395,27 +425,28 @@ function Services() {
               initial="hidden"
               whileInView="visible"
               viewport={{ once: true, amount: 0.3 }}
-              variants={floatIn(index * 0.12, from)}
+              variants={floatIn(index * 0.12, from, { damping: 30, mass: 4 })}
             >
-              <Card className="group flex h-full flex-col gap-5">
+              <Card className="group flex h-full flex-col items-center gap-5 text-center">
                 <service.Preview reduce={Boolean(reduce)} />
 
-                <div className="flex items-center gap-3">
-                  <span
-                    className={`flex size-10 shrink-0 items-center justify-center rounded-xl transition-transform duration-200 ease-nova group-hover:-rotate-6 group-hover:scale-110 ${service.className}`}
-                  >
-                    <Icon icon={service.icon} className="size-5" />
-                  </span>
-                  <p className="text-h3 font-heading font-semibold text-text">{service.title}</p>
-                </div>
+                <span
+                  className={`flex size-12 shrink-0 items-center justify-center rounded-2xl shadow-sm transition-transform duration-200 ease-nova group-hover:-rotate-6 group-hover:scale-110 ${service.className}`}
+                >
+                  <Icon icon={service.icon} className="size-5" />
+                </span>
+
+                <p className="text-h3 font-heading font-semibold text-text">{service.title}</p>
 
                 <p className="text-body text-text-secondary">{service.description}</p>
 
-                <ul className="flex flex-col gap-2">
+                <div className="h-px w-full bg-border" />
+
+                <ul className="flex w-full flex-col gap-2">
                   {service.features.map((feature, featureIndex) => (
                     <motion.li
                       key={feature}
-                      className="flex items-start gap-2 text-small text-text-secondary"
+                      className="flex items-start justify-center gap-2 text-small text-text-secondary"
                       initial={{ opacity: 0, x: -8 }}
                       whileInView={{ opacity: 1, x: 0 }}
                       viewport={{ once: true, amount: 0.6 }}

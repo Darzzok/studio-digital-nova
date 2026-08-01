@@ -65,19 +65,32 @@ const BENEFITS = [
     icon: Clock,
     className: "bg-primary/10 text-primary",
     title: "Réponse sous 24h",
-    description: "Je reviens vers vous rapidement, sans attente.",
+    description: (
+      <>
+        Je reviens vers vous rapidement, <strong className="font-semibold text-text">sans attente</strong>.
+      </>
+    ),
   },
   {
     icon: Gift,
     className: "bg-accent-purple/15 text-accent-purple",
     title: "Devis gratuit",
-    description: "Une estimation claire, sans engagement.",
+    description: (
+      <>
+        Une estimation claire, <strong className="font-semibold text-text">sans engagement</strong>.
+      </>
+    ),
   },
   {
     icon: Rocket,
     className: "bg-accent-green/15 text-accent-green",
     title: "Site livré rapidement",
-    description: "Des délais courts, annoncés dès le départ.",
+    description: (
+      <>
+        <strong className="font-semibold text-text">Des délais courts</strong>, annoncés dès le
+        départ.
+      </>
+    ),
   },
 ]
 
@@ -159,7 +172,7 @@ function Contact() {
   })
 
   return (
-    <Section>
+    <Section id="contact" className="scroll-mt-24">
       <div className="mx-auto flex max-w-2xl flex-col items-center text-center md:max-w-3xl">
         <motion.div
           className="mb-4"
@@ -190,9 +203,9 @@ function Contact() {
           viewport={{ once: true, amount: 0.4 }}
           variants={floatIn(0.22, { y: 40 })}
         >
-          Un projet en tête ? Décrivez-le-moi, je reviens vers vous rapidement avec un devis
-          gratuit et sans engagement. Chaque message est lu et traité personnellement, sans
-          détour.
+          Un projet en tête ? Décrivez-le-moi, je reviens vers vous rapidement avec{" "}
+          <strong className="font-semibold text-text">un devis gratuit et sans engagement</strong>.
+          Chaque message est lu et traité personnellement, sans détour.
         </motion.p>
       </div>
 
@@ -201,7 +214,7 @@ function Contact() {
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, amount: 0.2 }}
-          variants={floatIn(0.1, { x: -160, rotate: -4 })}
+          variants={floatIn(0.1, { x: -160, rotate: -4 }, { damping: 30, mass: 4 })}
         >
           <Card>
             <form onSubmit={onSubmit} noValidate className="flex flex-col gap-5">
@@ -262,7 +275,7 @@ function Contact() {
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, amount: 0.4 }}
-            variants={floatIn(0.15, { x: 160, rotate: 4 })}
+            variants={floatIn(0.15, { x: 160, rotate: 4 }, { damping: 30, mass: 4 })}
           >
             <ContactIllustration reduce={Boolean(reduce)} />
           </motion.div>
@@ -273,7 +286,7 @@ function Contact() {
               initial="hidden"
               whileInView="visible"
               viewport={{ once: true, amount: 0.4 }}
-              variants={floatIn(0.25 + index * 0.1, { y: 90 })}
+              variants={floatIn(0.25 + index * 0.1, { y: 90 }, { damping: 30, mass: 4 })}
             >
               <Card className="flex items-start gap-3 p-5">
                 <span

@@ -83,8 +83,8 @@ function Footer() {
               <span className="text-h3 font-heading font-bold text-text">Studio Digital Nova</span>
             </div>
             <p className="max-w-sm text-body text-text-secondary">
-              Je crée des sites vitrines modernes, rapides et optimisés pour convertir vos
-              visiteurs en clients.
+              Je crée des sites vitrines modernes, rapides et optimisés pour{" "}
+              <strong className="font-semibold text-text">convertir vos visiteurs en clients</strong>.
             </p>
             <div className="mt-2 flex items-center gap-3">
               {SOCIAL_LINKS.map((social) => (

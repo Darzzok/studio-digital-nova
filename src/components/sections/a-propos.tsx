@@ -99,19 +99,19 @@ function AboutPortrait() {
 
 function APropos() {
   return (
-    <Section>
+    <Section id="a-propos" className="scroll-mt-24">
       <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-5 lg:gap-12">
         <motion.div
           className="lg:col-span-2"
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, amount: 0.2 }}
-          variants={floatIn(0.1, { x: -160, rotate: -4 })}
+          variants={floatIn(0.1, { x: -160, rotate: -4 }, { damping: 30, mass: 4 })}
         >
           <AboutPortrait />
         </motion.div>
 
-        <div className="lg:col-span-3">
+        <div className="flex flex-col items-center text-center lg:col-span-3">
           <motion.div
             className="mb-4"
             initial="hidden"
@@ -141,13 +141,25 @@ function APropos() {
             viewport={{ once: true, amount: 0.4 }}
             variants={floatIn(0.22, { y: 40 })}
           >
-            Développeur web freelance, je conçois des sites qui allient design soigné, performance
-            technique et référencement naturel. Pas d&apos;agence, pas d&apos;intermédiaire : un
-            seul interlocuteur, du premier échange à la mise en ligne, pour un accompagnement
-            personnalisé à chaque étape de votre projet.
+            Développeur web indépendant, j&apos;accompagne les{" "}
+            <strong className="font-semibold text-text">
+              PME, auto-entrepreneurs, artisans et commerçants
+            </strong>{" "}
+            dans la création de leur présence en ligne. Quel que soit votre corps de métier, mon
+            objectif est simple : concevoir un{" "}
+            <strong className="font-semibold text-text">site sur mesure, fluide et performant</strong>,
+            qui valorise votre savoir-faire et attire de nouveaux clients. Fort de plusieurs
+            années d&apos;expérience dans la création de sites vitrines et multi-pages, je connais
+            parfaitement les enjeux des petites et moyennes entreprises. Travailler avec moi,
+            c&apos;est bénéficier d&apos;<strong className="font-semibold text-text">un interlocuteur unique</strong>,
+            à l&apos;écoute et réactif, qui vous guide pas à pas de l&apos;idée initiale
+            jusqu&apos;à la mise en ligne. Chaque projet est pensé pour s&apos;adapter à vos
+            besoins réels, sans complexité inutile. Vous obtenez un outil professionnel, efficace
+            et prêt à soutenir le développement de votre activité. Un projet en tête ?
+            Contactez-moi pour en discuter !
           </motion.p>
 
-          <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="mx-auto mt-8 grid w-full max-w-md grid-cols-1 gap-4 sm:grid-cols-2">
             {STRENGTHS.map((strength, index) => (
               <motion.div
                 key={strength.label}

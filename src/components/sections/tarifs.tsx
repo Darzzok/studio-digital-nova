@@ -1,6 +1,6 @@
 "use client"
 
-import { Check, Tag } from "lucide-react"
+import { Check, Crown, Rocket, Sparkles, Tag } from "lucide-react"
 import { motion } from "framer-motion"
 
 import { Badge } from "@/components/ui/badge"
@@ -45,8 +45,11 @@ function floatIn(delay: number, from: FloatFrom, options?: FloatOptions) {
 const PLANS = [
   {
     name: "Essentiel",
+    icon: Rocket,
     price: "690€",
     scope: "One Page",
+    tagline: "Pour démarrer votre présence en ligne rapidement.",
+    idealFor: "Idéal pour lancer votre activité sans attendre.",
     features: [
       "Design personnalisé",
       "1 page optimisée",
@@ -57,8 +60,11 @@ const PLANS = [
   },
   {
     name: "Pro",
+    icon: Sparkles,
     price: "990€",
     scope: "Site Vitrine",
+    tagline: "La formule la plus complète pour convertir vos visiteurs.",
+    idealFor: "Idéal pour une entreprise qui veut se démarquer durablement.",
     features: [
       "Tout Essentiel, plus :",
       "Jusqu'à 5 pages",
@@ -70,8 +76,11 @@ const PLANS = [
   },
   {
     name: "Premium",
+    icon: Crown,
     price: "À partir de 1200€",
     scope: "Projet sur mesure",
+    tagline: "Un accompagnement sur mesure, sans compromis.",
+    idealFor: "Idéal pour un projet ambitieux aux besoins spécifiques.",
     features: [
       "Tout Pro, plus :",
       "Fonctionnalités sur mesure",
@@ -84,7 +93,7 @@ const PLANS = [
 
 function Tarifs() {
   return (
-    <Section>
+    <Section id="tarifs" className="scroll-mt-24">
       <div className="mx-auto flex max-w-2xl flex-col items-center text-center md:max-w-3xl">
         <motion.div
           className="mb-4"
@@ -116,8 +125,9 @@ function Tarifs() {
           variants={floatIn(0.22, { y: 40 })}
         >
           Une offre adaptée à chaque étape de votre projet, du site one page au projet sur mesure.
-          Chaque tarif inclut un accompagnement personnalisé, du premier échange à la mise en
-          ligne.
+          Chaque tarif inclut{" "}
+          <strong className="font-semibold text-text">un accompagnement personnalisé</strong>, du
+          premier échange à la mise en ligne.
         </motion.p>
       </div>
 
@@ -138,33 +148,59 @@ function Tarifs() {
               initial="hidden"
               whileInView="visible"
               viewport={{ once: true, amount: 0.3 }}
-              variants={floatIn(index * 0.12, from)}
+              variants={floatIn(index * 0.12, from, { damping: 30, mass: 4 })}
             >
               {plan.featured && (
                 <div className="absolute -top-3.5 left-1/2 z-10 -translate-x-1/2">
-                  <Badge variant="primary">Le plus populaire</Badge>
+                  <Badge variant="primary" className="gap-1.5 shadow-sm">
+                    <Icon icon={Sparkles} className="size-3" />
+                    Le plus populaire
+                  </Badge>
                 </div>
               )}
 
               <Card
                 className={cn(
-                  "flex h-full flex-col gap-6",
-                  plan.featured && "border-primary/40 shadow-md lg:scale-[1.03]"
+                  "relative flex h-full flex-col items-center gap-5 overflow-hidden text-center",
+                  plan.featured && "border-primary/50 shadow-lg lg:scale-[1.05]"
                 )}
               >
-                <div>
+                {plan.featured && (
+                  <div
+                    aria-hidden
+                    className="pointer-events-none absolute -inset-x-10 -top-24 h-48 rounded-full bg-primary/20 blur-3xl"
+                  />
+                )}
+
+                <span
+                  className={cn(
+                    "relative flex size-11 shrink-0 items-center justify-center rounded-xl",
+                    plan.featured ? "bg-primary text-primary-foreground shadow-sm" : "bg-primary/10 text-primary"
+                  )}
+                >
+                  <Icon icon={plan.icon} className="size-5" />
+                </span>
+
+                <div className="relative">
                   <p className="text-h3 font-heading font-semibold text-text">{plan.name}</p>
-                  <p className="mt-1 text-small text-text-secondary">{plan.scope}</p>
+                  <p className="text-small text-text-secondary">{plan.scope}</p>
                 </div>
 
-                <p className="text-[2.5rem] font-heading font-bold leading-none text-text">
+                <p className="relative text-small text-text-secondary">{plan.tagline}</p>
+
+                <p className="relative text-[2.5rem] font-heading font-bold leading-none text-text">
                   {plan.price}
                 </p>
 
-                <div className="flex flex-1 flex-col gap-3">
+                <div className="relative flex flex-1 flex-col gap-3">
                   {plan.features.map((feature) => (
-                    <div key={feature} className="flex items-start gap-2.5">
-                      <span className="mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                    <div key={feature} className="flex items-start justify-center gap-2.5">
+                      <span
+                        className={cn(
+                          "mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full",
+                          plan.featured ? "bg-primary/15 text-primary" : "bg-primary/10 text-primary"
+                        )}
+                      >
                         <Icon icon={Check} className="size-2.5" />
                       </span>
                       <p className="text-small text-text-secondary">{feature}</p>
@@ -172,9 +208,13 @@ function Tarifs() {
                   ))}
                 </div>
 
+                <p className="relative w-full border-t border-border pt-4 text-small text-text-secondary">
+                  {plan.idealFor}
+                </p>
+
                 <Button
                   variant={plan.featured ? "primary" : "outline"}
-                  className="h-11 w-full text-small"
+                  className="relative h-11 w-full text-small"
                 >
                   Demander un devis
                 </Button>

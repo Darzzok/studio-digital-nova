@@ -40,8 +40,14 @@ function floatIn(delay: number, from: FloatFrom, options?: FloatOptions) {
 const SECTIONS = [
   {
     title: "Éditeur du site",
-    content:
-      "Le site Studio Digital Nova est édité par [Nom et prénom à compléter], entrepreneur individuel (micro-entrepreneur), immatriculé sous le numéro SIRET [numéro à compléter], domicilié à [adresse à compléter]. Responsable de la publication : [nom à compléter]. Contact : contact@studiodigitalnova.fr.",
+    content: (
+      <>
+        Le site Studio Digital Nova est édité par [Nom et prénom à compléter], entrepreneur
+        individuel (micro-entrepreneur), immatriculé sous le numéro SIRET [numéro à compléter],
+        domicilié à [adresse à compléter]. Responsable de la publication : [nom à compléter].
+        Contact : <strong className="font-semibold text-text">contact@studiodigitalnova.fr</strong>.
+      </>
+    ),
   },
   {
     title: "Hébergement",
@@ -50,8 +56,13 @@ const SECTIONS = [
   },
   {
     title: "Propriété intellectuelle",
-    content:
-      "L'ensemble des contenus présents sur ce site (textes, images, graphismes, logo) sont la propriété de Studio Digital Nova, sauf mention contraire, et ne peuvent être reproduits sans autorisation préalable.",
+    content: (
+      <>
+        L&apos;ensemble des contenus présents sur ce site (textes, images, graphismes, logo) sont
+        la <strong className="font-semibold text-text">propriété de Studio Digital Nova</strong>,
+        sauf mention contraire, et ne peuvent être reproduits sans autorisation préalable.
+      </>
+    ),
   },
   {
     title: "Responsabilité",
@@ -60,8 +71,12 @@ const SECTIONS = [
   },
   {
     title: "Litiges",
-    content:
-      "Le présent site est soumis au droit français. Tout litige relève de la compétence des tribunaux français.",
+    content: (
+      <>
+        Le présent site est soumis au <strong className="font-semibold text-text">droit français</strong>.
+        Tout litige relève de la compétence des tribunaux français.
+      </>
+    ),
   },
 ];
 

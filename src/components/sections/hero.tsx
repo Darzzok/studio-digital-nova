@@ -9,11 +9,6 @@ import {
   Palette,
   PhoneCall,
   Plus,
-  Search,
-  Layers,
-  ShieldCheck,
-  Smartphone,
-  Star,
   TrendingUp,
   Type,
   Zap,
@@ -56,13 +51,6 @@ function floatIn(delay: number, from: FloatFrom, options?: FloatOptions) {
     },
   }
 }
-
-const FEATURES = [
-  { icon: Search, label: "SEO optimisé" },
-  { icon: Smartphone, label: "100% responsive" },
-  { icon: Zap, label: "Ultra rapide" },
-  { icon: ShieldCheck, label: "Hébergement sécurisé" },
-]
 
 const BUBBLES = [
   { icon: Code2, className: "bg-warning/15 text-warning", pos: "left-[2%] top-[36%]", from: { x: -160, y: 40, rotate: -12 } },
@@ -122,7 +110,7 @@ function Hero() {
         <div className="pointer-events-none absolute inset-0 mx-auto hidden max-w-[1400px] lg:block">
           <motion.div
             className="absolute left-[6%] top-[14%] w-64"
-            variants={floatIn(2.3, { x: -220, y: -60, rotate: -8 }, { stiffness: 110, damping: 15, mass: 1 })}
+            variants={floatIn(2.3, { x: -220, y: -60, rotate: -8 }, { stiffness: 110, damping: 30, mass: 4 })}
             initial={initial}
             animate="visible"
           >
@@ -139,7 +127,7 @@ function Hero() {
 
           <motion.div
             className="absolute right-[6%] top-[10%] w-72"
-            variants={floatIn(1.95, { x: 240, y: -50, rotate: 6 }, { stiffness: 100, damping: 15, mass: 1.1 })}
+            variants={floatIn(1.95, { x: 240, y: -50, rotate: 6 }, { stiffness: 100, damping: 30, mass: 4.4 })}
             initial={initial}
             animate="visible"
           >
@@ -165,7 +153,7 @@ function Hero() {
 
           <motion.div
             className="absolute bottom-[16%] left-[9%] w-60"
-            variants={floatIn(2.4, { x: -200, y: 70, rotate: -6 }, { stiffness: 110, damping: 15, mass: 1 })}
+            variants={floatIn(2.4, { x: -200, y: 70, rotate: -6 }, { stiffness: 110, damping: 30, mass: 4 })}
             initial={initial}
             animate="visible"
           >
@@ -181,26 +169,18 @@ function Hero() {
           </motion.div>
 
           <motion.div
-            className="absolute bottom-[10%] right-[7%] w-72"
-            variants={floatIn(2.5, { x: 220, y: 80, rotate: 8 }, { stiffness: 110, damping: 15, mass: 1 })}
+            className="absolute bottom-[10%] right-[7%] w-64"
+            variants={floatIn(2.5, { x: 220, y: 80, rotate: 8 }, { stiffness: 110, damping: 30, mass: 4 })}
             initial={initial}
             animate="visible"
           >
-            <Card className="pointer-events-auto grid grid-cols-3 gap-3 p-5 text-center">
-              <div className="flex flex-col items-center gap-1">
-                <Icon icon={Layers} className="size-4 text-primary" />
-                <p className="text-h3 font-bold text-text">50+</p>
-                <p className="text-small text-text-secondary">Projets</p>
-              </div>
-              <div className="flex flex-col items-center gap-1">
-                <Icon icon={TrendingUp} className="size-4 text-accent-green" />
-                <p className="text-h3 font-bold text-text">98%</p>
-                <p className="text-small text-text-secondary">Satisfaits</p>
-              </div>
-              <div className="flex flex-col items-center gap-1">
-                <Icon icon={Star} className="size-4 text-warning" />
-                <p className="text-h3 font-bold text-text">5.0</p>
-                <p className="text-small text-text-secondary">Note</p>
+            <Card className="pointer-events-auto flex items-start gap-3 p-5">
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-warning/15 text-warning">
+                <Icon icon={Zap} className="size-5" />
+              </span>
+              <div>
+                <p className="text-small font-semibold text-text">Ultra rapide</p>
+                <p className="text-small text-text-secondary">Sites rapides et fluides.</p>
               </div>
             </Card>
           </motion.div>
@@ -313,10 +293,11 @@ function Hero() {
             initial={initial}
             animate="visible"
           >
-            Je crée des sites vitrines modernes, rapides et optimisés pour convertir vos
-            visiteurs en clients. De la conception au référencement, je m'occupe de tout,
-            en direct et sans intermédiaire. Un interlocuteur unique, disponible du premier
-            échange jusqu'à la mise en ligne de votre site.
+            Je crée des sites vitrines modernes, rapides et optimisés pour{" "}
+            <strong className="font-semibold text-text">convertir vos visiteurs en clients</strong>.
+            De la conception au référencement, je m'occupe de tout, en direct et sans
+            intermédiaire. <strong className="font-semibold text-text">Un interlocuteur unique</strong>,
+            disponible du premier échange jusqu'à la mise en ligne de votre site.
           </motion.p>
 
           <div className="mt-10 flex flex-col gap-4 sm:flex-row">
@@ -337,22 +318,6 @@ function Hero() {
             >
               <Button variant="outline">Découvrir mes offres</Button>
             </motion.div>
-          </div>
-
-          <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
-            {FEATURES.map((feature, index) => (
-              <motion.div
-                key={feature.label}
-                variants={floatIn(1.65 + index * 0.07, { y: 40, scale: 0.8 }, { stiffness: 170, damping: 15, mass: 0.6 })}
-                initial={initial}
-                animate="visible"
-              >
-                <Badge variant="outline" className="gap-2 py-1.5">
-                  <Icon icon={feature.icon} className="size-3.5" />
-                  {feature.label}
-                </Badge>
-              </motion.div>
-            ))}
           </div>
         </div>
       </div>

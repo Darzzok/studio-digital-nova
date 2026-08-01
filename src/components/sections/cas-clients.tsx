@@ -1,10 +1,9 @@
 "use client"
 
-import { ArrowRight, Lightbulb } from "lucide-react"
+import { CircleAlert, CircleCheck, Lightbulb, Sparkles } from "lucide-react"
 import { motion, useReducedMotion } from "framer-motion"
 
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Heading } from "@/components/ui/heading"
 import { Icon } from "@/components/ui/icon"
@@ -162,7 +161,7 @@ const CASES: {
   title: string
   problem: string
   solution: string
-  tech: string[]
+  outcome: string
   variant: PreviewVariant
   gradientFrom: string
   gradientTo: string
@@ -174,7 +173,7 @@ const CASES: {
       "Le restaurant n'avait aucune présence en ligne et les clients trouvaient difficilement les informations essentielles.",
     solution:
       "Création d'un site moderne présentant le menu, les horaires, la localisation et les moyens de réservation.",
-    tech: ["Next.js", "Réservation en ligne", "Galerie photo"],
+    outcome: "Un site clair qui rassure les clients et facilite la réservation.",
     variant: "restaurant",
     gradientFrom: "var(--color-primary)",
     gradientTo: "var(--color-accent-purple)",
@@ -186,7 +185,7 @@ const CASES: {
       "Les demandes arrivaient uniquement par téléphone et l'entreprise ne présentait pas clairement ses services.",
     solution:
       "Création d'un site vitrine optimisé permettant de présenter les prestations, les réalisations et de générer des demandes de devis.",
-    tech: ["Next.js", "Formulaire de devis", "SEO local"],
+    outcome: "Une image professionnelle qui génère plus de demandes de devis.",
     variant: "artisan",
     gradientFrom: "var(--color-accent-purple)",
     gradientTo: "var(--color-accent-green)",
@@ -198,7 +197,7 @@ const CASES: {
       "L'entreprise possédait un ancien site peu rassurant, lent et non adapté aux mobiles.",
     solution:
       "Refonte complète avec un design moderne, responsive, rapide et optimisé pour le référencement.",
-    tech: ["Next.js", "Refonte", "Responsive"],
+    outcome: "Un site moderne qui inspire confiance et convertit mieux.",
     variant: "pme",
     gradientFrom: "var(--color-primary)",
     gradientTo: "var(--color-accent-green)",
@@ -209,7 +208,7 @@ function CasClients() {
   const reduce = useReducedMotion()
 
   return (
-    <Section>
+    <Section id="cas-client" className="scroll-mt-24">
       <div className="mx-auto flex max-w-2xl flex-col items-center text-center md:max-w-3xl">
         <motion.div
           className="mb-4"
@@ -220,7 +219,7 @@ function CasClients() {
         >
           <Badge variant="outline" className="gap-2 py-1.5">
             <Icon icon={Lightbulb} className="size-3.5" />
-            Exemples concrets
+            Cas client
           </Badge>
         </motion.div>
 
@@ -240,8 +239,8 @@ function CasClients() {
           viewport={{ once: true, amount: 0.4 }}
           variants={floatIn(0.22, { y: 40 })}
         >
-          Chaque entreprise a des besoins différents. Voici quelques exemples de problématiques
-          que Studio Digital Nova peut résoudre.
+          Chaque entreprise a des besoins différents. Voici quelques exemples de{" "}
+          <strong className="font-semibold text-text">problématiques que Studio Digital Nova peut résoudre</strong>.
         </motion.p>
       </div>
 
@@ -261,9 +260,9 @@ function CasClients() {
               initial="hidden"
               whileInView="visible"
               viewport={{ once: true, amount: 0.3 }}
-              variants={floatIn(index * 0.12, from)}
+              variants={floatIn(index * 0.12, from, { damping: 30, mass: 4 })}
             >
-              <Card className="flex h-full flex-col gap-5">
+              <Card className="flex h-full flex-col items-center gap-5 text-center">
                 <CasePreview
                   variant={item.variant}
                   from={item.gradientFrom}
@@ -271,41 +270,35 @@ function CasClients() {
                   reduce={Boolean(reduce)}
                 />
 
-                <Badge variant="outline" className="self-start">
-                  {item.sector}
-                </Badge>
+                <Badge variant="outline">{item.sector}</Badge>
 
                 <p className="text-h3 font-heading font-semibold text-text">{item.title}</p>
 
-                <div className="flex flex-col gap-2.5">
-                  <div className="flex items-start gap-2.5">
-                    <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-primary" />
-                    <p className="text-small text-text-secondary">
-                      <span className="font-semibold text-text">Problématique — </span>
-                      {item.problem}
-                    </p>
+                <div className="flex w-full flex-1 flex-col gap-3">
+                  <div className="flex flex-col items-center gap-1.5 rounded-xl bg-background p-4">
+                    <span className="flex items-center gap-1.5 text-small font-semibold text-text">
+                      <Icon icon={CircleAlert} className="size-3.5 text-warning" />
+                      Problématique
+                    </span>
+                    <p className="text-small text-text-secondary">{item.problem}</p>
                   </div>
-                  <div className="flex items-start gap-2.5">
-                    <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-success" />
-                    <p className="text-small text-text-secondary">
-                      <span className="font-semibold text-text">Solution — </span>
-                      {item.solution}
-                    </p>
+
+                  <div className="flex flex-col items-center gap-1.5 rounded-xl bg-primary/5 p-4">
+                    <span className="flex items-center gap-1.5 text-small font-semibold text-primary">
+                      <Icon icon={CircleCheck} className="size-3.5" />
+                      Solution
+                    </span>
+                    <p className="text-small text-text-secondary">{item.solution}</p>
+                  </div>
+
+                  <div className="flex flex-col items-center gap-1.5 rounded-xl bg-success/10 p-4">
+                    <span className="flex items-center gap-1.5 text-small font-semibold text-success">
+                      <Icon icon={Sparkles} className="size-3.5" />
+                      Résultat
+                    </span>
+                    <p className="text-small text-text-secondary">{item.outcome}</p>
                   </div>
                 </div>
-
-                <div className="flex flex-wrap gap-2">
-                  {item.tech.map((tech) => (
-                    <Badge key={tech} variant="outline">
-                      {tech}
-                    </Badge>
-                  ))}
-                </div>
-
-                <Button variant="outline" className="mt-auto h-11 w-full text-small">
-                  Voir le projet
-                  <Icon icon={ArrowRight} className="size-4" />
-                </Button>
               </Card>
             </motion.div>
           )

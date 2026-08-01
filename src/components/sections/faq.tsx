@@ -45,48 +45,91 @@ function floatIn(delay: number, from: FloatFrom, options?: FloatOptions) {
 const QUESTIONS = [
   {
     question: "Combien de temps faut-il pour créer mon site ?",
-    answer:
-      "Comptez 5 jours pour un site one page, 10 jours pour un site vitrine complet, et un délai adapté pour les projets sur mesure.",
+    answer: (
+      <>
+        Comptez <strong className="font-semibold text-text">5 jours</strong> pour un site one
+        page, <strong className="font-semibold text-text">10 jours</strong> pour un site vitrine
+        complet, et un délai adapté pour les projets sur mesure.
+      </>
+    ),
   },
   {
     question: "Le prix affiché est-il le prix final ?",
-    answer:
-      "Oui, mes tarifs sont fixes et transparents. Aucun frais caché ne s'ajoute en cours de projet.",
+    answer: (
+      <>
+        Oui, mes tarifs sont{" "}
+        <strong className="font-semibold text-text">fixes et transparents</strong>. Aucun frais
+        caché ne s&apos;ajoute en cours de projet.
+      </>
+    ),
   },
   {
     question: "Puis-je modifier mon site moi-même après la livraison ?",
-    answer:
-      "Oui, je vous forme à la prise en main et peux ajouter un espace d'administration si besoin.",
+    answer: (
+      <>
+        Oui, je vous forme à la prise en main et peux ajouter un{" "}
+        <strong className="font-semibold text-text">espace d&apos;administration</strong> si
+        besoin.
+      </>
+    ),
   },
   {
     question: "Le référencement SEO est-il inclus ?",
-    answer:
-      "Il est inclus dans les offres Pro et Premium, et disponible en option pour l'offre Essentiel.",
+    answer: (
+      <>
+        Il est inclus dans les offres{" "}
+        <strong className="font-semibold text-text">Pro et Premium</strong>, et disponible en
+        option pour l&apos;offre Essentiel.
+      </>
+    ),
   },
   {
     question: "Que se passe-t-il si je ne suis pas satisfait du design ?",
-    answer:
-      "J'ajuste le design jusqu'à ce qu'il corresponde exactement à votre vision, sans frais supplémentaire.",
+    answer: (
+      <>
+        J&apos;ajuste le design jusqu&apos;à ce qu&apos;il corresponde exactement à votre vision,{" "}
+        <strong className="font-semibold text-text">sans frais supplémentaire</strong>.
+      </>
+    ),
   },
   {
     question: "Proposez-vous l'hébergement du site ?",
-    answer:
-      "Oui, je propose un hébergement fiable et sécurisé, avec une mise en ligne rapide.",
+    answer: (
+      <>
+        Oui, je propose un hébergement{" "}
+        <strong className="font-semibold text-text">fiable et sécurisé</strong>, avec une mise en
+        ligne rapide.
+      </>
+    ),
   },
   {
     question: "Le site sera-t-il adapté aux mobiles ?",
-    answer:
-      "Tous mes sites sont 100% responsives et testés sur mobile, tablette et ordinateur.",
+    answer: (
+      <>
+        Tous mes sites sont{" "}
+        <strong className="font-semibold text-text">100% responsives</strong> et testés sur
+        mobile, tablette et ordinateur.
+      </>
+    ),
   },
   {
     question: "Comment se déroule la prise de contact ?",
-    answer:
-      "Vous me contactez via le formulaire, nous échangeons ensemble sur votre projet puis vous recevez un devis gratuit sous 24h.",
+    answer: (
+      <>
+        Vous me contactez via le formulaire, nous échangeons ensemble sur votre projet puis vous
+        recevez un <strong className="font-semibold text-text">devis gratuit sous 24h</strong>.
+      </>
+    ),
   },
   {
     question: "Puis-je demander une refonte de mon site existant ?",
-    answer:
-      "Bien sûr, je propose un service de refonte complète pour moderniser votre site actuel.",
+    answer: (
+      <>
+        Bien sûr, je propose un service de{" "}
+        <strong className="font-semibold text-text">refonte complète</strong> pour moderniser
+        votre site actuel.
+      </>
+    ),
   },
 ]
 
@@ -125,8 +168,8 @@ function FAQ() {
           viewport={{ once: true, amount: 0.4 }}
           variants={floatIn(0.22, { y: 40 })}
         >
-          Tout ce qu'il faut savoir avant de vous lancer. Une autre question ? Contactez-moi,
-          je réponds personnellement à chaque message.
+          Tout ce qu'il faut savoir avant de vous lancer. Une autre question ? Contactez-moi,{" "}
+          <strong className="font-semibold text-text">je réponds personnellement à chaque message</strong>.
         </motion.p>
       </div>
 
@@ -142,7 +185,7 @@ function FAQ() {
               initial="hidden"
               whileInView="visible"
               viewport={{ once: true, amount: 0.3 }}
-              variants={floatIn(index * 0.08, from)}
+              variants={floatIn(index * 0.08, from, { damping: 30, mass: 4 })}
             >
               <Card className="overflow-hidden p-0">
                 <button
