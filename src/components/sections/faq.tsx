@@ -11,6 +11,7 @@ import { Card } from "@/components/ui/card"
 import { Heading } from "@/components/ui/heading"
 import { Icon } from "@/components/ui/icon"
 import { Section } from "@/components/ui/section"
+import { useIsMobile } from "@/hooks/use-is-mobile"
 import { EASE_NOVA } from "@/lib/motion"
 
 type FloatFrom = { x?: number; y?: number; rotate?: number; scale?: number }
@@ -375,10 +376,11 @@ const QUESTIONS = [
 
 function FaqCta() {
   const reduce = Boolean(useReducedMotion())
+  const isMobile = useIsMobile()
 
   return (
     <motion.div
-      initial={reduce ? false : "hidden"}
+      initial={reduce || isMobile ? false : "hidden"}
       whileInView="visible"
       viewport={{ once: true, amount: 0.4 }}
       variants={floatIn(0, { y: 60, scale: 0.94 })}
@@ -412,6 +414,7 @@ function FAQ() {
   const [openIndex, setOpenIndex] = useState<number | null>(null)
   const [showAll, setShowAll] = useState(false)
   const reduce = Boolean(useReducedMotion())
+  const isMobile = useIsMobile()
   const visibleQuestions = showAll ? QUESTIONS : QUESTIONS.slice(0, INITIAL_VISIBLE_QUESTIONS)
   const hiddenCount = QUESTIONS.length - INITIAL_VISIBLE_QUESTIONS
 
@@ -420,7 +423,7 @@ function FAQ() {
       <div className="mx-auto flex max-w-2xl flex-col items-center text-center md:max-w-3xl">
         <motion.div
           className="mb-4"
-          initial={reduce ? false : "hidden"}
+          initial={reduce || isMobile ? false : "hidden"}
           whileInView="visible"
           viewport={{ once: true, amount: 0.4 }}
           variants={floatIn(0, { y: -40, scale: 0.85 })}
@@ -432,7 +435,7 @@ function FAQ() {
         </motion.div>
 
         <motion.div
-          initial={reduce ? false : "hidden"}
+          initial={reduce || isMobile ? false : "hidden"}
           whileInView="visible"
           viewport={{ once: true, amount: 0.4 }}
           variants={floatIn(0.12, { y: -60, scale: 0.94 })}
@@ -442,7 +445,7 @@ function FAQ() {
 
         <motion.p
           className="mt-6 max-w-xl text-body text-text-secondary"
-          initial={reduce ? false : "hidden"}
+          initial={reduce || isMobile ? false : "hidden"}
           whileInView="visible"
           viewport={{ once: true, amount: 0.4 }}
           variants={floatIn(0.22, { y: 40 })}
@@ -461,7 +464,7 @@ function FAQ() {
           return (
             <motion.div
               key={item.question}
-              initial={reduce ? false : "hidden"}
+              initial={reduce || isMobile ? false : "hidden"}
               whileInView="visible"
               viewport={{ once: true, amount: 0.3 }}
               variants={floatIn(index * 0.08, from, { damping: 30, mass: 4 })}

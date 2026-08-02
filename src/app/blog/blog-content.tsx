@@ -26,6 +26,7 @@ import { Heading } from "@/components/ui/heading"
 import { Icon } from "@/components/ui/icon"
 import { Input } from "@/components/ui/input"
 import { Section } from "@/components/ui/section"
+import { useIsMobile } from "@/hooks/use-is-mobile"
 import { ARTICLES, CATEGORY_GRADIENT, CATEGORY_ICON, type Article } from "@/lib/articles"
 import { EASE_NOVA } from "@/lib/motion"
 import { cn } from "@/lib/utils"
@@ -137,6 +138,7 @@ function BlogHeroIllustration({ reduce }: { reduce: boolean }) {
 
 function BlogHero() {
   const reduce = Boolean(useReducedMotion())
+  const isMobile = useIsMobile()
 
   return (
     <Section spacing="lg">
@@ -144,7 +146,7 @@ function BlogHero() {
         <div className="flex flex-col items-center text-center">
           <motion.div
             className="mb-4"
-            initial="hidden"
+            initial={reduce || isMobile ? false : "hidden"}
             whileInView="visible"
             viewport={{ once: true, amount: 0.4 }}
             variants={floatIn(0, { y: -40, scale: 0.85 })}
@@ -156,7 +158,7 @@ function BlogHero() {
           </motion.div>
 
           <motion.div
-            initial="hidden"
+            initial={reduce || isMobile ? false : "hidden"}
             whileInView="visible"
             viewport={{ once: true, amount: 0.4 }}
             variants={floatIn(0.12, { y: -60, scale: 0.94 })}
@@ -166,7 +168,7 @@ function BlogHero() {
 
           <motion.p
             className="mt-6 max-w-xl text-body text-text-secondary"
-            initial="hidden"
+            initial={reduce || isMobile ? false : "hidden"}
             whileInView="visible"
             viewport={{ once: true, amount: 0.4 }}
             variants={floatIn(0.22, { y: 40 })}
@@ -181,7 +183,7 @@ function BlogHero() {
         </div>
 
         <motion.div
-          initial="hidden"
+          initial={reduce || isMobile ? false : "hidden"}
           whileInView="visible"
           viewport={{ once: true, amount: 0.2 }}
           variants={floatIn(0.15, { x: 100, rotate: 3 }, { damping: 30, mass: 4 })}
@@ -194,12 +196,15 @@ function BlogHero() {
 }
 
 function StatsRow() {
+  const reduce = Boolean(useReducedMotion())
+  const isMobile = useIsMobile()
+
   return (
     <div className="grid grid-cols-2 gap-4 lg:grid-cols-4 lg:gap-6">
       {STATS.map((stat, index) => (
         <motion.div
           key={stat.label}
-          initial="hidden"
+          initial={reduce || isMobile ? false : "hidden"}
           whileInView="visible"
           viewport={{ once: true, amount: 0.4 }}
           variants={floatIn(index * 0.1, { y: 40, scale: 0.9 }, { damping: 30, mass: 4 })}
@@ -218,10 +223,13 @@ function StatsRow() {
 }
 
 function SearchBar({ value, onChange }: { value: string; onChange: (value: string) => void }) {
+  const reduce = Boolean(useReducedMotion())
+  const isMobile = useIsMobile()
+
   return (
     <motion.div
       className="relative mx-auto w-full max-w-xl"
-      initial="hidden"
+      initial={reduce || isMobile ? false : "hidden"}
       whileInView="visible"
       viewport={{ once: true, amount: 0.4 }}
       variants={floatIn(0.1, { y: 30 })}
@@ -242,10 +250,13 @@ function SearchBar({ value, onChange }: { value: string; onChange: (value: strin
 }
 
 function CategoryFilters({ active, onSelect }: { active: string; onSelect: (category: string) => void }) {
+  const reduce = Boolean(useReducedMotion())
+  const isMobile = useIsMobile()
+
   return (
     <motion.div
       className="flex flex-wrap justify-center gap-3"
-      initial="hidden"
+      initial={reduce || isMobile ? false : "hidden"}
       whileInView="visible"
       viewport={{ once: true, amount: 0.4 }}
       variants={floatIn(0.18, { y: 30 })}
@@ -266,6 +277,8 @@ function CategoryFilters({ active, onSelect }: { active: string; onSelect: (cate
 }
 
 function ArticleCard({ article, index }: { article: Article; index: number }) {
+  const reduce = Boolean(useReducedMotion())
+  const isMobile = useIsMobile()
   const column = index % 3
   const from: FloatFrom =
     column === 0 ? { x: -160, rotate: -5 } : column === 2 ? { x: 160, rotate: 5 } : { y: 90 }
@@ -275,7 +288,7 @@ function ArticleCard({ article, index }: { article: Article; index: number }) {
 
   return (
     <motion.div
-      initial="hidden"
+      initial={reduce || isMobile ? false : "hidden"}
       whileInView="visible"
       viewport={{ once: true, amount: 0.3 }}
       variants={floatIn(index * 0.1, from, { damping: 30, mass: 4 })}
@@ -346,6 +359,9 @@ function EmptyState({
 }
 
 function FinalCta() {
+  const reduce = Boolean(useReducedMotion())
+  const isMobile = useIsMobile()
+
   return (
     <Card className="relative mx-auto max-w-3xl overflow-hidden text-center">
       <div
@@ -354,7 +370,7 @@ function FinalCta() {
       />
       <div className="relative flex flex-col items-center">
         <motion.div
-          initial="hidden"
+          initial={reduce || isMobile ? false : "hidden"}
           animate="visible"
           variants={floatIn(0, { y: -60, scale: 0.94 })}
         >
@@ -363,7 +379,7 @@ function FinalCta() {
 
         <motion.p
           className="mt-6 max-w-xl text-body text-text-secondary"
-          initial="hidden"
+          initial={reduce || isMobile ? false : "hidden"}
           animate="visible"
           variants={floatIn(0.12, { y: 40 })}
         >
@@ -373,7 +389,7 @@ function FinalCta() {
 
         <div className="mt-10 flex flex-col gap-4 sm:flex-row">
           <motion.div
-            initial="hidden"
+            initial={reduce || isMobile ? false : "hidden"}
             animate="visible"
             variants={floatIn(0.22, { x: -160, rotate: -6 })}
           >
@@ -382,7 +398,7 @@ function FinalCta() {
             </a>
           </motion.div>
           <motion.div
-            initial="hidden"
+            initial={reduce || isMobile ? false : "hidden"}
             animate="visible"
             variants={floatIn(0.3, { x: 160, rotate: 6 })}
           >

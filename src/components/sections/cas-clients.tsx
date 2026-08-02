@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card"
 import { Heading } from "@/components/ui/heading"
 import { Icon } from "@/components/ui/icon"
 import { Section } from "@/components/ui/section"
+import { useIsMobile } from "@/hooks/use-is-mobile"
 import { EASE_NOVA } from "@/lib/motion"
 
 type FloatFrom = { x?: number; y?: number; rotate?: number; scale?: number }
@@ -206,13 +207,14 @@ const CASES: {
 
 function CasClients() {
   const reduce = useReducedMotion()
+  const isMobile = useIsMobile()
 
   return (
     <Section id="cas-client" className="scroll-mt-24">
       <div className="mx-auto flex max-w-2xl flex-col items-center text-center md:max-w-3xl">
         <motion.div
           className="mb-4"
-          initial="hidden"
+          initial={reduce || isMobile ? false : "hidden"}
           whileInView="visible"
           viewport={{ once: true, amount: 0.4 }}
           variants={floatIn(0, { y: -40, scale: 0.85 })}
@@ -224,7 +226,7 @@ function CasClients() {
         </motion.div>
 
         <motion.div
-          initial="hidden"
+          initial={reduce || isMobile ? false : "hidden"}
           whileInView="visible"
           viewport={{ once: true, amount: 0.4 }}
           variants={floatIn(0.12, { y: -60, scale: 0.94 })}
@@ -234,7 +236,7 @@ function CasClients() {
 
         <motion.p
           className="mt-6 max-w-xl text-body text-text-secondary"
-          initial="hidden"
+          initial={reduce || isMobile ? false : "hidden"}
           whileInView="visible"
           viewport={{ once: true, amount: 0.4 }}
           variants={floatIn(0.22, { y: 40 })}
@@ -257,7 +259,7 @@ function CasClients() {
           return (
             <motion.div
               key={item.sector}
-              initial="hidden"
+              initial={reduce || isMobile ? false : "hidden"}
               whileInView="visible"
               viewport={{ once: true, amount: 0.3 }}
               variants={floatIn(index * 0.12, from, { damping: 30, mass: 4 })}

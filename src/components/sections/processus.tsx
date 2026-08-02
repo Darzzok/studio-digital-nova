@@ -1,14 +1,16 @@
 "use client"
 
-import { useRef } from "react"
-import { ClipboardCheck, Code2, Palette, Route, Rocket, Search, Zap } from "lucide-react"
+import { useRef, useState } from "react"
+import { ChevronDown, ClipboardCheck, Code2, Palette, Route, Rocket, Search, Zap } from "lucide-react"
 import { motion, useInView, useReducedMotion } from "framer-motion"
 
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Heading } from "@/components/ui/heading"
 import { Icon } from "@/components/ui/icon"
 import { Section } from "@/components/ui/section"
+import { useIsMobile } from "@/hooks/use-is-mobile"
 import { EASE_NOVA } from "@/lib/motion"
 
 type FloatFrom = { x?: number; y?: number; rotate?: number; scale?: number }
@@ -303,17 +305,27 @@ function StepCard({ index, inView, reduce }: PulseProps) {
   )
 }
 
+const INITIAL_VISIBLE_STEPS = 3
+
 function Processus() {
   const reduce = Boolean(useReducedMotion())
+  const isMobile = useIsMobile()
+  const [showAllSteps, setShowAllSteps] = useState(false)
   const gridRef = useRef<HTMLDivElement | null>(null)
   const inView = useInView(gridRef, { once: true, amount: 0.3 })
+
+  const visibleStepIndexes =
+    isMobile && !showAllSteps
+      ? STEPS.slice(0, INITIAL_VISIBLE_STEPS).map((_, i) => i)
+      : STEPS.map((_, i) => i)
+  const hiddenStepsCount = STEPS.length - INITIAL_VISIBLE_STEPS
 
   return (
     <Section id="ma-methode" className="scroll-mt-24">
       <div className="mx-auto flex max-w-2xl flex-col items-center text-center md:max-w-3xl">
         <motion.div
           className="mb-4"
-          initial="hidden"
+          initial={reduce || isMobile ? false : "hidden"}
           whileInView="visible"
           viewport={{ once: true, amount: 0.4 }}
           variants={floatIn(0, { y: -40, scale: 0.85 })}
@@ -325,7 +337,7 @@ function Processus() {
         </motion.div>
 
         <motion.div
-          initial="hidden"
+          initial={reduce || isMobile ? false : "hidden"}
           whileInView="visible"
           viewport={{ once: true, amount: 0.4 }}
           variants={floatIn(0.12, { y: -60, scale: 0.94 })}
@@ -335,7 +347,7 @@ function Processus() {
 
         <motion.p
           className="mt-6 max-w-xl text-body text-text-secondary"
-          initial="hidden"
+          initial={reduce || isMobile ? false : "hidden"}
           whileInView="visible"
           viewport={{ once: true, amount: 0.4 }}
           variants={floatIn(0.22, { y: 40 })}
@@ -370,7 +382,7 @@ function Processus() {
                       strokeWidth={1.5}
                       strokeDasharray="5 6"
                       fill="none"
-                      initial="hidden"
+                      initial={reduce || isMobile ? false : "hidden"}
                       whileInView="visible"
                       viewport={{ once: true, amount: 0.5 }}
                       variants={{
@@ -403,7 +415,7 @@ function Processus() {
               key={step.number}
               style={{ gridColumn: index + 1, gridRow: 2 }}
               className="flex items-center justify-center"
-              initial="hidden"
+              initial={reduce || isMobile ? false : "hidden"}
               whileInView="visible"
               viewport={{ once: true, amount: 0.4 }}
               variants={floatIn(index * 0.12, { y: 70, scale: 0.85 })}
@@ -417,7 +429,7 @@ function Processus() {
               key={step.number}
               style={{ gridColumn: index + 1, gridRow: index % 2 === 0 ? 1 : 3 }}
               className={index % 2 === 0 ? "self-end" : "self-start"}
-              initial="hidden"
+              initial={reduce || isMobile ? false : "hidden"}
               whileInView="visible"
               viewport={{ once: true, amount: 0.4 }}
               variants={floatIn(index * 0.12, { y: index % 2 === 0 ? -70 : 70, scale: 0.85 }, { damping: 32, mass: 3.6 })}
@@ -430,6 +442,8 @@ function Processus() {
         {/* Mobile / tablette — repli en liste, capsule intégrée à chaque carte */}
         <div className="mt-16 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:hidden">
           {STEPS.map((step, index) => {
+            if (!visibleStepIndexes.includes(index)) return null
+
             const scaleFrames = pulse(index, 1, 1.02)
             const glowFrames = pulse(index, 0, 1)
             const opacityFrames = cardOpacity(index)
@@ -440,7 +454,7 @@ function Processus() {
             return (
               <motion.div
                 key={step.number}
-                initial="hidden"
+                initial={reduce || isMobile ? false : "hidden"}
                 whileInView="visible"
                 viewport={{ once: true, amount: 0.4 }}
                 variants={floatIn(index * 0.1, { y: 60, scale: 0.9 }, { damping: 32, mass: 3.6 })}
@@ -472,6 +486,26 @@ function Processus() {
             )
           })}
         </div>
+
+        {isMobile && hiddenStepsCount > 0 && (
+          <div className="mt-8 flex justify-center lg:hidden">
+            <Button
+              type="button"
+              variant="outline"
+              className="h-11 px-6 text-small"
+              onClick={() => setShowAllSteps((prev) => !prev)}
+            >
+              {showAllSteps ? "Afficher moins" : `Voir les ${hiddenStepsCount} autres étapes`}
+              <motion.span
+                animate={{ rotate: showAllSteps ? 180 : 0 }}
+                transition={{ duration: 0.2, ease: EASE_NOVA }}
+                className="flex items-center justify-center"
+              >
+                <Icon icon={ChevronDown} className="size-4" />
+              </motion.span>
+            </Button>
+          </div>
+        )}
       </div>
     </Section>
   )

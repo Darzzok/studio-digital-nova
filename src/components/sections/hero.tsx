@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Heading } from "@/components/ui/heading"
 import { Icon } from "@/components/ui/icon"
+import { useIsMobile } from "@/hooks/use-is-mobile"
 import { EASE_NOVA } from "@/lib/motion"
 
 type FloatFrom = { x?: number; y?: number; rotate?: number; scale?: number }
@@ -63,6 +64,7 @@ function Hero() {
   const sectionRef = useRef<HTMLElement | null>(null)
   const inView = useInView(sectionRef, { amount: 0 })
   const reduce = useReducedMotion()
+  const isMobile = useIsMobile()
 
   const hasEverBeenInView = useRef(false)
   const hasLeft = useRef(false)
@@ -80,7 +82,7 @@ function Hero() {
     }
   }, [inView])
 
-  const initial = reduce ? false : "hidden"
+  const initial = reduce || isMobile ? false : "hidden"
 
   return (
     <section

@@ -6,6 +6,7 @@ import { motion, useReducedMotion } from "framer-motion"
 
 import { Container } from "@/components/ui/container"
 import { Icon } from "@/components/ui/icon"
+import { useIsMobile } from "@/hooks/use-is-mobile"
 
 type FloatFrom = { x?: number; y?: number; rotate?: number; scale?: number }
 type FloatOptions = { stiffness?: number; damping?: number; mass?: number; opacityDuration?: number }
@@ -59,6 +60,7 @@ const LEGAL_LINKS = [
 
 function Footer() {
   const reduce = Boolean(useReducedMotion())
+  const isMobile = useIsMobile()
 
   return (
     <footer data-slot="footer" className="w-full border-t border-border bg-surface">
@@ -66,7 +68,7 @@ function Footer() {
         <div className="grid grid-cols-1 gap-12 sm:grid-cols-2 lg:grid-cols-4">
           <motion.div
             className="flex flex-col gap-4 lg:col-span-2 lg:pr-12"
-            initial={reduce ? false : "hidden"}
+            initial={reduce || isMobile ? false : "hidden"}
             whileInView="visible"
             viewport={{ once: true, amount: 0.4 }}
             variants={floatIn(0, { x: -140, rotate: -4 })}
@@ -90,13 +92,13 @@ function Footer() {
           </motion.div>
 
           <motion.div
-            initial={reduce ? false : "hidden"}
+            initial={reduce || isMobile ? false : "hidden"}
             whileInView="visible"
             viewport={{ once: true, amount: 0.4 }}
             variants={floatIn(0.1, { y: 90 })}
           >
             <p className="text-small font-semibold text-text">Navigation</p>
-            <ul className="mt-4 flex flex-col gap-3">
+            <ul className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3">
               {NAV_ITEMS.map((item) => (
                 <li key={item.label}>
                   <a
@@ -111,7 +113,7 @@ function Footer() {
           </motion.div>
 
           <motion.div
-            initial={reduce ? false : "hidden"}
+            initial={reduce || isMobile ? false : "hidden"}
             whileInView="visible"
             viewport={{ once: true, amount: 0.4 }}
             variants={floatIn(0.2, { x: 140, rotate: 4 })}
@@ -135,7 +137,7 @@ function Footer() {
 
         <motion.div
           className="mt-16 flex flex-col items-center gap-4 border-t border-border pt-8 sm:flex-row sm:justify-between"
-          initial={reduce ? false : "hidden"}
+          initial={reduce || isMobile ? false : "hidden"}
           whileInView="visible"
           viewport={{ once: true, amount: 0.4 }}
           variants={floatIn(0.3, { y: 40 })}

@@ -21,6 +21,7 @@ import { Card } from "@/components/ui/card"
 import { Heading } from "@/components/ui/heading"
 import { Icon } from "@/components/ui/icon"
 import { Section } from "@/components/ui/section"
+import { useIsMobile } from "@/hooks/use-is-mobile"
 import { cn } from "@/lib/utils"
 import {
   CATEGORY_GRADIENT,
@@ -241,12 +242,14 @@ function ArticleBlockRenderer({ block }: { block: ArticleBlock }) {
 }
 
 function RelatedArticleCard({ article, index }: { article: Article; index: number }) {
+  const reduce = Boolean(useReducedMotion())
+  const isMobile = useIsMobile()
   const gradient = CATEGORY_GRADIENT[article.category]
   const icon = CATEGORY_ICON[article.category]
 
   return (
     <motion.div
-      initial="hidden"
+      initial={reduce || isMobile ? false : "hidden"}
       whileInView="visible"
       viewport={{ once: true, amount: 0.3 }}
       variants={floatIn(index * 0.1, { y: 60 }, { damping: 30, mass: 4 })}
@@ -302,6 +305,7 @@ function ArticleConversionCta() {
 
 function ArticleContent({ article }: { article: Article }) {
   const reduce = Boolean(useReducedMotion())
+  const isMobile = useIsMobile()
   const gradient = CATEGORY_GRADIENT[article.category]
   const toc = article.blocks
     .filter((block): block is Extract<ArticleBlock, { type: "heading" }> => block.type === "heading")
@@ -313,7 +317,7 @@ function ArticleContent({ article }: { article: Article }) {
     <>
       <Section spacing="lg">
         <motion.div
-          initial="hidden"
+          initial={reduce || isMobile ? false : "hidden"}
           whileInView="visible"
           viewport={{ once: true, amount: 0.4 }}
           variants={floatIn(0, { y: -30 })}
@@ -331,7 +335,7 @@ function ArticleContent({ article }: { article: Article }) {
           <div className="flex flex-col items-center text-center">
             <motion.div
               className="mb-4"
-              initial="hidden"
+              initial={reduce || isMobile ? false : "hidden"}
               whileInView="visible"
               viewport={{ once: true, amount: 0.4 }}
               variants={floatIn(0, { y: -40, scale: 0.85 })}
@@ -342,7 +346,7 @@ function ArticleContent({ article }: { article: Article }) {
             </motion.div>
 
             <motion.div
-              initial="hidden"
+              initial={reduce || isMobile ? false : "hidden"}
               whileInView="visible"
               viewport={{ once: true, amount: 0.4 }}
               variants={floatIn(0.12, { y: -60, scale: 0.94 })}
@@ -354,7 +358,7 @@ function ArticleContent({ article }: { article: Article }) {
 
             <motion.div
               className="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-small text-text-secondary"
-              initial="hidden"
+              initial={reduce || isMobile ? false : "hidden"}
               whileInView="visible"
               viewport={{ once: true, amount: 0.4 }}
               variants={floatIn(0.2, { y: 30 })}
@@ -375,7 +379,7 @@ function ArticleContent({ article }: { article: Article }) {
           </div>
 
           <motion.div
-            initial="hidden"
+            initial={reduce || isMobile ? false : "hidden"}
             whileInView="visible"
             viewport={{ once: true, amount: 0.2 }}
             variants={floatIn(0.15, { x: 100, rotate: 3 }, { damping: 30, mass: 4 })}
@@ -392,7 +396,7 @@ function ArticleContent({ article }: { article: Article }) {
               <motion.p
                 key={index}
                 className="text-h3 font-heading font-medium leading-snug text-text"
-                initial="hidden"
+                initial={reduce || isMobile ? false : "hidden"}
                 whileInView="visible"
                 viewport={{ once: true, amount: 0.4 }}
                 variants={floatIn(index * 0.08, { y: 30 })}
@@ -404,7 +408,7 @@ function ArticleContent({ article }: { article: Article }) {
             {article.blocks.map((block, index) => (
               <motion.div
                 key={index}
-                initial="hidden"
+                initial={reduce || isMobile ? false : "hidden"}
                 whileInView="visible"
                 viewport={{ once: true, amount: 0.25 }}
                 variants={floatIn(0, { y: 30 })}
@@ -443,7 +447,7 @@ function ArticleContent({ article }: { article: Article }) {
       {related.length > 0 && (
         <Section spacing="sm">
           <motion.div
-            initial="hidden"
+            initial={reduce || isMobile ? false : "hidden"}
             whileInView="visible"
             viewport={{ once: true, amount: 0.4 }}
             variants={floatIn(0, { y: -30 })}

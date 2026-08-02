@@ -8,6 +8,7 @@ import { ArrowRight, Menu, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Container } from "@/components/ui/container"
 import { Icon } from "@/components/ui/icon"
+import { useIsMobile } from "@/hooks/use-is-mobile"
 import { cn } from "@/lib/utils"
 
 const NAV_ITEMS = [
@@ -24,7 +25,8 @@ function Header() {
   const [scrolled, setScrolled] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const reduce = useReducedMotion()
-  const initial = reduce ? false : "hidden"
+  const isMobile = useIsMobile()
+  const initial = reduce || isMobile ? false : "hidden"
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8)

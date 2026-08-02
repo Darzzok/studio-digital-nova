@@ -1,8 +1,10 @@
 "use client"
 
+import { useState } from "react"
 import {
   ArrowLeftRight,
   Check,
+  ChevronDown,
   Globe,
   LayoutTemplate,
   Layers,
@@ -14,10 +16,12 @@ import {
 import { motion, useReducedMotion } from "framer-motion"
 
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Heading } from "@/components/ui/heading"
 import { Icon } from "@/components/ui/icon"
 import { Section } from "@/components/ui/section"
+import { useIsMobile } from "@/hooks/use-is-mobile"
 import { EASE_NOVA } from "@/lib/motion"
 
 type FloatFrom = { x?: number; y?: number; rotate?: number; scale?: number }
@@ -368,15 +372,23 @@ const SERVICES = [
   },
 ]
 
+const INITIAL_VISIBLE_SERVICES = 3
+
 function Services() {
   const reduce = useReducedMotion()
+  const isMobile = useIsMobile()
+  const [showAll, setShowAll] = useState(false)
+
+  const visibleServices =
+    isMobile && !showAll ? SERVICES.slice(0, INITIAL_VISIBLE_SERVICES) : SERVICES
+  const hiddenCount = SERVICES.length - INITIAL_VISIBLE_SERVICES
 
   return (
     <Section id="services" className="scroll-mt-24">
       <div className="mx-auto flex max-w-2xl flex-col items-center text-center md:max-w-3xl">
         <motion.div
           className="mb-4"
-          initial="hidden"
+          initial={reduce || isMobile ? false : "hidden"}
           whileInView="visible"
           viewport={{ once: true, amount: 0.4 }}
           variants={floatIn(0, { y: -40, scale: 0.85 })}
@@ -388,7 +400,7 @@ function Services() {
         </motion.div>
 
         <motion.div
-          initial="hidden"
+          initial={reduce || isMobile ? false : "hidden"}
           whileInView="visible"
           viewport={{ once: true, amount: 0.4 }}
           variants={floatIn(0.12, { y: -60, scale: 0.94 })}
@@ -398,7 +410,7 @@ function Services() {
 
         <motion.p
           className="mt-6 max-w-xl text-body text-text-secondary"
-          initial="hidden"
+          initial={reduce || isMobile ? false : "hidden"}
           whileInView="visible"
           viewport={{ once: true, amount: 0.4 }}
           variants={floatIn(0.22, { y: 40 })}
@@ -410,7 +422,7 @@ function Services() {
       </div>
 
       <div className="mt-16 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {SERVICES.map((service, index) => {
+        {visibleServices.map((service, index) => {
           const column = index % 3
           const from: FloatFrom =
             column === 0
@@ -422,7 +434,7 @@ function Services() {
           return (
             <motion.div
               key={service.title}
-              initial="hidden"
+              initial={reduce || isMobile ? false : "hidden"}
               whileInView="visible"
               viewport={{ once: true, amount: 0.3 }}
               variants={floatIn(index * 0.12, from, { damping: 30, mass: 4 })}
@@ -462,6 +474,26 @@ function Services() {
           )
         })}
       </div>
+
+      {isMobile && hiddenCount > 0 && (
+        <div className="mt-8 flex justify-center">
+          <Button
+            type="button"
+            variant="outline"
+            className="h-11 px-6 text-small"
+            onClick={() => setShowAll((prev) => !prev)}
+          >
+            {showAll ? "Afficher moins" : `Voir les ${hiddenCount} autres services`}
+            <motion.span
+              animate={{ rotate: showAll ? 180 : 0 }}
+              transition={{ duration: 0.2, ease: EASE_NOVA }}
+              className="flex items-center justify-center"
+            >
+              <Icon icon={ChevronDown} className="size-4" />
+            </motion.span>
+          </Button>
+        </div>
+      )}
     </Section>
   )
 }

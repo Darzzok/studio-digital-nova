@@ -1,0 +1,24 @@
+"use client"
+
+import { useSyncExternalStore } from "react"
+
+const MOBILE_QUERY = "(max-width: 1023px)"
+
+function subscribe(callback: () => void) {
+  const mql = window.matchMedia(MOBILE_QUERY)
+  mql.addEventListener("change", callback)
+  return () => mql.removeEventListener("change", callback)
+}
+
+function getSnapshot() {
+  return window.matchMedia(MOBILE_QUERY).matches
+}
+
+function getServerSnapshot() {
+  return false
+}
+
+/** Vrai sur mobile/tablette (< breakpoint lg), pour désactiver les animations d'arrivée jugées peu agréables sur petit écran. */
+export function useIsMobile() {
+  return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot)
+}
