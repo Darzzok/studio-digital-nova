@@ -396,10 +396,13 @@ function FaqCta() {
             <strong className="font-semibold text-text">Je réponds personnellement à chaque message</strong>.
             Parlons de votre projet et voyons ensemble comment je peux vous aider.
           </p>
-          <a href="/#contact">
+          <a href="/#contact" className="group">
             <Button variant="primary">
               Construisons votre projet
-              <Icon icon={ArrowRight} className="size-4" />
+              <Icon
+                icon={ArrowRight}
+                className="size-4 transition-transform duration-200 ease-nova group-hover:translate-x-0.5"
+              />
             </Button>
           </a>
         </div>
@@ -474,13 +477,15 @@ function FAQ() {
                   type="button"
                   onClick={() => setOpenIndex(isOpen ? null : index)}
                   aria-expanded={isOpen}
-                  className="flex w-full items-center justify-between gap-4 p-6 text-left"
+                  className="group flex w-full items-center justify-between gap-4 p-6 text-left"
                 >
-                  <span className="text-body font-semibold text-text">{item.question}</span>
+                  <span className="text-body font-semibold text-text transition-colors duration-150 ease-nova group-hover:text-primary">
+                    {item.question}
+                  </span>
                   <motion.span
                     animate={{ rotate: isOpen ? 180 : 0 }}
                     transition={{ duration: 0.2, ease: EASE_NOVA }}
-                    className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary"
+                    className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary transition-colors duration-150 ease-nova group-hover:bg-primary/20"
                   >
                     <Icon icon={ChevronDown} className="size-4" />
                   </motion.span>

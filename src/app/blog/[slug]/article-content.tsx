@@ -292,10 +292,13 @@ function ArticleConversionCta() {
           Vous souhaitez un site moderne, performant et adapté à votre activité ? Construisons
           ensemble votre futur site internet.
         </p>
-        <Link href="/#contact">
+        <Link href="/#contact" className="group">
           <Button variant="primary">
             Construisons votre projet
-            <Icon icon={ArrowRight} className="size-4" />
+            <Icon
+              icon={ArrowRight}
+              className="size-4 transition-transform duration-200 ease-nova group-hover:translate-x-0.5"
+            />
           </Button>
         </Link>
       </div>

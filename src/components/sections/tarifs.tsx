@@ -1,6 +1,6 @@
 "use client"
 
-import { Check, Crown, Rocket, Sparkles, Tag } from "lucide-react"
+import { ArrowRight, Check, Crown, Rocket, Sparkles, Tag } from "lucide-react"
 import { motion, useReducedMotion } from "framer-motion"
 
 import { Badge } from "@/components/ui/badge"
@@ -216,12 +216,16 @@ function Tarifs() {
                   {plan.idealFor}
                 </p>
 
-                <a href="/#contact" className="relative w-full">
+                <a href="/#contact" className="group relative w-full">
                   <Button
                     variant={plan.featured ? "primary" : "outline"}
                     className="h-11 w-full text-small"
                   >
                     Demander un devis
+                    <Icon
+                      icon={ArrowRight}
+                      className="size-4 transition-transform duration-200 ease-nova group-hover:translate-x-0.5"
+                    />
                   </Button>
                 </a>
               </Card>

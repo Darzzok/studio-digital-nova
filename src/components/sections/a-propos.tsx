@@ -201,10 +201,13 @@ function APropos() {
             viewport={{ once: true, amount: 0.4 }}
             variants={floatIn(0.75, { x: -160, rotate: -6 })}
           >
-            <a href="/#contact">
+            <a href="/#contact" className="group">
               <Button variant="primary">
                 Parlons de votre projet
-                <Icon icon={ArrowRight} className="size-4" />
+                <Icon
+                  icon={ArrowRight}
+                  className="size-4 transition-transform duration-200 ease-nova group-hover:translate-x-0.5"
+                />
               </Button>
             </a>
           </motion.div>

@@ -109,9 +109,9 @@ function Hero() {
         />
 
         {/* Floating layer — gravitates around the central content, one single scene */}
-        <div className="pointer-events-none absolute inset-0 mx-auto hidden max-w-[1400px] lg:block">
+        <div className="pointer-events-none absolute inset-0 mx-auto hidden max-w-[1400px] xl:block">
           <motion.div
-            className="absolute left-[6%] top-[14%] w-64"
+            className="absolute left-0 top-[8%] w-60"
             variants={floatIn(2.3, { x: -220, y: -60, rotate: -8 }, { stiffness: 110, damping: 30, mass: 4 })}
             initial={initial}
             animate="visible"
@@ -128,7 +128,7 @@ function Hero() {
           </motion.div>
 
           <motion.div
-            className="absolute right-[6%] top-[10%] w-72"
+            className="absolute right-0 top-[4%] w-64"
             variants={floatIn(1.95, { x: 240, y: -50, rotate: 6 }, { stiffness: 100, damping: 30, mass: 4.4 })}
             initial={initial}
             animate="visible"
@@ -145,7 +145,7 @@ function Hero() {
           </motion.div>
 
           <motion.div
-            className="absolute bottom-[16%] left-[9%] w-60"
+            className="absolute bottom-[8%] left-0 w-60"
             variants={floatIn(2.4, { x: -200, y: 70, rotate: -6 }, { stiffness: 110, damping: 30, mass: 4 })}
             initial={initial}
             animate="visible"
@@ -162,7 +162,7 @@ function Hero() {
           </motion.div>
 
           <motion.div
-            className="absolute bottom-[10%] right-[7%] w-64"
+            className="absolute bottom-[2%] right-0 w-60"
             variants={floatIn(2.5, { x: 220, y: 80, rotate: 8 }, { stiffness: 110, damping: 30, mass: 4 })}
             initial={initial}
             animate="visible"
@@ -256,10 +256,13 @@ function Hero() {
               initial={initial}
               animate="visible"
             >
-              <a href="/#contact">
+              <a href="/#contact" className="group">
                 <Button variant="primary">
                   Demander un devis
-                  <Icon icon={ArrowRight} className="size-4" />
+                  <Icon
+                    icon={ArrowRight}
+                    className="size-4 transition-transform duration-200 ease-nova group-hover:translate-x-0.5"
+                  />
                 </Button>
               </a>
             </motion.div>

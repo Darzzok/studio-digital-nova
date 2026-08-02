@@ -88,7 +88,7 @@ function Header() {
               <motion.a
                 key={item.label}
                 href={item.href}
-                className="group relative text-body font-medium text-text-secondary transition-colors duration-200 ease-nova hover:text-text"
+                className="group relative shrink-0 whitespace-nowrap text-body font-medium text-text-secondary transition-colors duration-200 ease-nova hover:text-text"
                 initial={initial}
                 animate="visible"
                 variants={{
@@ -138,10 +138,13 @@ function Header() {
                 },
               }}
             >
-              <a href="/#contact" className="hidden sm:inline-flex">
+              <a href="/#contact" className="group hidden sm:inline-flex">
                 <Button variant="primary" className="h-11 px-6 text-small">
                   Demander un devis
-                  <Icon icon={ArrowRight} className="size-4" />
+                  <Icon
+                    icon={ArrowRight}
+                    className="size-4 transition-transform duration-200 ease-nova group-hover:translate-x-0.5"
+                  />
                 </Button>
               </a>
             </motion.div>
@@ -227,10 +230,13 @@ function Header() {
             ))}
           </nav>
 
-          <a href="/#contact" onClick={() => setMobileOpen(false)} className="mt-auto pt-6">
+          <a href="/#contact" onClick={() => setMobileOpen(false)} className="group mt-auto pt-6">
             <Button variant="primary" className="w-full">
               Demander un devis
-              <Icon icon={ArrowRight} className="size-4" />
+              <Icon
+                icon={ArrowRight}
+                className="size-4 transition-transform duration-200 ease-nova group-hover:translate-x-0.5"
+              />
             </Button>
           </a>
         </Dialog.Popup>

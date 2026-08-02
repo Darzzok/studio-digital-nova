@@ -103,7 +103,7 @@ function Footer() {
                 <li key={item.label}>
                   <a
                     href={item.href}
-                    className="text-body text-text-secondary transition-colors duration-150 ease-nova hover:text-primary"
+                    className="-my-1.5 inline-block py-1.5 text-body text-text-secondary transition-colors duration-150 ease-nova hover:text-primary"
                   >
                     {item.label}
                   </a>
@@ -124,7 +124,7 @@ function Footer() {
                 <li key={item.label}>
                   <a
                     href={item.href}
-                    className="flex items-center gap-2.5 text-body text-text-secondary transition-colors duration-150 ease-nova hover:text-primary"
+                    className="-my-1.5 flex items-center gap-2.5 py-1.5 text-body text-text-secondary transition-colors duration-150 ease-nova hover:text-primary"
                   >
                     <Icon icon={item.icon} className="size-4 shrink-0" />
                     {item.label}
@@ -150,7 +150,7 @@ function Footer() {
               <li key={link.href}>
                 <Link
                   href={link.href}
-                  className="text-small text-text-secondary transition-colors duration-150 ease-nova hover:text-primary"
+                  className="-my-2 inline-block py-2 text-small text-text-secondary transition-colors duration-150 ease-nova hover:text-primary"
                 >
                   {link.label}
                 </Link>

@@ -323,10 +323,13 @@ function ArticleCard({ article, index }: { article: Article; index: number }) {
               {article.date}
             </span>
           </div>
-          <Link href={`/blog/${article.slug}`} className="mt-2 block">
+          <Link href={`/blog/${article.slug}`} className="group mt-2 block">
             <Button variant="outline" className="h-11 w-full text-small">
               Lire l&apos;article
-              <Icon icon={ArrowRight} className="size-4" />
+              <Icon
+                icon={ArrowRight}
+                className="size-4 transition-transform duration-200 ease-nova group-hover:translate-x-0.5"
+              />
             </Button>
           </Link>
         </div>
