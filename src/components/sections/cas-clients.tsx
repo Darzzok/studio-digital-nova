@@ -191,8 +191,8 @@ const CASES: {
     gradientTo: "var(--color-accent-green)",
   },
   {
-    sector: "PME",
-    title: "PME",
+    sector: "TPE",
+    title: "TPE",
     problem:
       "L'entreprise possédait un ancien site peu rassurant, lent et non adapté aux mobiles.",
     solution:

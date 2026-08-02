@@ -100,9 +100,8 @@ function AboutPortrait() {
 function APropos() {
   return (
     <Section id="a-propos" className="scroll-mt-24">
-      <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-5 lg:gap-12">
+      <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-2 lg:gap-12">
         <motion.div
-          className="lg:col-span-2"
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, amount: 0.2 }}
@@ -111,7 +110,7 @@ function APropos() {
           <AboutPortrait />
         </motion.div>
 
-        <div className="flex flex-col items-center text-center lg:col-span-3">
+        <div className="flex flex-col items-center text-center">
           <motion.div
             className="mb-4"
             initial="hidden"
@@ -143,7 +142,7 @@ function APropos() {
           >
             Développeur web indépendant, j&apos;accompagne les{" "}
             <strong className="font-semibold text-text">
-              PME, auto-entrepreneurs, artisans et commerçants
+              TPE, auto-entrepreneurs, artisans et commerçants
             </strong>{" "}
             dans la création de leur présence en ligne. Quel que soit votre corps de métier, mon
             objectif est simple : concevoir un{" "}
@@ -155,8 +154,7 @@ function APropos() {
             à l&apos;écoute et réactif, qui vous guide pas à pas de l&apos;idée initiale
             jusqu&apos;à la mise en ligne. Chaque projet est pensé pour s&apos;adapter à vos
             besoins réels, sans complexité inutile. Vous obtenez un outil professionnel, efficace
-            et prêt à soutenir le développement de votre activité. Un projet en tête ?
-            Contactez-moi pour en discuter !
+            et prêt à soutenir le développement de votre activité.
           </motion.p>
 
           <div className="mx-auto mt-8 grid w-full max-w-md grid-cols-1 gap-4 sm:grid-cols-2">
@@ -184,6 +182,16 @@ function APropos() {
 
           <motion.div
             className="mt-10"
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.4 }}
+            variants={floatIn(0.65, { y: 30, scale: 0.94 })}
+          >
+            <Heading variant="h3">Un projet en tête ? Contactez-moi pour en discuter !</Heading>
+          </motion.div>
+
+          <motion.div
+            className="mt-5"
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, amount: 0.4 }}

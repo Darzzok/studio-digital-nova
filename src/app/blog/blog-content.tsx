@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
+import type { ReactNode } from "react"
 import Link from "next/link"
 import { motion, useReducedMotion } from "framer-motion"
 import {
@@ -77,7 +78,7 @@ const CATEGORIES = [
   "SEO",
   "Webdesign",
   "Marketing",
-  "Conseils PME",
+  "Conseils TPE",
   "Actualités",
 ]
 
@@ -140,7 +141,7 @@ function BlogHero() {
   return (
     <Section spacing="lg">
       <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-2 lg:gap-16">
-        <div className="flex flex-col items-center text-center lg:items-start lg:text-left">
+        <div className="flex flex-col items-center text-center">
           <motion.div
             className="mb-4"
             initial="hidden"
@@ -160,7 +161,7 @@ function BlogHero() {
             viewport={{ once: true, amount: 0.4 }}
             variants={floatIn(0.12, { y: -60, scale: 0.94 })}
           >
-            <Heading variant="h1">Le blog Studio Digital Nova</Heading>
+            <Heading variant="h1">Des conseils concrets pour votre activité</Heading>
           </motion.div>
 
           <motion.p
@@ -170,8 +171,12 @@ function BlogHero() {
             viewport={{ once: true, amount: 0.4 }}
             variants={floatIn(0.22, { y: 40 })}
           >
-            Découvrez des conseils pratiques, des guides et des ressources pour développer votre
-            présence en ligne et faire évoluer votre activité.
+            Découvrez des{" "}
+            <strong className="font-semibold text-text">conseils pratiques, des guides et des ressources</strong>{" "}
+            pour développer votre présence en ligne et faire évoluer votre activité. Des articles
+            écrits pour les{" "}
+            <strong className="font-semibold text-text">TPE, artisans, commerçants et indépendants</strong>{" "}
+            qui veulent avancer sereinement dans leur projet digital.
           </motion.p>
         </div>
 
@@ -212,7 +217,7 @@ function StatsRow() {
   )
 }
 
-function SearchBar() {
+function SearchBar({ value, onChange }: { value: string; onChange: (value: string) => void }) {
   return (
     <motion.div
       className="relative mx-auto w-full max-w-xl"
@@ -225,14 +230,18 @@ function SearchBar() {
         icon={Search}
         className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-text-secondary"
       />
-      <Input type="search" placeholder="Rechercher un article..." className="h-14 pl-12" />
+      <Input
+        type="search"
+        placeholder="Rechercher un article..."
+        className="h-14 pl-12"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+      />
     </motion.div>
   )
 }
 
-function CategoryFilters() {
-  const [active, setActive] = useState<string>("Tous")
-
+function CategoryFilters({ active, onSelect }: { active: string; onSelect: (category: string) => void }) {
   return (
     <motion.div
       className="flex flex-wrap justify-center gap-3"
@@ -247,7 +256,7 @@ function CategoryFilters() {
           type="button"
           variant={active === category ? "primary" : "outline"}
           className="h-10 px-5 text-small"
-          onClick={() => setActive(category)}
+          onClick={() => onSelect(category)}
         >
           {category}
         </Button>
@@ -313,19 +322,25 @@ function ArticleCard({ article, index }: { article: Article; index: number }) {
   )
 }
 
-function EmptyState() {
+function EmptyState({
+  title = "Les premiers articles arrivent bientôt.",
+  description = "Je prépare actuellement une collection de guides et d'articles pour vous accompagner dans le développement de votre activité.",
+  action,
+}: {
+  title?: string
+  description?: string
+  action?: ReactNode
+}) {
   return (
     <div className="mx-auto flex max-w-md flex-col items-center gap-6 py-16 text-center">
       <span className="flex size-20 items-center justify-center rounded-full bg-primary/10 text-primary">
         <Icon icon={Sparkles} className="size-8" />
       </span>
       <div>
-        <Heading variant="h3">Les premiers articles arrivent bientôt.</Heading>
-        <p className="mt-3 text-body text-text-secondary">
-          Je prépare actuellement une collection de guides et d&apos;articles pour vous
-          accompagner dans le développement de votre activité.
-        </p>
+        <Heading variant="h3">{title}</Heading>
+        <p className="mt-3 text-body text-text-secondary">{description}</p>
       </div>
+      {action}
     </div>
   )
 }
@@ -340,8 +355,7 @@ function FinalCta() {
       <div className="relative flex flex-col items-center">
         <motion.div
           initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, amount: 0.4 }}
+          animate="visible"
           variants={floatIn(0, { y: -60, scale: 0.94 })}
         >
           <Heading variant="h2">🚀 Un projet en tête ?</Heading>
@@ -350,19 +364,17 @@ function FinalCta() {
         <motion.p
           className="mt-6 max-w-xl text-body text-text-secondary"
           initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, amount: 0.4 }}
+          animate="visible"
           variants={floatIn(0.12, { y: 40 })}
         >
-          Construisons ensemble un site internet moderne, performant et pensé pour développer
-          votre activité.
+          Construisons ensemble{" "}
+          <strong className="font-semibold text-text">un site internet moderne, performant et pensé pour développer votre activité</strong>.
         </motion.p>
 
         <div className="mt-10 flex flex-col gap-4 sm:flex-row">
           <motion.div
             initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, amount: 0.4 }}
+            animate="visible"
             variants={floatIn(0.22, { x: -160, rotate: -6 })}
           >
             <a href="/#contact">
@@ -371,8 +383,7 @@ function FinalCta() {
           </motion.div>
           <motion.div
             initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, amount: 0.4 }}
+            animate="visible"
             variants={floatIn(0.3, { x: 160, rotate: 6 })}
           >
             <a href="/#services">
@@ -390,6 +401,21 @@ function FinalCta() {
 /* ------------------------------------------------------------------------ */
 
 function BlogContent() {
+  const [query, setQuery] = useState("")
+  const [category, setCategory] = useState("Tous")
+
+  const filteredArticles = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase()
+    return ARTICLES.filter((article) => {
+      const matchesCategory = category === "Tous" || article.category === category
+      const matchesQuery =
+        normalizedQuery === "" ||
+        article.title.toLowerCase().includes(normalizedQuery) ||
+        article.excerpt.toLowerCase().includes(normalizedQuery)
+      return matchesCategory && matchesQuery
+    })
+  }, [query, category])
+
   return (
     <>
       <BlogHero />
@@ -399,18 +425,36 @@ function BlogContent() {
           <StatsRow />
 
           <div className="flex flex-col gap-6">
-            <SearchBar />
-            <CategoryFilters />
+            <SearchBar value={query} onChange={setQuery} />
+            <CategoryFilters active={category} onSelect={setCategory} />
           </div>
 
-          {ARTICLES.length > 0 ? (
+          {filteredArticles.length > 0 ? (
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {ARTICLES.map((article, index) => (
+              {filteredArticles.map((article, index) => (
                 <ArticleCard key={article.slug} article={article} index={index} />
               ))}
             </div>
-          ) : (
+          ) : ARTICLES.length === 0 ? (
             <EmptyState />
+          ) : (
+            <EmptyState
+              title="Aucun article ne correspond à votre recherche."
+              description="Essayez un autre mot-clé ou réinitialisez les filtres pour retrouver tous les articles."
+              action={
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-11 px-6 text-small"
+                  onClick={() => {
+                    setQuery("")
+                    setCategory("Tous")
+                  }}
+                >
+                  Réinitialiser les filtres
+                </Button>
+              }
+            />
           )}
         </div>
       </Section>

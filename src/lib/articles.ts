@@ -27,14 +27,14 @@ export type ArticleCategory =
   | "SEO"
   | "Webdesign"
   | "Marketing"
-  | "Conseils PME"
+  | "Conseils TPE"
 
 export const CATEGORY_ICON: Record<ArticleCategory, LucideIcon> = {
   "Création de site": Code2,
   SEO: Search,
   Webdesign: Palette,
   Marketing: TrendingUp,
-  "Conseils PME": Users,
+  "Conseils TPE": Users,
 }
 
 export const CATEGORY_GRADIENT: Record<ArticleCategory, { from: string; to: string }> = {
@@ -42,7 +42,7 @@ export const CATEGORY_GRADIENT: Record<ArticleCategory, { from: string; to: stri
   SEO: { from: "var(--color-accent-purple)", to: "var(--color-accent-green)" },
   Webdesign: { from: "var(--color-primary)", to: "var(--color-accent-green)" },
   Marketing: { from: "var(--color-accent-green)", to: "var(--color-primary)" },
-  "Conseils PME": { from: "var(--color-accent-purple)", to: "var(--color-primary)" },
+  "Conseils TPE": { from: "var(--color-accent-purple)", to: "var(--color-primary)" },
 }
 
 export type Article = {
@@ -66,16 +66,16 @@ export const ARTICLES: Article[] = [
     slug: "pourquoi-site-internet-entreprise-2026",
     title: "Pourquoi votre entreprise a besoin d'un site internet en 2026",
     metaDescription:
-      "En 2026, l'absence de site internet coûte plus cher qu'on ne le pense aux PME, artisans et commerçants. Découvrez pourquoi un site reste un investissement stratégique, pas une dépense.",
-    category: "Conseils PME",
+      "En 2026, l'absence de site internet coûte plus cher qu'on ne le pense aux TPE, artisans et commerçants. Découvrez pourquoi un site reste un investissement stratégique, pas une dépense.",
+    category: "Conseils TPE",
     author: "Geoffrey — Studio Digital Nova",
     date: "3 août 2026",
     readingTime: "9 min",
     excerpt:
-      "Un site internet n'est plus un luxe réservé aux grandes entreprises. Voici ce que change réellement sa présence — ou son absence — pour une PME, un artisan ou un commerçant en 2026.",
+      "Un site internet n'est plus un luxe réservé aux grandes entreprises. Voici ce que change réellement sa présence — ou son absence — pour une TPE, un artisan ou un commerçant en 2026.",
     keywords: {
       primary: "site internet entreprise 2026",
-      secondary: ["pourquoi créer un site internet", "site vitrine PME", "présence en ligne entreprise"],
+      secondary: ["pourquoi créer un site internet", "site vitrine TPE", "présence en ligne entreprise"],
     },
     intro: [
       "Un client potentiel tape le nom de votre entreprise dans Google. Rien. Ou pire : une page Facebook à moitié à jour, une fiche d'annuaire sans photo, un profil créé il y a cinq ans et jamais retouché. Il referme l'onglet et passe au résultat suivant — celui d'un concurrent qui, lui, a un site.",
@@ -415,7 +415,7 @@ export const ARTICLES: Article[] = [
     title: "Comment choisir le bon prestataire pour créer son site internet",
     metaDescription:
       "Freelance, agence, plateforme en ligne : comment s'y retrouver et choisir le bon prestataire pour créer son site internet ? Les critères essentiels et les signaux à surveiller.",
-    category: "Conseils PME",
+    category: "Conseils TPE",
     author: "Geoffrey — Studio Digital Nova",
     date: "24 août 2026",
     readingTime: "10 min",
@@ -492,7 +492,7 @@ export const ARTICLES: Article[] = [
       {
         type: "quote",
         text: "Le meilleur prestataire n'est pas nécessairement le moins cher, ni le plus connu : c'est celui avec qui la communication reste simple, même après la mise en ligne.",
-        author: "Retour d'expérience partagé par de nombreux dirigeants de PME",
+        author: "Retour d'expérience partagé par de nombreux dirigeants de TPE",
       },
       {
         type: "checklist",
@@ -639,10 +639,10 @@ export const ARTICLES: Article[] = [
     date: "7 septembre 2026",
     readingTime: "10 min",
     excerpt:
-      "Pour une entreprise locale, apparaître dans les premiers résultats Google change tout. Voici les leviers concrets, accessibles à toutes les PME et indépendants, pour améliorer sa visibilité locale.",
+      "Pour une entreprise locale, apparaître dans les premiers résultats Google change tout. Voici les leviers concrets, accessibles à toutes les TPE et indépendants, pour améliorer sa visibilité locale.",
     keywords: {
       primary: "visibilité locale Google",
-      secondary: ["SEO local PME", "référencement local artisan", "Google Business Profile optimisation"],
+      secondary: ["SEO local TPE", "référencement local artisan", "Google Business Profile optimisation"],
     },
     intro: [
       "Lorsqu'un client potentiel cherche un professionnel près de chez lui, Google affiche en priorité une carte avec les entreprises les mieux positionnées localement. Apparaître dans ce carré de tête, communément appelé le « pack local », représente une opportunité considérable — souvent négligée par les petites entreprises qui pensent le référencement réservé aux grandes structures.",
@@ -652,7 +652,7 @@ export const ARTICLES: Article[] = [
       { type: "heading", id: "comprendre-seo-local", text: "Comprendre le SEO local et pourquoi il change tout" },
       {
         type: "paragraph",
-        text: "Le SEO local désigne l'ensemble des pratiques qui permettent à une entreprise d'apparaître dans les résultats de recherche géolocalisés. Contrairement au référencement national, très concurrentiel, le SEO local met en concurrence un nombre limité d'entreprises situées dans une même zone géographique — ce qui rend la compétition beaucoup plus accessible pour un artisan, un commerçant ou une PME.",
+        text: "Le SEO local désigne l'ensemble des pratiques qui permettent à une entreprise d'apparaître dans les résultats de recherche géolocalisés. Contrairement au référencement national, très concurrentiel, le SEO local met en concurrence un nombre limité d'entreprises situées dans une même zone géographique — ce qui rend la compétition beaucoup plus accessible pour un artisan, un commerçant ou une TPE.",
       },
       { type: "heading", id: "google-business-profile", text: "Optimiser sa fiche Google Business Profile" },
       {
@@ -835,7 +835,7 @@ export const ARTICLES: Article[] = [
     title: "Les questions à se poser avant de lancer son projet digital",
     metaDescription:
       "Avant de vous lancer dans un projet de site internet, certaines questions méritent une réflexion sincère. Voici celles qui font vraiment la différence entre un projet réussi et un projet regretté.",
-    category: "Conseils PME",
+    category: "Conseils TPE",
     author: "Geoffrey — Studio Digital Nova",
     date: "21 septembre 2026",
     readingTime: "8 min",
@@ -935,7 +935,7 @@ export const ARTICLES: Article[] = [
       "Un site qui attire des visiteurs sans les convertir reste un potentiel inexploité. Voici les leviers concrets pour transformer une simple visite en demande de contact.",
     keywords: {
       primary: "convertir visiteurs site internet",
-      secondary: ["améliorer taux de conversion site", "générer des demandes de devis en ligne", "conversion site vitrine PME"],
+      secondary: ["améliorer taux de conversion site", "générer des demandes de devis en ligne", "conversion site vitrine TPE"],
     },
     intro: [
       "Recevoir des visiteurs sur son site est une première victoire. Les convertir en demandes de contact ou en clients en est une autre, bien plus déterminante pour l'activité. Entre ces deux étapes se joue un ensemble de décisions, souvent simples, qui font toute la différence.",
@@ -1118,6 +1118,237 @@ export const ARTICLES: Article[] = [
       },
     ],
     relatedSlugs: ["7-erreurs-visiteurs-fuient-site", "elements-confiance-site-professionnel"],
+  },
+
+  {
+    slug: "wordpress-ou-site-sur-mesure",
+    title: "WordPress ou site sur mesure : quel choix pour votre site professionnel ?",
+    metaDescription:
+      "WordPress ou développement sur mesure : quelles différences réelles pour votre site professionnel ? Comparatif objectif pour faire le bon choix selon votre activité.",
+    category: "Création de site",
+    author: "Geoffrey — Studio Digital Nova",
+    date: "12 octobre 2026",
+    readingTime: "8 min",
+    excerpt:
+      "WordPress ou développement sur mesure : la question revient dans presque tous les projets de site internet. Voici les vraies différences, sans parti pris technique, pour faire le choix le plus adapté à votre activité.",
+    keywords: {
+      primary: "wordpress ou site sur mesure",
+      secondary: ["site vitrine wordpress", "développement site sur mesure", "choisir technologie site internet"],
+    },
+    intro: [
+      "« Il vaut mieux passer par WordPress, c'est moins cher » : cette phrase revient dans presque toutes les discussions autour d'un projet de site internet. Elle est parfois vraie — et parfois une fausse économie qui se paie quelques mois plus tard, en lenteur, en failles de sécurité ou en design finalement bridé.",
+      "Entre WordPress et un développement sur mesure, il n'existe pas de solution universellement meilleure, seulement un choix plus ou moins adapté à votre situation. Voici un comparatif objectif pour trancher en connaissance de cause.",
+    ],
+    blocks: [
+      { type: "heading", id: "difference-fondamentale", text: "Comprendre la vraie différence entre les deux approches" },
+      {
+        type: "paragraph",
+        text: "WordPress est un CMS (système de gestion de contenu) : une base logicielle générique, habillée par un thème et enrichie de plugins, que des millions de sites utilisent à travers le monde. Un développement sur mesure, à l'inverse, part d'une page blanche : chaque ligne de code répond spécifiquement aux besoins du projet, sans superflu.",
+      },
+      {
+        type: "paragraph",
+        text: "Aucune des deux approches n'est supérieure dans l'absolu. Ce sont deux outils différents, chacun pertinent selon le contexte, le budget et les objectifs à long terme du site.",
+      },
+      { type: "heading", id: "avantages-wordpress", text: "Les avantages réels de WordPress" },
+      {
+        type: "paragraph",
+        text: "WordPress a construit sa popularité sur des atouts concrets, qu'il serait malhonnête de nier.",
+      },
+      {
+        type: "list",
+        items: [
+          "Un coût d'entrée généralement plus faible pour un site simple",
+          "Une mise en ligne rapide grâce aux thèmes préconçus",
+          "Une interface d'administration connue et largement documentée",
+          "Un vaste écosystème de plugins pour ajouter des fonctionnalités",
+        ],
+      },
+      { type: "heading", id: "limites-wordpress", text: "Les limites moins souvent évoquées de WordPress" },
+      {
+        type: "paragraph",
+        text: "Ce qui fait la force de WordPress — sa flexibilité par l'ajout de plugins — devient aussi sa principale faiblesse à long terme. Chaque plugin ajouté est une brique supplémentaire qui doit être maintenue, mise à jour et surveillée, sous peine de ralentir le site ou d'ouvrir une faille de sécurité.",
+      },
+      {
+        type: "callout",
+        tone: "warning",
+        title: "Le piège de l'accumulation de plugins",
+        text: "Un site WordPress qui fonctionnait parfaitement au lancement peut devenir lent et vulnérable un an plus tard, simplement parce que plugins et thème n'ont pas été suivis avec la même rigueur que le reste de l'activité.",
+      },
+      { type: "heading", id: "avantages-sur-mesure", text: "Les avantages du développement sur mesure" },
+      {
+        type: "paragraph",
+        text: "Un site sur mesure ne contient que le code strictement nécessaire à son fonctionnement. Cette sobriété a des conséquences directes et mesurables.",
+      },
+      {
+        type: "list",
+        items: [
+          "Des temps de chargement plus rapides, sans code superflu à faire transiter",
+          "Une surface d'attaque réduite, donc moins de vulnérabilités potentielles",
+          "Un design qui ne se heurte jamais aux limites d'un thème préexistant",
+          "Une base technique plus simple à faire évoluer sur le long terme",
+        ],
+      },
+      { type: "heading", id: "inconvenients-sur-mesure", text: "Le développement sur mesure a-t-il des inconvénients ?" },
+      {
+        type: "paragraph",
+        text: "Honnêtement, oui. L'investissement de départ est généralement plus élevé qu'un site WordPress basique, puisque chaque fonctionnalité est conçue spécifiquement plutôt que réutilisée. Ce choix n'est pas non plus toujours le plus pertinent pour un très gros catalogue e-commerce, où l'écosystème WordPress (via WooCommerce) apporte des outils déjà éprouvés.",
+      },
+      {
+        type: "quote",
+        text: "Le sur-mesure n'est pas un luxe : c'est un investissement dans la rapidité, la sécurité et la longévité du site, qui se rentabilise sur la durée plutôt qu'au premier jour.",
+        author: "Constat partagé par de nombreux dirigeants ayant testé les deux approches",
+      },
+      { type: "heading", id: "comment-trancher", text: "Comment trancher selon votre situation" },
+      {
+        type: "paragraph",
+        text: "Le bon choix dépend moins d'une préférence technique que de vos priorités réelles pour votre activité.",
+      },
+      {
+        type: "list",
+        items: [
+          "Vous publiez très fréquemment du contenu éditorial avec une équipe dédiée : WordPress peut convenir.",
+          "Vous recherchez avant tout la rapidité, la sécurité et un design fidèle à votre image : le sur-mesure prend l'avantage.",
+          "Votre budget de lancement est très limité et le site restera simple : WordPress reste une option raisonnable.",
+          "Votre site est un investissement stratégique de long terme pour développer votre activité : le sur-mesure s'amortit largement.",
+        ],
+      },
+      {
+        type: "paragraph",
+        text: "Dans tous les cas, ce choix mérite d'être posé avant de démarrer le projet, au même titre que le budget ou les délais — des questions abordées plus en détail dans l'article sur la préparation d'un projet de site internet.",
+      },
+    ],
+    faq: [
+      {
+        question: "WordPress est-il toujours moins cher qu'un développement sur mesure ?",
+        answer:
+          "Au lancement, souvent oui. Mais en intégrant les coûts de maintenance, de mises à jour et les éventuels ralentissements liés à l'accumulation de plugins, l'écart se réduit fortement sur la durée.",
+      },
+      {
+        question: "Peut-on migrer plus tard d'un site WordPress vers un site sur mesure ?",
+        answer:
+          "Oui, c'est tout à fait possible. Cela implique généralement une refonte complète plutôt qu'une simple migration technique, mais le contenu et l'identité de marque peuvent être conservés.",
+      },
+      {
+        question: "WordPress est-il forcément moins sécurisé qu'un site sur mesure ?",
+        answer:
+          "Pas intrinsèquement, mais il demande une vigilance plus constante : mises à jour régulières du cœur, des thèmes et des plugins. Un site sur mesure réduit naturellement cette surface de risque.",
+      },
+      {
+        question: "Quelle solution privilégier pour un site e-commerce ?",
+        answer:
+          "Pour un très large catalogue avec des besoins standards, WordPress et WooCommerce offrent un écosystème mature. Pour une expérience d'achat différenciante ou des besoins spécifiques, le sur-mesure reprend l'avantage.",
+      },
+    ],
+    relatedSlugs: ["choisir-bon-prestataire-site-internet", "questions-avant-projet-digital"],
+  },
+
+  {
+    slug: "maintenance-site-internet-apres-mise-en-ligne",
+    title: "Maintenance de site internet : ce qu'il faut absolument prévoir après la mise en ligne",
+    metaDescription:
+      "Un site internet n'est jamais vraiment « terminé ». Découvrez ce qu'implique réellement la maintenance d'un site professionnel, et pourquoi l'anticiper évite bien des mauvaises surprises.",
+    category: "Conseils TPE",
+    author: "Geoffrey — Studio Digital Nova",
+    date: "19 octobre 2026",
+    readingTime: "7 min",
+    excerpt:
+      "Beaucoup pensent qu'un site est terminé une fois mis en ligne. En réalité, un site jamais entretenu se dégrade progressivement : sécurité, performance, référencement. Voici ce qu'implique une maintenance sérieuse.",
+    keywords: {
+      primary: "maintenance site internet",
+      secondary: ["mise à jour site professionnel", "sécurité site internet entreprise", "entretien site vitrine"],
+    },
+    intro: [
+      "Beaucoup d'entrepreneurs considèrent la mise en ligne comme la ligne d'arrivée de leur projet de site internet. En réalité, c'est plutôt un point de départ : un site laissé sans aucun suivi se dégrade avec le temps, souvent de façon invisible jusqu'au jour où le problème devient concret.",
+      "Comprendre ce que recouvre réellement la maintenance d'un site permet d'anticiper ces désagréments, plutôt que de les découvrir au pire moment.",
+    ],
+    blocks: [
+      { type: "heading", id: "projet-jamais-fige", text: "Un site internet n'est jamais un projet figé" },
+      {
+        type: "paragraph",
+        text: "Un site vit dans un environnement qui évolue en permanence : nouvelles versions de navigateurs, nouvelles exigences de sécurité, évolutions des standards du web. Un site parfaitement fonctionnel au lancement peut, sans aucune intervention de votre part, devenir plus lent, plus vulnérable ou moins bien positionné sur Google en l'espace de quelques mois.",
+      },
+      { type: "heading", id: "securite-negligee", text: "La sécurité : la priorité la plus souvent négligée" },
+      {
+        type: "paragraph",
+        text: "Les logiciels et extensions non mis à jour restent la porte d'entrée la plus fréquente utilisée pour compromettre un site. Un certificat de sécurité expiré, une extension obsolète ou une faille connue mais jamais corrigée suffisent à exposer votre site — et les données de vos visiteurs.",
+      },
+      {
+        type: "list",
+        items: [
+          "Renouvellement du certificat de sécurité (SSL) avant son expiration",
+          "Mises à jour régulières des logiciels, thèmes et extensions",
+          "Surveillance des tentatives d'intrusion ou de contenus indésirables",
+          "Sauvegardes régulières, stockées séparément du site",
+        ],
+      },
+      {
+        type: "callout",
+        tone: "warning",
+        title: "Une négligence qui coûte cher",
+        text: "Un site piraté peut être blacklisté par Google, faisant disparaître des mois d'efforts de référencement en quelques jours — bien plus coûteux que la maintenance qui aurait permis de l'éviter.",
+      },
+      { type: "heading", id: "sauvegardes-testees", text: "Des sauvegardes qu'on ne pense à tester qu'après un problème" },
+      {
+        type: "paragraph",
+        text: "Avoir une sauvegarde ne suffit pas : encore faut-il qu'elle soit récente, complète et réellement restaurable. Beaucoup découvrent, au pire moment, qu'une sauvegarde ancienne ou incomplète ne permet pas de revenir en arrière aussi facilement qu'espéré.",
+      },
+      { type: "heading", id: "performances-degradation", text: "Les performances se dégradent aussi avec le temps" },
+      {
+        type: "paragraph",
+        text: "Un site accumule naturellement du contenu : nouvelles pages, nouvelles images, nouvelles fonctionnalités. Sans optimisation régulière, cette accumulation ralentit progressivement le chargement, avec un impact direct sur l'expérience des visiteurs et sur le référencement.",
+      },
+      {
+        type: "quote",
+        text: "Un site rapide au lancement ne le reste pas automatiquement : la performance se maintient, elle ne se décrète pas une seule fois.",
+        author: "Constat récurrent chez les sites laissés sans suivi pendant plusieurs années",
+      },
+      { type: "heading", id: "referencement-suivi", text: "Le référencement demande un suivi dans la durée" },
+      {
+        type: "paragraph",
+        text: "Le positionnement sur Google n'est jamais acquis définitivement. Des liens cassés apparaissent, des informations deviennent obsolètes, les algorithmes évoluent. Un suivi régulier permet de corriger ces points avant qu'ils n'affectent votre visibilité.",
+      },
+      {
+        type: "list",
+        items: [
+          "Vérification et correction des liens cassés",
+          "Mise à jour des informations, tarifs ou offres obsolètes",
+          "Suivi des performances via Google Search Console",
+          "Actualisation ponctuelle des pages stratégiques",
+        ],
+      },
+      { type: "heading", id: "que-couvre-maintenance", text: "Que couvre concrètement une maintenance sérieuse" },
+      {
+        type: "paragraph",
+        text: "Dans les faits, une maintenance bien menée reste discrète : mises à jour techniques régulières, sauvegardes vérifiées, surveillance de la sécurité et petites corrections de contenu au fil de l'eau. Rien d'extravagant, mais un suivi qui doit être planifié plutôt qu'improvisé au moment où un problème survient déjà.",
+      },
+      {
+        type: "paragraph",
+        text: "C'est une question à poser dès la conception du site, au même titre que le design ou le contenu — pas une réflexion à remettre à plus tard, une fois le site déjà en ligne.",
+      },
+    ],
+    faq: [
+      {
+        question: "Un site internet a-t-il vraiment besoin d'une maintenance régulière ?",
+        answer:
+          "Oui. Même un site simple bénéficie d'un suivi minimal : mises à jour de sécurité, vérification des sauvegardes et contrôle occasionnel des performances, pour éviter une dégradation progressive et invisible.",
+      },
+      {
+        question: "Que risque-t-on concrètement en l'absence de maintenance ?",
+        answer:
+          "Les risques les plus fréquents sont une faille de sécurité exploitée, un ralentissement progressif du site et une perte de positionnement sur Google, souvent constatés bien après que le problème s'est installé.",
+      },
+      {
+        question: "La maintenance d'un site représente-t-elle un budget important ?",
+        answer:
+          "Cela varie selon la complexité du site, mais reste généralement modeste comparé au coût d'une intervention en urgence après un piratage ou une panne majeure.",
+      },
+      {
+        question: "Peut-on gérer soi-même la maintenance de son site ?",
+        answer:
+          "C'est possible pour les aspects les plus simples, mais cela demande du temps et une vigilance technique constante. Beaucoup préfèrent déléguer ce suivi pour se concentrer entièrement sur leur activité.",
+      },
+    ],
+    relatedSlugs: ["pourquoi-site-internet-entreprise-2026", "elements-confiance-site-professionnel"],
   },
 ]
 

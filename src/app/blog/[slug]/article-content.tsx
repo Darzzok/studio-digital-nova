@@ -328,7 +328,7 @@ function ArticleContent({ article }: { article: Article }) {
         </motion.div>
 
         <div className="mt-8 grid grid-cols-1 items-center gap-12 lg:grid-cols-2 lg:gap-16">
-          <div className="flex flex-col items-center text-center lg:items-start lg:text-left">
+          <div className="flex flex-col items-center text-center">
             <motion.div
               className="mb-4"
               initial="hidden"
@@ -353,7 +353,7 @@ function ArticleContent({ article }: { article: Article }) {
             </motion.div>
 
             <motion.div
-              className="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-small text-text-secondary lg:justify-start"
+              className="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-small text-text-secondary"
               initial="hidden"
               whileInView="visible"
               viewport={{ once: true, amount: 0.4 }}

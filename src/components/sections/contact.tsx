@@ -335,7 +335,7 @@ function ProgressFrieze({
 function StepBlock({ title, subtitle, children }: { title: string; subtitle: string; children: ReactNode }) {
   return (
     <div className="flex flex-col gap-6">
-      <div>
+      <div className="text-center">
         <Heading variant="h3">{title}</Heading>
         <p className="mt-2 text-body text-text-secondary">{subtitle}</p>
       </div>
@@ -937,7 +937,7 @@ function Contact() {
               viewport={{ once: true, amount: 0.4 }}
               variants={floatIn(0.25 + index * 0.1, { y: 90 }, { damping: 30, mass: 4 })}
             >
-              <Card className="flex items-start gap-3 p-5">
+              <Card className="flex flex-col items-center gap-3 p-5 text-center">
                 <span
                   className={cn(
                     "flex size-10 shrink-0 items-center justify-center rounded-xl",

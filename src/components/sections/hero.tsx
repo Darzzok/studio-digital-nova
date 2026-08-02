@@ -9,6 +9,7 @@ import {
   Palette,
   PhoneCall,
   Plus,
+  Smartphone,
   TrendingUp,
   Type,
   Zap,
@@ -131,22 +132,13 @@ function Hero() {
             initial={initial}
             animate="visible"
           >
-            <Card className="pointer-events-auto p-3">
-              <div className="flex items-center gap-1.5 border-b border-border pb-2.5">
-                <span className="size-2.5 rounded-full bg-error/40" />
-                <span className="size-2.5 rounded-full bg-warning/40" />
-                <span className="size-2.5 rounded-full bg-success/40" />
-              </div>
-              <div className="mt-3 space-y-2">
-                <div
-                  className="h-16 w-full rounded-lg"
-                  style={{
-                    backgroundImage:
-                      "linear-gradient(135deg, var(--color-primary), var(--color-accent-purple))",
-                  }}
-                />
-                <div className="h-2 w-3/4 rounded-full bg-border" />
-                <div className="h-2 w-1/2 rounded-full bg-border" />
+            <Card className="pointer-events-auto flex items-start gap-3 p-5">
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-accent-purple/15 text-accent-purple">
+                <Icon icon={Smartphone} className="size-5" />
+              </span>
+              <div>
+                <p className="text-small font-semibold text-text">100% responsive</p>
+                <p className="text-small text-text-secondary">Parfait sur mobile et tablette.</p>
               </div>
             </Card>
           </motion.div>

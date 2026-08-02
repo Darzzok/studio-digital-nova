@@ -14,7 +14,9 @@
       "Bash(node -e \"console.log\\(require\\('./package.json'\\).dependencies\\)\")",
       "Bash(node -e ' *)",
       "Bash(xargs -I{} ls -la {})",
-      "Bash(sort -k6,7)"
+      "Bash(sort -k6,7)",
+      "Bash(rm -rf out .next)",
+      "Bash(grep -oE \".{0,20}Un projet.{0,40}\" out/blog.html)"
     ]
   }
 }

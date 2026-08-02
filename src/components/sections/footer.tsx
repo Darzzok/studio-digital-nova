@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { Briefcase, Camera, Mail, Phone, Users, X } from "lucide-react"
+import { Mail } from "lucide-react"
 import { motion } from "framer-motion"
 
 import { Container } from "@/components/ui/container"
@@ -39,29 +39,22 @@ function floatIn(delay: number, from: FloatFrom, options?: FloatOptions) {
 }
 
 const NAV_ITEMS = [
-  { label: "Accueil", href: "/" },
-  { label: "Mes offres", href: "/#tarifs" },
-  { label: "Réalisations", href: "/#cas-client" },
+  { label: "Mes services", href: "/#services" },
   { label: "À propos", href: "/#a-propos" },
-  { label: "Contact", href: "/#contact" },
+  { label: "Ma méthode", href: "/#ma-methode" },
+  { label: "Tarifs", href: "/#tarifs" },
+  { label: "Cas client", href: "/#cas-client" },
+  { label: "Blog", href: "/blog" },
+  { label: "FAQ", href: "/faq" },
 ]
 
 const CONTACT_ITEMS = [
   { icon: Mail, label: "contact@studiodigitalnova.fr", href: "mailto:contact@studiodigitalnova.fr" },
-  { icon: Phone, label: "+33 1 23 45 67 89", href: "tel:+33123456789" },
-]
-
-const SOCIAL_LINKS = [
-  { icon: Camera, label: "Instagram" },
-  { icon: Briefcase, label: "LinkedIn" },
-  { icon: Users, label: "Facebook" },
-  { icon: X, label: "Twitter" },
 ]
 
 const LEGAL_LINKS = [
   { label: "Mentions légales", href: "/mentions-legales" },
   { label: "Confidentialité", href: "/confidentialite" },
-  { label: "FAQ", href: "/faq" },
 ]
 
 function Footer() {
@@ -92,18 +85,6 @@ function Footer() {
               Je crée des sites vitrines modernes, rapides et optimisés pour{" "}
               <strong className="font-semibold text-text">convertir vos visiteurs en clients</strong>.
             </p>
-            <div className="mt-2 flex items-center gap-3">
-              {SOCIAL_LINKS.map((social) => (
-                <a
-                  key={social.label}
-                  href="#"
-                  aria-label={social.label}
-                  className="flex size-10 items-center justify-center rounded-full bg-primary/10 text-primary transition-transform duration-150 ease-nova hover:-translate-y-0.5 hover:scale-105"
-                >
-                  <Icon icon={social.icon} className="size-4" />
-                </a>
-              ))}
-            </div>
           </motion.div>
 
           <motion.div
