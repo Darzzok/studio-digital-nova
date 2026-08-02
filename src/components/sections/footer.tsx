@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { Mail } from "lucide-react"
-import { motion } from "framer-motion"
+import { motion, useReducedMotion } from "framer-motion"
 
 import { Container } from "@/components/ui/container"
 import { Icon } from "@/components/ui/icon"
@@ -58,13 +58,15 @@ const LEGAL_LINKS = [
 ]
 
 function Footer() {
+  const reduce = Boolean(useReducedMotion())
+
   return (
     <footer data-slot="footer" className="w-full border-t border-border bg-surface">
       <Container className="py-20">
         <div className="grid grid-cols-1 gap-12 sm:grid-cols-2 lg:grid-cols-4">
           <motion.div
             className="flex flex-col gap-4 lg:col-span-2 lg:pr-12"
-            initial="hidden"
+            initial={reduce ? false : "hidden"}
             whileInView="visible"
             viewport={{ once: true, amount: 0.4 }}
             variants={floatIn(0, { x: -140, rotate: -4 })}
@@ -88,7 +90,7 @@ function Footer() {
           </motion.div>
 
           <motion.div
-            initial="hidden"
+            initial={reduce ? false : "hidden"}
             whileInView="visible"
             viewport={{ once: true, amount: 0.4 }}
             variants={floatIn(0.1, { y: 90 })}
@@ -109,7 +111,7 @@ function Footer() {
           </motion.div>
 
           <motion.div
-            initial="hidden"
+            initial={reduce ? false : "hidden"}
             whileInView="visible"
             viewport={{ once: true, amount: 0.4 }}
             variants={floatIn(0.2, { x: 140, rotate: 4 })}
@@ -133,7 +135,7 @@ function Footer() {
 
         <motion.div
           className="mt-16 flex flex-col items-center gap-4 border-t border-border pt-8 sm:flex-row sm:justify-between"
-          initial="hidden"
+          initial={reduce ? false : "hidden"}
           whileInView="visible"
           viewport={{ once: true, amount: 0.4 }}
           variants={floatIn(0.3, { y: 40 })}

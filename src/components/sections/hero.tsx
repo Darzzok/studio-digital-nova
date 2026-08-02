@@ -8,7 +8,6 @@ import {
   LayoutGrid,
   Palette,
   PhoneCall,
-  Plus,
   Smartphone,
   TrendingUp,
   Type,
@@ -193,49 +192,6 @@ function Hero() {
             </motion.div>
           ))}
 
-          <motion.svg
-            aria-hidden
-            viewBox="0 0 100 100"
-            preserveAspectRatio="none"
-            className="absolute inset-0 h-full w-full"
-            variants={{
-              hidden: { opacity: 0 },
-              visible: { opacity: 1, transition: { duration: 0.3, delay: 2.75 } },
-            }}
-            initial={initial}
-            animate="visible"
-          >
-            <motion.path
-              d="M 10 26 Q 4 32, 3 36"
-              vectorEffect="non-scaling-stroke"
-              stroke="var(--color-text-secondary)"
-              strokeOpacity={0.3}
-              strokeWidth={1.5}
-              strokeDasharray="5 6"
-              fill="none"
-              variants={{
-                hidden: { pathLength: 0 },
-                visible: { pathLength: 1, transition: { duration: 0.8, delay: 2.8, ease: EASE_NOVA } },
-              }}
-              initial={initial}
-              animate="visible"
-            />
-          </motion.svg>
-
-          {[
-            { pos: "left-[4%] top-[16%]" },
-            { pos: "right-[4%] top-[74%]" },
-          ].map((deco) => (
-            <motion.div
-              key={deco.pos}
-              className={`absolute ${deco.pos}`}
-              variants={floatIn(2.85, { scale: 0.4 }, { stiffness: 180, damping: 14, mass: 0.5 })}
-              initial={initial}
-              animate="visible"
-            >
-              <Icon icon={Plus} className="size-4 text-text-secondary/30" />
-            </motion.div>
-          ))}
         </div>
 
         {/* Central composition */}

@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { ArrowRight, ChevronDown, HelpCircle } from "lucide-react"
-import { AnimatePresence, motion } from "framer-motion"
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -374,9 +374,11 @@ const QUESTIONS = [
 ]
 
 function FaqCta() {
+  const reduce = Boolean(useReducedMotion())
+
   return (
     <motion.div
-      initial="hidden"
+      initial={reduce ? false : "hidden"}
       whileInView="visible"
       viewport={{ once: true, amount: 0.4 }}
       variants={floatIn(0, { y: 60, scale: 0.94 })}
@@ -409,6 +411,7 @@ const INITIAL_VISIBLE_QUESTIONS = 8
 function FAQ() {
   const [openIndex, setOpenIndex] = useState<number | null>(null)
   const [showAll, setShowAll] = useState(false)
+  const reduce = Boolean(useReducedMotion())
   const visibleQuestions = showAll ? QUESTIONS : QUESTIONS.slice(0, INITIAL_VISIBLE_QUESTIONS)
   const hiddenCount = QUESTIONS.length - INITIAL_VISIBLE_QUESTIONS
 
@@ -417,7 +420,7 @@ function FAQ() {
       <div className="mx-auto flex max-w-2xl flex-col items-center text-center md:max-w-3xl">
         <motion.div
           className="mb-4"
-          initial="hidden"
+          initial={reduce ? false : "hidden"}
           whileInView="visible"
           viewport={{ once: true, amount: 0.4 }}
           variants={floatIn(0, { y: -40, scale: 0.85 })}
@@ -429,7 +432,7 @@ function FAQ() {
         </motion.div>
 
         <motion.div
-          initial="hidden"
+          initial={reduce ? false : "hidden"}
           whileInView="visible"
           viewport={{ once: true, amount: 0.4 }}
           variants={floatIn(0.12, { y: -60, scale: 0.94 })}
@@ -439,7 +442,7 @@ function FAQ() {
 
         <motion.p
           className="mt-6 max-w-xl text-body text-text-secondary"
-          initial="hidden"
+          initial={reduce ? false : "hidden"}
           whileInView="visible"
           viewport={{ once: true, amount: 0.4 }}
           variants={floatIn(0.22, { y: 40 })}
@@ -458,7 +461,7 @@ function FAQ() {
           return (
             <motion.div
               key={item.question}
-              initial="hidden"
+              initial={reduce ? false : "hidden"}
               whileInView="visible"
               viewport={{ once: true, amount: 0.3 }}
               variants={floatIn(index * 0.08, from, { damping: 30, mass: 4 })}

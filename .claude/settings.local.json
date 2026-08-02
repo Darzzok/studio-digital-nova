@@ -16,7 +16,8 @@
       "Bash(xargs -I{} ls -la {})",
       "Bash(sort -k6,7)",
       "Bash(rm -rf out .next)",
-      "Bash(grep -oE \".{0,20}Un projet.{0,40}\" out/blog.html)"
+      "Bash(grep -oE \".{0,20}Un projet.{0,40}\" out/blog.html)",
+      "Bash(npx eslint *)"
     ]
   }
 }

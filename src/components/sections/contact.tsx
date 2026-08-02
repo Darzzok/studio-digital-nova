@@ -653,6 +653,9 @@ function Contact() {
     const next: Record<string, string> = {}
     if (data.name.trim().length < 2) next.name = "Merci d'indiquer votre nom."
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) next.email = "Adresse email invalide."
+    if (data.phone.trim() !== "" && !/^[+\d][\d\s.-]{7,19}$/.test(data.phone.trim())) {
+      next.phone = "Numéro de téléphone invalide."
+    }
     setErrors(next)
     return Object.keys(next).length === 0
   }
@@ -735,7 +738,8 @@ function Contact() {
           viewport={{ once: true, amount: 0.4 }}
           variants={floatIn(0.22, { y: 40 })}
         >
-          Répondez à quelques questions et recevez une proposition personnalisée sous 24 heures.
+          Répondez à quelques questions et recevez une proposition personnalisée sous 24 heures.{" "}
+          <span className="font-medium text-text">Environ 2 minutes.</span>
         </motion.p>
       </div>
 
@@ -854,7 +858,7 @@ function Contact() {
                                   onChange={(e) => setData((d) => ({ ...d, email: e.target.value }))}
                                 />
                               </FormField>
-                              <FormField label="Téléphone" htmlFor="config-phone">
+                              <FormField label="Téléphone" htmlFor="config-phone" error={errors.phone}>
                                 <Input
                                   id="config-phone"
                                   type="tel"
@@ -864,6 +868,10 @@ function Contact() {
                                 />
                               </FormField>
                             </div>
+                            <p className="mt-3 text-small text-text-secondary">
+                              Vos informations restent strictement confidentielles et ne seront
+                              jamais partagées.
+                            </p>
                             <Button
                               type="button"
                               variant="primary"

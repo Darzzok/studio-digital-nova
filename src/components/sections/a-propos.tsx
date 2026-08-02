@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import { ArrowRight, Search, Smartphone, Sparkles, User, UserCheck } from "lucide-react"
-import { motion } from "framer-motion"
+import { motion, useReducedMotion } from "framer-motion"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -98,11 +98,13 @@ function AboutPortrait() {
 }
 
 function APropos() {
+  const reduce = Boolean(useReducedMotion())
+
   return (
     <Section id="a-propos" className="scroll-mt-24">
       <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-2 lg:gap-12">
         <motion.div
-          initial="hidden"
+          initial={reduce ? false : "hidden"}
           whileInView="visible"
           viewport={{ once: true, amount: 0.2 }}
           variants={floatIn(0.1, { x: -160, rotate: -4 }, { damping: 30, mass: 4 })}
@@ -113,7 +115,7 @@ function APropos() {
         <div className="flex flex-col items-center text-center">
           <motion.div
             className="mb-4"
-            initial="hidden"
+            initial={reduce ? false : "hidden"}
             whileInView="visible"
             viewport={{ once: true, amount: 0.4 }}
             variants={floatIn(0, { y: -40, scale: 0.85 })}
@@ -125,7 +127,7 @@ function APropos() {
           </motion.div>
 
           <motion.div
-            initial="hidden"
+            initial={reduce ? false : "hidden"}
             whileInView="visible"
             viewport={{ once: true, amount: 0.4 }}
             variants={floatIn(0.12, { y: -60, scale: 0.94 })}
@@ -135,7 +137,7 @@ function APropos() {
 
           <motion.p
             className="mt-6 max-w-xl text-body text-text-secondary"
-            initial="hidden"
+            initial={reduce ? false : "hidden"}
             whileInView="visible"
             viewport={{ once: true, amount: 0.4 }}
             variants={floatIn(0.22, { y: 40 })}
@@ -162,7 +164,7 @@ function APropos() {
               <motion.div
                 key={strength.label}
                 className="flex items-center gap-3"
-                initial="hidden"
+                initial={reduce ? false : "hidden"}
                 whileInView="visible"
                 viewport={{ once: true, amount: 0.4 }}
                 variants={floatIn(0.32 + index * 0.1, { y: 30, scale: 0.9 })}
@@ -182,7 +184,7 @@ function APropos() {
 
           <motion.div
             className="mt-10"
-            initial="hidden"
+            initial={reduce ? false : "hidden"}
             whileInView="visible"
             viewport={{ once: true, amount: 0.4 }}
             variants={floatIn(0.65, { y: 30, scale: 0.94 })}
@@ -192,7 +194,7 @@ function APropos() {
 
           <motion.div
             className="mt-5"
-            initial="hidden"
+            initial={reduce ? false : "hidden"}
             whileInView="visible"
             viewport={{ once: true, amount: 0.4 }}
             variants={floatIn(0.75, { x: -160, rotate: -6 })}

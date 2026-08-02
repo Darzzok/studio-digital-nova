@@ -1,7 +1,7 @@
 "use client"
 
 import { Check, Crown, Rocket, Sparkles, Tag } from "lucide-react"
-import { motion } from "framer-motion"
+import { motion, useReducedMotion } from "framer-motion"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -46,7 +46,7 @@ const PLANS = [
   {
     name: "Essentiel",
     icon: Rocket,
-    price: "690€",
+    price: "À partir de 690 €",
     scope: "One Page",
     tagline: "Pour démarrer votre présence en ligne rapidement.",
     idealFor: "Idéal pour lancer votre activité sans attendre.",
@@ -61,7 +61,7 @@ const PLANS = [
   {
     name: "Pro",
     icon: Sparkles,
-    price: "990€",
+    price: "À partir de 990 €",
     scope: "Site Vitrine",
     tagline: "La formule la plus complète pour convertir vos visiteurs.",
     idealFor: "Idéal pour une entreprise qui veut se démarquer durablement.",
@@ -77,7 +77,7 @@ const PLANS = [
   {
     name: "Premium",
     icon: Crown,
-    price: "À partir de 1200€",
+    price: "À partir de 1 200 €",
     scope: "Projet sur mesure",
     tagline: "Un accompagnement sur mesure, sans compromis.",
     idealFor: "Idéal pour un projet ambitieux aux besoins spécifiques.",
@@ -92,12 +92,14 @@ const PLANS = [
 ]
 
 function Tarifs() {
+  const reduce = Boolean(useReducedMotion())
+
   return (
     <Section id="tarifs" className="scroll-mt-24">
       <div className="mx-auto flex max-w-2xl flex-col items-center text-center md:max-w-3xl">
         <motion.div
           className="mb-4"
-          initial="hidden"
+          initial={reduce ? false : "hidden"}
           whileInView="visible"
           viewport={{ once: true, amount: 0.4 }}
           variants={floatIn(0, { y: -40, scale: 0.85 })}
@@ -109,7 +111,7 @@ function Tarifs() {
         </motion.div>
 
         <motion.div
-          initial="hidden"
+          initial={reduce ? false : "hidden"}
           whileInView="visible"
           viewport={{ once: true, amount: 0.4 }}
           variants={floatIn(0.12, { y: -60, scale: 0.94 })}
@@ -119,7 +121,7 @@ function Tarifs() {
 
         <motion.p
           className="mt-6 max-w-xl text-body text-text-secondary"
-          initial="hidden"
+          initial={reduce ? false : "hidden"}
           whileInView="visible"
           viewport={{ once: true, amount: 0.4 }}
           variants={floatIn(0.22, { y: 40 })}
@@ -145,7 +147,7 @@ function Tarifs() {
             <motion.div
               key={plan.name}
               className="relative"
-              initial="hidden"
+              initial={reduce ? false : "hidden"}
               whileInView="visible"
               viewport={{ once: true, amount: 0.3 }}
               variants={floatIn(index * 0.12, from, { damping: 30, mass: 4 })}
@@ -188,7 +190,7 @@ function Tarifs() {
 
                 <p className="relative text-small text-text-secondary">{plan.tagline}</p>
 
-                <p className="relative text-[2.5rem] font-heading font-bold leading-none text-text">
+                <p className="relative whitespace-nowrap text-[2rem] font-heading font-bold leading-none text-text">
                   {plan.price}
                 </p>
 
