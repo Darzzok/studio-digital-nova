@@ -4,7 +4,7 @@ export const siteConfig = {
   title: "Studio Digital Nova — Création de sites internet pour TPE et artisans",
   description:
     "Sites internet modernes et rapides pour TPE, artisans et commerçants. Devis gratuit, tarifs clairs dès 690 €, livraison en quelques jours.",
-  url: process.env.NEXT_PUBLIC_SITE_URL ?? "https://studio-digital-nova.com",
+  url: process.env.NEXT_PUBLIC_SITE_URL ?? "https://studiodigitalnova.fr",
   locale: "fr_FR",
   language: "fr",
   author: {

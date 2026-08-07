@@ -28,15 +28,6 @@ function AboutPortrait() {
 
   return (
     <Card className="relative overflow-hidden p-5 sm:p-6">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -left-10 -top-10 h-48 w-48 rounded-full bg-primary/10 blur-3xl"
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -bottom-12 -right-8 h-48 w-48 rounded-full bg-accent-purple/10 blur-3xl"
-      />
-
       <div className="relative aspect-4/5 w-full overflow-hidden rounded-3xl border border-border bg-background">
         {!imgError ? (
           <Image

@@ -143,13 +143,6 @@ function Tarifs() {
                   plan.featured && "border-primary/50 shadow-lg lg:scale-[1.05]"
                 )}
               >
-                {plan.featured && (
-                  <div
-                    aria-hidden
-                    className="pointer-events-none absolute -inset-x-10 -top-24 h-48 rounded-full bg-primary/20 blur-3xl"
-                  />
-                )}
-
                 <span
                   className={cn(
                     "relative flex size-11 shrink-0 items-center justify-center rounded-xl shadow-sm transition-transform duration-200 ease-nova group-hover:-rotate-6 group-hover:scale-110",

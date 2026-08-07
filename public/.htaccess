@@ -3,6 +3,16 @@
 
 DirectoryIndex index.html
 
+# Next.js exporte les images Open Graph / Twitter Card sans extension
+# (ex. /opengraph-image, /blog/mon-article/opengraph-image). Sans ça, Apache
+# ne devine pas leur type et les sert sans Content-Type — LinkedIn, Facebook
+# etc. ne peuvent alors pas afficher l'aperçu image du lien.
+<IfModule mod_mime.c>
+  <FilesMatch "^(opengraph-image|twitter-image)$">
+    ForceType image/png
+  </FilesMatch>
+</IfModule>
+
 RewriteEngine On
 
 # Sert les pages sans extension (ex. /blog -> blog.html) sans changer l'URL affichée.

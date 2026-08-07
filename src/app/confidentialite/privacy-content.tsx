@@ -25,13 +25,17 @@ const SECTIONS = [
       "Lorsque vous utilisez le formulaire de contact, je collecte votre nom, votre email, votre téléphone, le nom de votre entreprise, la description de votre projet et votre budget. Seuls le nom, l'email et le message sont obligatoires.",
   },
   {
-    title: "Finalité du traitement",
+    title: "Finalité et base légale du traitement",
     content: (
       <>
         Ces informations sont utilisées uniquement pour répondre à votre demande de devis et
-        échanger avec vous sur votre projet.{" "}
+        échanger avec vous sur votre projet, sur la base de l&apos;exécution de mesures
+        précontractuelles prises à votre demande (article 6.1.b du RGPD). Pour acheminer votre
+        message par email, le formulaire de contact utilise le service tiers{" "}
+        <strong className="font-semibold text-text">Web3Forms</strong>, qui traite vos données
+        uniquement à cette fin et ne les conserve ni ne les réutilise.{" "}
         <strong className="font-semibold text-text">
-          Elles ne sont ni vendues, ni partagées avec des tiers.
+          Vos données ne sont ni vendues, ni partagées à des fins commerciales avec des tiers.
         </strong>
       </>
     ),
@@ -39,7 +43,7 @@ const SECTIONS = [
   {
     title: "Conservation des données",
     content:
-      "Vos données sont conservées le temps nécessaire au traitement de votre demande, puis supprimées ou archivées conformément à la réglementation en vigueur.",
+      "Vos données sont conservées pendant une durée maximale de 3 ans à compter de notre dernier échange, puis supprimées, sauf obligation légale de conservation plus longue.",
   },
   {
     title: "Cookies",
@@ -58,9 +62,13 @@ const SECTIONS = [
     content: (
       <>
         Conformément au <strong className="font-semibold text-text">RGPD</strong>, vous disposez
-        d&apos;un droit d&apos;accès, de rectification et de suppression de vos données. Pour
-        exercer ce droit, contactez-moi à{" "}
-        <strong className="font-semibold text-text">contact@studiodigitalnova.fr</strong>.
+        d&apos;un droit d&apos;accès, de rectification, d&apos;effacement et de limitation de vos
+        données, ainsi que d&apos;un droit d&apos;opposition. Pour exercer ces droits,
+        contactez-moi à{" "}
+        <strong className="font-semibold text-text">contact@studiodigitalnova.fr</strong>. Si vous
+        estimez que vos droits ne sont pas respectés, vous pouvez également introduire une
+        réclamation auprès de la{" "}
+        <strong className="font-semibold text-text">CNIL</strong> (www.cnil.fr).
       </>
     ),
   },

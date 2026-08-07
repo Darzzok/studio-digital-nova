@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import Image from "next/image"
 import Link from "next/link"
 import { motion } from "framer-motion"
 import {
@@ -25,7 +26,6 @@ import { useFloatIn } from "@/lib/motion"
 import { cn } from "@/lib/utils"
 import {
   CATEGORY_GRADIENT,
-  CATEGORY_ICON,
   getRelatedArticles,
   type Article,
   type ArticleBlock,
@@ -77,21 +77,18 @@ function useReadingProgress(headingIds: string[]) {
 }
 
 function ArticleHeroIllustration({ article }: { article: Article }) {
-  const gradient = CATEGORY_GRADIENT[article.category]
-  const icon = CATEGORY_ICON[article.category]
-
   return (
     <div className="relative mx-auto w-full max-w-md">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute left-1/2 top-1/2 h-72 w-72 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/10 blur-3xl"
-      />
       <Card className="relative overflow-hidden p-0">
-        <div
-          className="flex h-64 w-full items-center justify-center sm:h-72"
-          style={{ backgroundImage: `linear-gradient(135deg, ${gradient.from}, ${gradient.to})` }}
-        >
-          <Icon icon={icon} className="size-16 text-primary-foreground/90" />
+        <div className="relative h-64 w-full sm:h-72">
+          <Image
+            src={article.image.url}
+            alt={article.image.alt}
+            fill
+            sizes="(min-width: 1024px) 480px, 90vw"
+            priority
+            className="object-cover"
+          />
         </div>
       </Card>
     </div>
@@ -212,8 +209,6 @@ function ArticleBlockRenderer({ block }: { block: ArticleBlock }) {
 
 function RelatedArticleCard({ article, index }: { article: Article; index: number }) {
   const floatIn = useFloatIn()
-  const gradient = CATEGORY_GRADIENT[article.category]
-  const icon = CATEGORY_ICON[article.category]
 
   return (
     <motion.div
@@ -224,18 +219,14 @@ function RelatedArticleCard({ article, index }: { article: Article; index: numbe
     >
       <Link href={`/blog/${article.slug}`}>
         <Card className="group relative flex h-full flex-col gap-0 overflow-hidden p-0">
-          <div
-            aria-hidden
-            className="pointer-events-none absolute -inset-8 -z-10 rounded-[2rem] bg-primary/0 blur-2xl transition-colors duration-300 ease-nova group-hover:bg-primary/15"
-          />
           <div className="relative h-32 w-full overflow-hidden">
-            <div
-              className="absolute inset-0 transition-transform duration-300 ease-nova group-hover:scale-110"
-              style={{ backgroundImage: `linear-gradient(135deg, ${gradient.from}, ${gradient.to})` }}
+            <Image
+              src={article.image.url}
+              alt={article.image.alt}
+              fill
+              sizes="(min-width: 1024px) 320px, 90vw"
+              className="object-cover transition-transform duration-300 ease-nova group-hover:scale-110"
             />
-            <div className="absolute inset-0 flex items-center justify-center">
-              <Icon icon={icon} className="size-8 text-primary-foreground/90" />
-            </div>
           </div>
           <div className="flex flex-1 flex-col items-center gap-2 p-5 text-center">
             <Badge variant="outline">{article.category}</Badge>
@@ -250,10 +241,6 @@ function RelatedArticleCard({ article, index }: { article: Article; index: numbe
 function ArticleConversionCta() {
   return (
     <Card className="relative overflow-hidden text-center">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -inset-x-10 -top-24 h-56 rounded-full bg-primary/15 blur-3xl"
-      />
       <div className="relative flex flex-col items-center gap-4 py-4">
         <Heading variant="h2">🚀 Construisons votre projet</Heading>
         <p className="max-w-xl text-body text-text-secondary">

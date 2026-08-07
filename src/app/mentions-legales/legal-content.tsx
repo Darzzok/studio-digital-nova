@@ -12,17 +12,29 @@ const SECTIONS = [
     title: "Éditeur du site",
     content: (
       <>
-        Le site Studio Digital Nova est édité par [Nom et prénom à compléter], entrepreneur
-        individuel (micro-entrepreneur), immatriculé sous le numéro SIRET [numéro à compléter],
-        domicilié à [adresse à compléter]. Responsable de la publication : [nom à compléter].
-        Contact : <strong className="font-semibold text-text">contact@studiodigitalnova.fr</strong>.
+        Le site Studio Digital Nova est édité par{" "}
+        <strong className="font-semibold text-text">Geoffrey Marechal</strong>, entrepreneur
+        individuel (auto-entrepreneur), immatriculé sous le numéro SIRET{" "}
+        <strong className="font-semibold text-text">912 865 474 00031</strong>, domicilié à
+        Quatremare (27400), France.{" "}
+        <strong className="font-semibold text-text">
+          TVA non applicable, article 293 B du Code général des impôts.
+        </strong>{" "}
+        Directeur de la publication : Geoffrey Marechal. Contact :{" "}
+        <strong className="font-semibold text-text">contact@studiodigitalnova.fr</strong>.
       </>
     ),
   },
   {
     title: "Hébergement",
-    content:
-      "Ce site est hébergé par [nom de l'hébergeur à compléter], [adresse de l'hébergeur à compléter].",
+    content: (
+      <>
+        Ce site est hébergé par{" "}
+        <strong className="font-semibold text-text">Hostinger International Ltd.</strong>,
+        Lumiel Building, 61 Lordou Vironos Street, 6023 Larnaca, Chypre. Site web :{" "}
+        <strong className="font-semibold text-text">hostinger.fr</strong>.
+      </>
+    ),
   },
   {
     title: "Propriété intellectuelle",

@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react"
 import type { ReactNode } from "react"
+import Image from "next/image"
 import Link from "next/link"
 import { motion } from "framer-motion"
 import {
@@ -26,7 +27,7 @@ import { Heading } from "@/components/ui/heading"
 import { Icon } from "@/components/ui/icon"
 import { Input } from "@/components/ui/input"
 import { Section } from "@/components/ui/section"
-import { ARTICLES, CATEGORY_GRADIENT, CATEGORY_ICON, type Article } from "@/lib/articles"
+import { ARTICLES, type Article } from "@/lib/articles"
 import { useFloatIn } from "@/lib/motion"
 import { cn } from "@/lib/utils"
 
@@ -69,11 +70,6 @@ function BlogHeroIllustration() {
 
   return (
     <div className="relative mx-auto w-full max-w-sm">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute left-1/2 top-1/2 h-72 w-72 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/10 blur-3xl"
-      />
-
       <Card className="relative p-4">
         <div className="flex items-center gap-1.5 border-b border-border pb-3">
           <span className="size-2.5 rounded-full bg-error/40" />
@@ -255,9 +251,6 @@ function ArticleCard({ article, index }: { article: Article; index: number }) {
   const from: FloatFrom =
     column === 0 ? { x: -160, rotate: -5 } : column === 2 ? { x: 160, rotate: 5 } : { y: 90 }
 
-  const gradient = CATEGORY_GRADIENT[article.category]
-  const icon = CATEGORY_ICON[article.category]
-
   return (
     <motion.div
       initial="hidden"
@@ -266,19 +259,14 @@ function ArticleCard({ article, index }: { article: Article; index: number }) {
       variants={floatIn(index * 0.1, from, { damping: 30, mass: 4 })}
     >
       <Card className="group relative flex h-full flex-col gap-0 overflow-hidden p-0">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -inset-8 -z-10 rounded-[2rem] bg-primary/0 blur-2xl transition-colors duration-300 ease-nova group-hover:bg-primary/15"
-        />
-
         <div className="relative h-40 w-full overflow-hidden">
-          <div
-            className="absolute inset-0 transition-transform duration-300 ease-nova group-hover:scale-110"
-            style={{ backgroundImage: `linear-gradient(135deg, ${gradient.from}, ${gradient.to})` }}
+          <Image
+            src={article.image.url}
+            alt={article.image.alt}
+            fill
+            sizes="(min-width: 1024px) 400px, 90vw"
+            className="object-cover transition-transform duration-300 ease-nova group-hover:scale-110"
           />
-          <div className="absolute inset-0 flex items-center justify-center">
-            <Icon icon={icon} className="size-10 text-primary-foreground/90" />
-          </div>
         </div>
 
         <div className="flex flex-1 flex-col items-center gap-3 p-6 text-center">
@@ -338,10 +326,6 @@ function FinalCta() {
 
   return (
     <Card className="relative mx-auto max-w-3xl overflow-hidden text-center">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -inset-x-10 -top-24 h-56 rounded-full bg-primary/15 blur-3xl"
-      />
       <div className="relative flex flex-col items-center">
         <motion.div
           initial="hidden"

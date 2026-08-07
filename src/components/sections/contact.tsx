@@ -112,6 +112,9 @@ const BENEFITS = [
 
 const STORAGE_KEY = "sdn-configurator-v1"
 
+const WEB3FORMS_ACCESS_KEY = "37757408-4a45-44eb-afc1-20d7ae50d224"
+const WEB3FORMS_ENDPOINT = "https://api.web3forms.com/submit"
+
 /* ------------------------------------------------------------------------ */
 /* Types et helpers                                                         */
 /* ------------------------------------------------------------------------ */
@@ -299,12 +302,6 @@ function StepOffer({ value, onSelect }: { value: OfferId | null; onSelect: (id: 
                   selected ? "scale-[1.02] border-primary shadow-lg" : "hover:border-primary/40"
                 )}
               >
-                {selected && (
-                  <div
-                    aria-hidden
-                    className="pointer-events-none absolute -inset-x-6 -top-16 h-32 rounded-full bg-primary/20 blur-3xl"
-                  />
-                )}
                 <span
                   className={cn(
                     "relative flex size-11 shrink-0 items-center justify-center rounded-xl shadow-sm transition-transform duration-200 ease-nova group-hover:-rotate-6 group-hover:scale-110",
@@ -538,6 +535,8 @@ function Contact() {
   const [direction, setDirection] = useState(1)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [submitted, setSubmitted] = useState(false)
+  const [sending, setSending] = useState(false)
+  const [sendError, setSendError] = useState<string | null>(null)
 
   useEffect(() => {
     try {
@@ -605,13 +604,44 @@ function Contact() {
     if (validateContact()) goTo(3)
   }
 
-  function handleSubmitProject() {
+  async function handleSubmitProject() {
     if (!validateProject()) return
-    setSubmitted(true)
+    setSending(true)
+    setSendError(null)
+
     try {
-      window.localStorage.removeItem(STORAGE_KEY)
+      const response = await fetch(WEB3FORMS_ENDPOINT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({
+          access_key: WEB3FORMS_ACCESS_KEY,
+          subject: "Nouvelle demande de devis — Studio Digital Nova",
+          from_name: data.name,
+          name: data.name,
+          email: data.email,
+          phone: data.phone || "Non renseigné",
+          company: data.company || "Non renseignée",
+          offer: offerLabel(data.offer) ?? "Non renseignée",
+          needs: needLabels(data.needs).join(", ") || "Aucun",
+          timeline: data.timeline || "Non renseigné",
+          message: data.description,
+        }),
+      })
+      const result = await response.json()
+      if (!result.success) throw new Error(result.message ?? "Échec de l'envoi.")
+
+      setSubmitted(true)
+      try {
+        window.localStorage.removeItem(STORAGE_KEY)
+      } catch {
+        // localStorage indisponible — on ignore silencieusement.
+      }
     } catch {
-      // localStorage indisponible — on ignore silencieusement.
+      setSendError(
+        "Une erreur est survenue lors de l'envoi. Merci de réessayer, ou contactez-moi directement à contact@studiodigitalnova.fr."
+      )
+    } finally {
+      setSending(false)
     }
   }
 
@@ -845,9 +875,16 @@ function Contact() {
                                 </Card>
                               </div>
 
-                              <Button type="button" variant="primary" className="w-full" onClick={handleSubmitProject}>
-                                🚀 Lancer mon projet
+                              <Button
+                                type="button"
+                                variant="primary"
+                                className="w-full"
+                                onClick={handleSubmitProject}
+                                disabled={sending}
+                              >
+                                {sending ? "Envoi en cours..." : "🚀 Lancer mon projet"}
                               </Button>
+                              {sendError && <p className="text-small text-error">{sendError}</p>}
                             </div>
                           </StepBlock>
                         )}

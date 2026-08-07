@@ -19,8 +19,7 @@ export default function Image() {
           alignItems: "center",
           justifyContent: "center",
           gap: 32,
-          backgroundColor: "#eef1f5",
-          backgroundImage: "linear-gradient(135deg, #1f4e79 0%, #a8783f 100%)",
+          backgroundColor: "#3b5bff",
           fontFamily: "sans-serif",
         }}
       >
@@ -30,15 +29,16 @@ export default function Image() {
             width: 120,
             height: 120,
             borderRadius: 28,
-            backgroundColor: "rgba(255,255,255,0.16)",
+            backgroundColor: "#0a0a0a",
             alignItems: "center",
             justifyContent: "center",
-            fontSize: 64,
+            fontSize: 42,
             fontWeight: 800,
+            letterSpacing: 1,
             color: "#ffffff",
           }}
         >
-          N
+          SDN
         </div>
         <div
           style={{

@@ -355,10 +355,6 @@ function FaqCta() {
       variants={floatIn(0, { y: 60, scale: 0.94 })}
     >
       <Card className="relative mx-auto max-w-3xl overflow-hidden text-center">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -inset-x-10 -top-24 h-56 rounded-full bg-primary/15 blur-3xl"
-        />
         <div className="relative flex flex-col items-center gap-4 py-4">
           <Heading variant="h2">Une autre question ?</Heading>
           <p className="max-w-xl text-body text-text-secondary">

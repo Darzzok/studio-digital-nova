@@ -74,16 +74,12 @@ function Header() {
               },
             }}
           >
-            <span
-              className="flex size-10 items-center justify-center rounded-xl text-base font-extrabold text-primary-foreground shadow-sm"
-              style={{
-                backgroundImage:
-                  "linear-gradient(135deg, var(--color-primary), var(--color-accent-purple))",
-              }}
-            >
-              N
+            <span className="flex size-10 items-center justify-center rounded-xl bg-[#0a0a0a] text-[11px] font-extrabold tracking-wider text-white">
+              SDN
             </span>
-            <span className="text-h3 font-heading font-bold text-text">Studio Digital Nova</span>
+            <span className="font-sans text-small font-semibold tracking-wide text-[#0a0a0a]">
+              Studio Digital Nova
+            </span>
           </motion.a>
 
           <nav className="hidden items-center gap-8 lg:flex">
@@ -201,16 +197,12 @@ function Header() {
         >
           <div className="mb-4 flex items-center justify-between">
             <span className="flex items-center gap-2.5">
-              <span
-                className="flex size-9 items-center justify-center rounded-xl text-sm font-extrabold text-primary-foreground shadow-sm"
-                style={{
-                  backgroundImage:
-                    "linear-gradient(135deg, var(--color-primary), var(--color-accent-purple))",
-                }}
-              >
-                N
+              <span className="flex size-9 items-center justify-center rounded-xl bg-[#0a0a0a] text-[10px] font-extrabold tracking-wider text-white">
+                SDN
               </span>
-              <span className="text-body font-heading font-bold text-text">Studio Digital Nova</span>
+              <span className="font-sans text-small font-semibold tracking-wide text-[#0a0a0a]">
+                Studio Digital Nova
+              </span>
             </span>
             <Dialog.Close
               aria-label="Fermer le menu"

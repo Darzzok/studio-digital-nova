@@ -49,24 +49,6 @@ function Hero() {
       className="relative flex min-h-screen w-full items-center justify-center overflow-hidden bg-background"
     >
       <div key={playKey} className="relative flex w-full items-center justify-center">
-        <motion.div
-          aria-hidden
-          initial={reduce ? false : { opacity: 0 }}
-          animate={{ opacity: [0, 0.35, 0.05] }}
-          transition={{ duration: 2, times: [0, 0.25, 1], ease: EASE_NOVA }}
-          className="pointer-events-none absolute inset-0"
-          style={{
-            backgroundImage:
-              "linear-gradient(var(--color-border) 1px, transparent 1px), linear-gradient(90deg, var(--color-border) 1px, transparent 1px)",
-            backgroundSize: "56px 56px",
-          }}
-        />
-
-        <div
-          aria-hidden
-          className="pointer-events-none absolute left-1/2 top-1/2 h-[640px] w-[640px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/10 blur-3xl"
-        />
-
         {/* Floating layer — gravitates around the central content, one single scene */}
         <div className="pointer-events-none absolute inset-0 mx-auto hidden max-w-[1400px] xl:block">
           <motion.div

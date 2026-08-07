@@ -50,6 +50,7 @@ export type Article = {
   title: string
   metaDescription: string
   category: ArticleCategory
+  image: { url: string; alt: string }
   author: string
   date: string
   readingTime: string
@@ -68,6 +69,10 @@ export const ARTICLES: Article[] = [
     metaDescription:
       "En 2026, l'absence de site internet coûte plus cher qu'on ne le pense aux TPE, artisans et commerçants. Découvrez pourquoi un site reste un investissement stratégique, pas une dépense.",
     category: "Conseils TPE",
+    image: {
+      url: "https://images.unsplash.com/photo-1687422808191-93810cd07ab0?auto=format&fit=crop&w=1200&q=80",
+      alt: "Commerçante souriante dans sa boutique, illustrant la présence en ligne d'une TPE",
+    },
     author: "Geoffrey — Studio Digital Nova",
     date: "3 août 2026",
     readingTime: "9 min",
@@ -182,6 +187,10 @@ export const ARTICLES: Article[] = [
     metaDescription:
       "Un visiteur quitte un site en quelques secondes s'il ne trouve pas ce qu'il cherche. Découvrez les 7 erreurs les plus fréquentes qui font fuir les visiteurs, et comment les éviter.",
     category: "Webdesign",
+    image: {
+      url: "https://images.unsplash.com/photo-1490222939321-2a267366a124?auto=format&fit=crop&w=1200&q=80",
+      alt: "Main tenant un smartphone affichant un site web adapté au mobile",
+    },
     author: "Geoffrey — Studio Digital Nova",
     date: "10 août 2026",
     readingTime: "8 min",
@@ -307,6 +316,10 @@ export const ARTICLES: Article[] = [
     metaDescription:
       "Avant de contacter un prestataire, une bonne préparation fait toute la différence. Voici comment structurer votre réflexion pour un projet de site internet clair et sans mauvaise surprise.",
     category: "Création de site",
+    image: {
+      url: "https://images.unsplash.com/photo-1506784881475-0e408bbca849?auto=format&fit=crop&w=1200&q=80",
+      alt: "Carnet de notes et stylo pour préparer un projet de site internet",
+    },
     author: "Geoffrey — Studio Digital Nova",
     date: "17 août 2026",
     readingTime: "9 min",
@@ -416,6 +429,10 @@ export const ARTICLES: Article[] = [
     metaDescription:
       "Freelance, agence, plateforme en ligne : comment s'y retrouver et choisir le bon prestataire pour créer son site internet ? Les critères essentiels et les signaux à surveiller.",
     category: "Conseils TPE",
+    image: {
+      url: "https://images.unsplash.com/photo-1521791136064-7986c2920216?auto=format&fit=crop&w=1200&q=80",
+      alt: "Poignée de main entre un client et un prestataire lors d'un rendez-vous professionnel",
+    },
     author: "Geoffrey — Studio Digital Nova",
     date: "24 août 2026",
     readingTime: "10 min",
@@ -537,6 +554,10 @@ export const ARTICLES: Article[] = [
     metaDescription:
       "La confiance se construit en quelques secondes sur un site internet. Découvrez les éléments concrets qui rassurent vos visiteurs et les incitent à passer à l'action.",
     category: "Webdesign",
+    image: {
+      url: "https://images.unsplash.com/photo-1648134859196-3aa762e9440d?auto=format&fit=crop&w=1200&q=80",
+      alt: "Maquette d'interface de site web affichée sur un écran d'ordinateur",
+    },
     author: "Geoffrey — Studio Digital Nova",
     date: "31 août 2026",
     readingTime: "8 min",
@@ -635,6 +656,10 @@ export const ARTICLES: Article[] = [
     metaDescription:
       "Fiche Google Business Profile, avis clients, site internet : découvrez les leviers concrets pour améliorer votre visibilité locale sur Google et attirer plus de clients près de chez vous.",
     category: "SEO",
+    image: {
+      url: "https://images.unsplash.com/photo-1587573578274-184d5ccabfc3?auto=format&fit=crop&w=1200&q=80",
+      alt: "Smartphone affichant une carte de géolocalisation, illustrant le référencement local",
+    },
     author: "Geoffrey — Studio Digital Nova",
     date: "7 septembre 2026",
     readingTime: "10 min",
@@ -747,6 +772,10 @@ export const ARTICLES: Article[] = [
     metaDescription:
       "Les réseaux sociaux ne remplacent pas un site internet. Découvrez pourquoi les deux sont complémentaires, et pourquoi miser uniquement sur les réseaux sociaux comporte des risques réels.",
     category: "Marketing",
+    image: {
+      url: "https://images.unsplash.com/photo-1611926653458-09294b3142bf?auto=format&fit=crop&w=1200&q=80",
+      alt: "Smartphone affichant des applications de réseaux sociaux à côté d'un ordinateur portable",
+    },
     author: "Geoffrey — Studio Digital Nova",
     date: "14 septembre 2026",
     readingTime: "8 min",
@@ -836,6 +865,10 @@ export const ARTICLES: Article[] = [
     metaDescription:
       "Avant de vous lancer dans un projet de site internet, certaines questions méritent une réflexion sincère. Voici celles qui font vraiment la différence entre un projet réussi et un projet regretté.",
     category: "Conseils TPE",
+    image: {
+      url: "https://images.unsplash.com/photo-1541140911322-98afe66ea6da?auto=format&fit=crop&w=1200&q=80",
+      alt: "Carnet de planification ouvert pour préparer les questions avant un projet digital",
+    },
     author: "Geoffrey — Studio Digital Nova",
     date: "21 septembre 2026",
     readingTime: "8 min",
@@ -928,6 +961,10 @@ export const ARTICLES: Article[] = [
     metaDescription:
       "Attirer des visiteurs ne suffit pas : encore faut-il les convertir. Découvrez les leviers concrets pour transformer les visiteurs de votre site internet en demandes de devis et en clients.",
     category: "Marketing",
+    image: {
+      url: "https://images.unsplash.com/photo-1700190827565-7b6247de4838?auto=format&fit=crop&w=1200&q=80",
+      alt: "Client satisfait effectuant un achat en ligne depuis son ordinateur",
+    },
     author: "Geoffrey — Studio Digital Nova",
     date: "28 septembre 2026",
     readingTime: "9 min",
@@ -1032,6 +1069,10 @@ export const ARTICLES: Article[] = [
     metaDescription:
       "Toutes les tendances webdesign ne se valent pas. Découvrez celles qui améliorent réellement l'expérience utilisateur, et celles à ne pas suivre aveuglément pour votre site professionnel.",
     category: "Webdesign",
+    image: {
+      url: "https://images.unsplash.com/photo-1750056393349-dfaf647f7400?auto=format&fit=crop&w=1200&q=80",
+      alt: "Écran affichant une interface de design web moderne et épurée",
+    },
     author: "Geoffrey — Studio Digital Nova",
     date: "5 octobre 2026",
     readingTime: "8 min",
@@ -1126,6 +1167,10 @@ export const ARTICLES: Article[] = [
     metaDescription:
       "WordPress ou développement sur mesure : quelles différences réelles pour votre site professionnel ? Comparatif objectif pour faire le bon choix selon votre activité.",
     category: "Création de site",
+    image: {
+      url: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=1200&q=80",
+      alt: "Ordinateur portable affichant du code de développement web",
+    },
     author: "Geoffrey — Studio Digital Nova",
     date: "12 octobre 2026",
     readingTime: "8 min",
@@ -1248,6 +1293,10 @@ export const ARTICLES: Article[] = [
     metaDescription:
       "Un site internet n'est jamais vraiment « terminé ». Découvrez ce qu'implique réellement la maintenance d'un site professionnel, et pourquoi l'anticiper évite bien des mauvaises surprises.",
     category: "Conseils TPE",
+    image: {
+      url: "https://images.unsplash.com/photo-1591439657848-9f4b9ce436b9?auto=format&fit=crop&w=1200&q=80",
+      alt: "Écran d'ordinateur affichant une mise à jour de sécurité logicielle",
+    },
     author: "Geoffrey — Studio Digital Nova",
     date: "19 octobre 2026",
     readingTime: "7 min",

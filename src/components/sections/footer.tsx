@@ -76,16 +76,12 @@ function Footer() {
             variants={floatIn(0, { x: -140, rotate: -4 })}
           >
             <div className="flex items-center gap-2.5">
-              <span
-                className="flex size-10 items-center justify-center rounded-xl text-base font-extrabold text-primary-foreground shadow-sm"
-                style={{
-                  backgroundImage:
-                    "linear-gradient(135deg, var(--color-primary), var(--color-accent-purple))",
-                }}
-              >
-                N
+              <span className="flex size-10 items-center justify-center rounded-xl bg-[#0a0a0a] text-[11px] font-extrabold tracking-wider text-white">
+                SDN
               </span>
-              <span className="text-h3 font-heading font-bold text-text">Studio Digital Nova</span>
+              <span className="font-sans text-small font-semibold tracking-wide text-[#0a0a0a]">
+                Studio Digital Nova
+              </span>
             </div>
             <p className="max-w-sm text-body text-text-secondary">
               Je crée des sites vitrines modernes, rapides et optimisés pour{" "}

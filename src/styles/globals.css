@@ -75,39 +75,39 @@
   --text-small--line-height: 1.5;
   --text-small--font-weight: 400;
 
-  /* ---- Soft shadow scale (Small / Medium / Large) ---- */
-  --shadow-sm: 0 1px 2px 0 rgba(15, 23, 42, 0.06), 0 1px 1px 0 rgba(15, 23, 42, 0.04);
-  --shadow-md: 0 12px 24px -8px rgba(21, 45, 71, 0.16), 0 4px 8px -2px rgba(15, 23, 42, 0.06);
-  --shadow-lg: 0 24px 48px -12px rgba(21, 45, 71, 0.22), 0 8px 16px -4px rgba(15, 23, 42, 0.08);
+  /* ---- Soft shadow scale (Small / Medium / Large) — kept very light, borders carry most of the definition */
+  --shadow-sm: 0 1px 2px 0 rgba(20, 22, 26, 0.04), 0 1px 1px 0 rgba(20, 22, 26, 0.03);
+  --shadow-md: 0 8px 16px -8px rgba(20, 22, 26, 0.08), 0 2px 6px -2px rgba(20, 22, 26, 0.04);
+  --shadow-lg: 0 16px 32px -12px rgba(20, 22, 26, 0.10), 0 4px 10px -4px rgba(20, 22, 26, 0.05);
 
   /* ---- Motion easing shared by every animation ---- */
   --ease-nova: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 :root {
-  /* Base — neutral surfaces with enough contrast for cards to lift off the page */
-  --background: #eef1f5;
-  --foreground: #1f2937;
+  /* Base — Signal: near-white ground (Cloud Dancer, not stark white), near-black text, hairline borders instead of shadows */
+  --background: #fafaf8;
+  --foreground: #14161a;
   --surface: #ffffff;
   --card: var(--surface);
   --card-foreground: var(--foreground);
   --popover: var(--surface);
   --popover-foreground: var(--foreground);
 
-  /* Brand — confident corporate navy, plus two real supporting hues (brass + teal) instead of washed-out grays */
-  --primary: #1f4e79;
-  --primary-hover: #163a5c;
+  /* Brand — one saturated blue is the accent, full opacity everywhere it appears, never diluted into a tint */
+  --primary: #3b5bff;
+  --primary-hover: #2843d1;
   --primary-foreground: #ffffff;
-  --accent-purple: #a8783f;
-  --accent-green: #2f6f6b;
+  --accent-purple: #6b7280;
+  --accent-green: #57635c;
 
   /* Secondary = soft brand tint, reused from primary */
   --secondary: color-mix(in oklab, var(--primary) 12%, var(--surface));
   --secondary-foreground: var(--primary-hover);
 
-  /* Text */
-  --text: #1f2937;
-  --text-secondary: #5b6472;
+  /* Text — near-black instead of a warm or cool slate, neutral gray for secondary copy */
+  --text: #14161a;
+  --text-secondary: #6b7078;
 
   /* Neutral surfaces reuse background/text tokens */
   --muted: var(--background);
@@ -115,12 +115,12 @@
   --accent: var(--accent-purple);
   --accent-foreground: #ffffff;
 
-  /* Borders / focus */
-  --border: #dde2e8;
+  /* Borders / focus — warm-neutral hairline that matches the off-white ground */
+  --border: #e7e4de;
   --input: var(--border);
   --ring: var(--primary);
 
-  /* Status — legible, still restrained */
+  /* Status — kept legible and restrained on a near-white surface */
   --success: #22764f;
   --warning: #b07a1e;
   --error: #b3413a;
