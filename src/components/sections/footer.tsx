@@ -1,12 +1,40 @@
 "use client"
 
+import { forwardRef } from "react"
 import Link from "next/link"
 import { Mail } from "lucide-react"
+import type { LucideProps } from "lucide-react"
 import { motion } from "framer-motion"
 
 import { Container } from "@/components/ui/container"
 import { Icon } from "@/components/ui/icon"
 import { useFloatIn } from "@/lib/motion"
+import { cn } from "@/lib/utils"
+
+/** Lucide a retiré les logos de marques de son set — icône "in" recréée dans le même style (traits). */
+const Linkedin = forwardRef<SVGSVGElement, LucideProps>(
+  ({ color = "currentColor", size = 24, strokeWidth = 2, className, ...props }, ref) => (
+    <svg
+      ref={ref}
+      xmlns="http://www.w3.org/2000/svg"
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={color}
+      strokeWidth={strokeWidth}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={cn("lucide lucide-linkedin", className)}
+      {...props}
+    >
+      <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z" />
+      <rect width="4" height="12" x="2" y="9" />
+      <circle cx="4" cy="4" r="2" />
+    </svg>
+  )
+)
+Linkedin.displayName = "Linkedin"
 
 const NAV_ITEMS = [
   { label: "Mes services", href: "/#services" },
@@ -20,6 +48,12 @@ const NAV_ITEMS = [
 
 const CONTACT_ITEMS = [
   { icon: Mail, label: "contact@studiodigitalnova.fr", href: "mailto:contact@studiodigitalnova.fr" },
+  {
+    icon: Linkedin,
+    label: "LinkedIn",
+    href: "https://www.linkedin.com/in/geoffrey-marechal-677417428",
+    external: true,
+  },
 ]
 
 const LEGAL_LINKS = [
@@ -92,6 +126,7 @@ function Footer() {
                 <li key={item.label}>
                   <a
                     href={item.href}
+                    {...(item.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
                     className="-my-1.5 flex items-center gap-2.5 py-1.5 text-body text-text-secondary transition-colors duration-150 ease-nova hover:text-primary"
                   >
                     <Icon icon={item.icon} className="size-4 shrink-0" />

@@ -365,7 +365,7 @@ function FaqCta() {
             <strong className="font-semibold text-text">Je réponds personnellement à chaque message</strong>.
             Parlons de votre projet et voyons ensemble comment je peux vous aider.
           </p>
-          <a href="/#contact" className="group">
+          <Link href="/#contact" className="group">
             <Button variant="primary">
               Construisons votre projet
               <Icon
@@ -373,7 +373,7 @@ function FaqCta() {
                 className="size-4 transition-transform duration-200 ease-nova group-hover:translate-x-0.5"
               />
             </Button>
-          </a>
+          </Link>
         </div>
       </Card>
     </motion.div>
@@ -421,7 +421,7 @@ function FAQ() {
           viewport={{ once: true, amount: 0.4 }}
           variants={floatIn(0.22, { y: 40 })}
         >
-          Tout ce qu'il faut savoir avant de vous lancer. Une autre question ? Contactez-moi,{" "}
+          Tout ce qu&apos;il faut savoir avant de vous lancer. Une autre question ? Contactez-moi,{" "}
           <strong className="font-semibold text-text">je réponds personnellement à chaque message</strong>.
         </motion.p>
       </div>

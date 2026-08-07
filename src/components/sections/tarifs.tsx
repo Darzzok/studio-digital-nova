@@ -2,6 +2,7 @@
 
 import { ArrowRight, Check, Crown, Rocket, Sparkles, Tag } from "lucide-react"
 import { motion } from "framer-motion"
+import Link from "next/link"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -60,7 +61,7 @@ const PLANS = [
       "Tout Pro, plus :",
       "Fonctionnalités sur mesure",
       "Accompagnement dédié",
-      "Maintenance incluse",
+      "Optimisation avancée",
     ],
     featured: false,
   },
@@ -189,7 +190,7 @@ function Tarifs() {
                   {plan.idealFor}
                 </p>
 
-                <a href="/#contact" className="group relative w-full">
+                <Link href="/#contact" className="group relative w-full">
                   <Button
                     variant={plan.featured ? "primary" : "outline"}
                     className="h-11 w-full text-small"
@@ -200,7 +201,7 @@ function Tarifs() {
                       className="size-4 transition-transform duration-200 ease-nova group-hover:translate-x-0.5"
                     />
                   </Button>
-                </a>
+                </Link>
               </Card>
             </motion.div>
           )

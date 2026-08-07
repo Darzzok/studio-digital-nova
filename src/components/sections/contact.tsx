@@ -2,6 +2,7 @@
 
 import { Fragment, useEffect, useState } from "react"
 import type { ReactNode } from "react"
+import Link from "next/link"
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion"
 import {
   ArrowLeft,
@@ -503,17 +504,17 @@ function Confirmation({ data, reduce }: { data: ConfiguratorData; reduce: boolea
       </div>
 
       <div className="flex w-full flex-col gap-3 sm:flex-row">
-        <a href="/" className="flex-1">
+        <Link href="/" className="flex-1">
           <Button type="button" variant="outline" className="w-full">
             <Icon icon={ArrowLeft} className="size-4" />
             Retour à l&apos;accueil
           </Button>
-        </a>
-        <a href="/#services" className="flex-1">
+        </Link>
+        <Link href="/#services" className="flex-1">
           <Button type="button" variant="primary" className="w-full">
             Découvrir mes services
           </Button>
-        </a>
+        </Link>
       </div>
     </div>
   )

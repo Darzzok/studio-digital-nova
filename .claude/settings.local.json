@@ -24,7 +24,15 @@
       "Bash(export CHROME_PATH=\"C:\\\\Program Files\\\\Google\\\\Chrome\\\\Application\\\\chrome.exe\")",
       "Bash(npx lighthouse *)",
       "Bash(pkill -f \"serve -s out\")",
-      "Bash(curl -sI --http2 http://localhost:5050/ -o /dev/null -w \"Protocol: %{http_version}\\\\n\")"
+      "Bash(curl -sI --http2 http://localhost:5050/ -o /dev/null -w \"Protocol: %{http_version}\\\\n\")",
+      "Bash(node -e \"const l = require\\('lucide-react'\\); console.log\\(typeof l.createLucideIcon\\);\")",
+      "Bash(export MSYS_NO_PATHCONV=1)",
+      "Bash(curl -s \"http://localhost:5050/nonexistent-page-xyz\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:5050/ --max-time 5)",
+      "Bash(curl -s \"http://localhost:5050/blog\")",
+      "Bash(pkill -f \"serve out\\\\|serve -s out\")",
+      "Bash(rm -f \"C:/Users/geoff/Desktop/Projet Studio Digital Nova/Studio Digital Nova Site/out/serve.json\")",
+      "Bash(rm -f /tmp/serve*.log 2>/dev/null; echo done)"
     ]
   }
 }

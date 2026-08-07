@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import Link from "next/link"
 import { Dialog } from "@base-ui/react/dialog"
 import { motion, useReducedMotion } from "framer-motion"
 import { ArrowRight, Menu, X } from "lucide-react"
@@ -140,7 +141,7 @@ function Header() {
                 },
               }}
             >
-              <a href="/#contact" className="group hidden sm:inline-flex">
+              <Link href="/#contact" className="group hidden sm:inline-flex">
                 <Button variant="primary" className="h-11 px-6 text-small">
                   Demander un devis
                   <Icon
@@ -148,7 +149,7 @@ function Header() {
                     className="size-4 transition-transform duration-200 ease-nova group-hover:translate-x-0.5"
                   />
                 </Button>
-              </a>
+              </Link>
             </motion.div>
 
             <motion.div
@@ -232,7 +233,7 @@ function Header() {
             ))}
           </nav>
 
-          <a href="/#contact" onClick={() => setMobileOpen(false)} className="group mt-auto pt-6">
+          <Link href="/#contact" onClick={() => setMobileOpen(false)} className="group mt-auto pt-6">
             <Button variant="primary" className="w-full">
               Demander un devis
               <Icon
@@ -240,7 +241,7 @@ function Header() {
                 className="size-4 transition-transform duration-200 ease-nova group-hover:translate-x-0.5"
               />
             </Button>
-          </a>
+          </Link>
         </Dialog.Popup>
       </Dialog.Portal>
     </Dialog.Root>

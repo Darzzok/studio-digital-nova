@@ -377,7 +377,7 @@ function Services() {
           viewport={{ once: true, amount: 0.4 }}
           variants={floatIn(0.12, { y: -60, scale: 0.94 })}
         >
-          <Heading variant="h2">Tout ce qu'il faut pour réussir en ligne</Heading>
+          <Heading variant="h2">Tout ce qu&apos;il faut pour réussir en ligne</Heading>
         </motion.div>
 
         <motion.p

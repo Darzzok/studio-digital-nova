@@ -1,0 +1,47 @@
+# Studio Digital Nova — configuration Apache pour l'export statique Next.js
+# À placer à la racine du site sur Hostinger (public_html), aux côtés d'index.html.
+
+DirectoryIndex index.html
+
+RewriteEngine On
+
+# Sert les pages sans extension (ex. /blog -> blog.html) sans changer l'URL affichée.
+# Les fichiers réels (assets _next/static, images...) sont servis tels quels grâce à !-f.
+# Pas de condition "!-d" : Next.js génère à la fois blog.html ET un dossier blog/
+# (pour les articles enfants) — le fichier .html doit toujours avoir la priorité.
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME}\.html -f
+RewriteRule ^(.*)$ $1.html [L]
+
+# Si une URL est tapée avec un slash final (ex. /blog/) alors qu'un dossier du
+# même nom existe (cas des routes ayant des sous-pages), sert quand même le
+# fichier .html correspondant plutôt que de chercher un index dans ce dossier.
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteCond %{REQUEST_FILENAME}\.html -f
+RewriteRule ^(.*)/$ $1.html [L]
+
+# Page 404 personnalisée (générée par Next.js)
+ErrorDocument 404 /404.html
+
+# Compression des fichiers texte
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/plain text/css text/javascript application/javascript application/json image/svg+xml application/manifest+json
+</IfModule>
+
+# Mise en cache longue durée pour les assets statiques (noms de fichiers hashés par Next.js)
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresByType text/css "access plus 1 year"
+  ExpiresByType application/javascript "access plus 1 year"
+  ExpiresByType font/woff2 "access plus 1 year"
+  ExpiresByType image/webp "access plus 1 year"
+  ExpiresByType image/svg+xml "access plus 1 year"
+  ExpiresByType image/x-icon "access plus 1 year"
+  ExpiresByType image/png "access plus 1 year"
+</IfModule>
+
+# En-têtes de sécurité de base
+<IfModule mod_headers.c>
+  Header set X-Content-Type-Options "nosniff"
+  Header set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>

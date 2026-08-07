@@ -367,18 +367,18 @@ function FinalCta() {
             animate="visible"
             variants={floatIn(0.22, { x: -160, rotate: -6 })}
           >
-            <a href="/#contact">
+            <Link href="/#contact">
               <Button variant="primary">🚀 Construisons votre projet</Button>
-            </a>
+            </Link>
           </motion.div>
           <motion.div
             initial="hidden"
             animate="visible"
             variants={floatIn(0.3, { x: 160, rotate: 6 })}
           >
-            <a href="/#services">
+            <Link href="/#services">
               <Button variant="outline">Découvrir mes services</Button>
-            </a>
+            </Link>
           </motion.div>
         </div>
       </div>

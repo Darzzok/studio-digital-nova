@@ -4,6 +4,7 @@ import { useState } from "react"
 import { ArrowRight, Search, Smartphone, Sparkles, User, UserCheck } from "lucide-react"
 import { motion } from "framer-motion"
 import Image from "next/image"
+import Link from "next/link"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -164,7 +165,7 @@ function APropos() {
             viewport={{ once: true, amount: 0.4 }}
             variants={floatIn(0.75, { x: -160, rotate: -6 })}
           >
-            <a href="/#contact" className="group">
+            <Link href="/#contact" className="group">
               <Button variant="primary">
                 Parlons de votre projet
                 <Icon
@@ -172,7 +173,7 @@ function APropos() {
                   className="size-4 transition-transform duration-200 ease-nova group-hover:translate-x-0.5"
                 />
               </Button>
-            </a>
+            </Link>
           </motion.div>
         </div>
       </div>

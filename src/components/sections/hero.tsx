@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
+import Link from "next/link"
 import { motion, useInView, useReducedMotion } from "framer-motion"
 import {
   ArrowRight,
@@ -194,9 +195,9 @@ function Hero() {
           >
             Je crée des sites vitrines modernes, rapides et optimisés pour{" "}
             <strong className="font-semibold text-text">convertir vos visiteurs en clients</strong>.
-            De la conception au référencement, je m'occupe de tout, en direct et sans
+            De la conception au référencement, je m&apos;occupe de tout, en direct et sans
             intermédiaire. <strong className="font-semibold text-text">Un interlocuteur unique</strong>,
-            disponible du premier échange jusqu'à la mise en ligne de votre site.
+            disponible du premier échange jusqu&apos;à la mise en ligne de votre site.
           </motion.p>
 
           <div className="mt-10 flex flex-col gap-4 sm:flex-row">
@@ -206,7 +207,7 @@ function Hero() {
               whileInView="visible"
               viewport={viewport}
             >
-              <a href="/#contact" className="group">
+              <Link href="/#contact" className="group">
                 <Button variant="primary">
                   Demander un devis
                   <Icon
@@ -214,7 +215,7 @@ function Hero() {
                     className="size-4 transition-transform duration-200 ease-nova group-hover:translate-x-0.5"
                   />
                 </Button>
-              </a>
+              </Link>
             </motion.div>
             <motion.div
               variants={floatIn(1.45, { x: 160, rotate: 6 })}
@@ -222,9 +223,9 @@ function Hero() {
               whileInView="visible"
               viewport={viewport}
             >
-              <a href="/#tarifs">
+              <Link href="/#tarifs">
                 <Button variant="outline">Découvrir mes offres</Button>
-              </a>
+              </Link>
             </motion.div>
           </div>
         </div>

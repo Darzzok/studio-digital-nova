@@ -72,7 +72,7 @@ function LegalContent() {
           viewport={{ once: true, amount: 0.4 }}
           variants={floatIn(0.1, { y: 40 })}
         >
-          Les informations légales relatives à l'édition et à l'hébergement de ce site.
+          Les informations légales relatives à l&apos;édition et à l&apos;hébergement de ce site.
         </motion.p>
       </div>
 
