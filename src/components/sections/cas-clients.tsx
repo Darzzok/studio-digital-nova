@@ -244,7 +244,7 @@ function CasClients() {
 
                 <Badge variant="outline">{item.sector}</Badge>
 
-                <p className="text-h3 font-heading font-semibold text-text">{item.title}</p>
+                <h3 className="text-h3 font-heading font-semibold text-text">{item.title}</h3>
 
                 <div className="flex w-full flex-1 flex-col gap-3">
                   <div className="flex flex-col items-center gap-1.5 rounded-xl bg-background p-4">

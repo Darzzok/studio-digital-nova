@@ -1,8 +1,9 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useState } from "react"
 import { ArrowRight, Search, Smartphone, Sparkles, User, UserCheck } from "lucide-react"
 import { motion } from "framer-motion"
+import Image from "next/image"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -23,13 +24,6 @@ const STRENGTHS = [
 /** Portrait intégré dans une carte premium — fond DS, radius et ombre du Card, photo inchangée. */
 function AboutPortrait() {
   const [imgError, setImgError] = useState(false)
-  const imgRef = useRef<HTMLImageElement | null>(null)
-
-  useEffect(() => {
-    if (imgRef.current?.complete && imgRef.current.naturalWidth === 0) {
-      setImgError(true)
-    }
-  }, [])
 
   return (
     <Card className="relative overflow-hidden p-5 sm:p-6">
@@ -44,12 +38,13 @@ function AboutPortrait() {
 
       <div className="relative aspect-4/5 w-full overflow-hidden rounded-3xl border border-border bg-background">
         {!imgError ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            ref={imgRef}
+          <Image
             src="/images/geoffrey.webp"
             alt="Geoffrey, développeur web freelance et fondateur de Studio Digital Nova"
-            className="absolute inset-0 h-full w-full object-cover"
+            fill
+            sizes="(min-width: 1024px) 480px, 90vw"
+            className="object-cover"
+            loading="lazy"
             onError={() => setImgError(true)}
           />
         ) : (

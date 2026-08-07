@@ -1,23 +1,34 @@
 "use client"
 
-import { useRef, useState } from "react"
-import { ChevronDown, ClipboardCheck, Code2, Palette, Route, Rocket, Search, Zap } from "lucide-react"
-import { motion, useInView, useReducedMotion } from "framer-motion"
+import { Fragment, useEffect, useRef, useState } from "react"
+import {
+  ArrowLeft,
+  ArrowRight,
+  Check,
+  ClipboardCheck,
+  Code2,
+  Palette,
+  Route,
+  Rocket,
+  Search,
+  Zap,
+} from "lucide-react"
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion"
 
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Heading } from "@/components/ui/heading"
 import { Icon } from "@/components/ui/icon"
 import { Section } from "@/components/ui/section"
-import { useIsMobile } from "@/hooks/use-is-mobile"
 import { EASE_NOVA, useFloatIn } from "@/lib/motion"
+import { cn } from "@/lib/utils"
 
 const STEPS = [
   {
     number: "01",
     title: "Découverte",
     icon: Search,
+    className: "bg-primary/10 text-primary",
     description: (
       <>
         J&apos;échange avec vous sur{" "}
@@ -30,6 +41,7 @@ const STEPS = [
     number: "02",
     title: "Maquette",
     icon: Palette,
+    className: "bg-accent-purple/15 text-accent-purple",
     description: (
       <>
         Je conçois un design <strong className="font-semibold text-text">sur mesure</strong> qui
@@ -41,6 +53,7 @@ const STEPS = [
     number: "03",
     title: "Développement",
     icon: Code2,
+    className: "bg-accent-green/15 text-accent-green",
     description: (
       <>
         Le site prend vie avec un code{" "}
@@ -52,6 +65,7 @@ const STEPS = [
     number: "04",
     title: "Optimisation",
     icon: Zap,
+    className: "bg-warning/15 text-warning",
     description: (
       <>
         <strong className="font-semibold text-text">SEO, vitesse et accessibilité</strong> sont
@@ -63,6 +77,7 @@ const STEPS = [
     number: "05",
     title: "Validation",
     icon: ClipboardCheck,
+    className: "bg-primary/10 text-primary",
     description: (
       <>
         Vous testez et validez{" "}
@@ -75,6 +90,7 @@ const STEPS = [
     number: "06",
     title: "Mise en ligne",
     icon: Rocket,
+    className: "bg-accent-purple/15 text-accent-purple",
     description: (
       <>
         Votre site est publié et prêt à{" "}
@@ -85,210 +101,52 @@ const STEPS = [
 ]
 
 const STEP_COUNT = STEPS.length
-const LAST_INDEX = STEP_COUNT - 1
-const centerOf = (index: number) => ((index + 0.5) / STEP_COUNT) * 100
+const AUTOPLAY_DELAY = 4500
+const RESUME_DELAY = 9000
 
-// ---- Minuterie de la progression (une capsule à la fois, puis la ligne, puis la suivante) ----
-const ENTRANCE_SETTLE = 2 // laisse le temps à l'animation d'entrée (désormais plus lente) de se terminer
-const CAPSULE_FILL = 0.7
-const LINE_FILL = 0.45
-const STEP_CYCLE = CAPSULE_FILL + LINE_FILL
-const RAMP = 0.3
-const END_PAUSE = 0.4
-
-const activeStart = (i: number) => ENTRANCE_SETTLE + i * STEP_CYCLE
-const activeEnd = (i: number) => activeStart(i + 1)
-const SEQUENCE_END = activeStart(LAST_INDEX) + CAPSULE_FILL
-const GRAND_TOTAL = SEQUENCE_END + END_PAUSE + RAMP
-
-type Frames = { values: number[]; times: number[] }
-
-function toTimes(points: number[]): number[] {
-  return points.map((t) => Math.min(1, Math.max(0, t / GRAND_TOTAL)))
+const cardVariants = {
+  enter: (direction: number) => ({ opacity: 0, x: direction >= 0 ? 32 : -32 }),
+  center: { opacity: 1, x: 0 },
+  exit: (direction: number) => ({ opacity: 0, x: direction >= 0 ? -32 : 32 }),
 }
-
-/** Allumé pendant [activeStart(i), activeEnd(i)) puis éteint — reste allumé pour la dernière étape. */
-function pulse(i: number, off: number, on: number): Frames {
-  const start = activeStart(i)
-  if (i === LAST_INDEX) {
-    return { values: [off, off, on, on], times: toTimes([0, start, start + RAMP, GRAND_TOTAL]) }
-  }
-  const end = activeEnd(i)
-  return {
-    values: [off, off, on, on, off, off],
-    times: toTimes([0, start, start + RAMP, end - RAMP, end, GRAND_TOTAL]),
-  }
-}
-
-/** Opacité de la carte : discrète tant que ce n'est pas son tour, pleine pendant, puis retour "normal" à la toute fin. */
-function cardOpacity(i: number): Frames {
-  const start = activeStart(i)
-  const isFirst = i === 0
-  const isLast = i === LAST_INDEX
-  const points: number[] = [0]
-  const values: number[] = [1]
-  if (!isFirst) {
-    points.push(ENTRANCE_SETTLE, ENTRANCE_SETTLE + RAMP)
-    values.push(1, 0.7)
-  }
-  points.push(start, start + RAMP)
-  values.push(isFirst ? 1 : 0.7, 1)
-  if (!isLast) {
-    const end = activeEnd(i)
-    points.push(end - RAMP, end, GRAND_TOTAL - RAMP, GRAND_TOTAL)
-    values.push(1, 0.7, 0.7, 1)
-  } else if (points[points.length - 1] < GRAND_TOTAL) {
-    // Framer requiert que le dernier point de "times" atteigne la durée totale,
-    // sans quoi il réinterprète la fin de la timeline — on maintient donc la valeur.
-    points.push(GRAND_TOTAL)
-    values.push(1)
-  }
-  return { values, times: toTimes(points) }
-}
-
-/** Remplissage en un sens (0 -> 1) qui reste plein ensuite. */
-function fillOnce(start: number, duration: number): Frames {
-  const end = start + duration
-  if (end >= GRAND_TOTAL) {
-    return { values: [0, 0, 1], times: toTimes([0, start, end]) }
-  }
-  // Un point final à GRAND_TOTAL est indispensable : sans lui, Framer Motion ne
-  // tient pas la valeur atteinte et la timeline "dérive" après le remplissage.
-  return { values: [0, 0, 1, 1], times: toTimes([0, start, end, GRAND_TOTAL]) }
-}
-
-const finalOn = (i: number) => (i === LAST_INDEX ? 1 : 0)
-
-/**
- * Une seule courbe (ease-nova) mais appliquée segment par segment : les paliers qui ne
- * changent pas de valeur restent strictement plats (linear), seule une vraie transition
- * utilise ease-nova. Sans ça, Framer applique la courbe globalement sur toute la durée et
- * fait "fuiter" un peu de progression sur les paliers censés rester à 0 — d'où le clignotement.
- */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function easesFor(values: number[]): any[] {
-  const eases: unknown[] = []
-  for (let i = 0; i < values.length - 1; i++) {
-    eases.push(values[i] === values[i + 1] ? "linear" : EASE_NOVA)
-  }
-  return eases
-}
-
-/**
- * Construit les props initial/animate/transition d'une valeur unique pour un `motion.*`.
- * Ne joue qu'une seule fois, quand `inView` passe à `true` (jamais de rejeu).
- */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function seq(inView: boolean, reduce: boolean, frames: Frames, finalValue: number): { animate: { value: number | number[] }; transition: any } {
-  if (reduce) {
-    return { animate: { value: finalValue }, transition: { duration: 0 } }
-  }
-  return {
-    animate: { value: inView ? frames.values : frames.values[0] },
-    transition: inView
-      ? { duration: GRAND_TOTAL, times: frames.times, ease: easesFor(frames.values) }
-      : { duration: 0 },
-  }
-}
-
-type PulseProps = { index: number; inView: boolean; reduce: boolean }
-
-function Capsule({ index, inView, reduce }: PulseProps) {
-  const fill = fillOnce(activeStart(index), CAPSULE_FILL)
-  const fillSeq = seq(inView, reduce, fill, 1)
-  const invertedFill: Frames = { values: fill.values.map((v) => 1 - v), times: fill.times }
-  const numberSeq = seq(inView, reduce, invertedFill, 0)
-
-  return (
-    <div className="relative flex size-14 shrink-0 items-center justify-center">
-      <div className="absolute inset-0 rounded-full border-2 border-border bg-surface shadow-sm" />
-      <motion.div
-        aria-hidden
-        className="absolute inset-0 rounded-full bg-primary"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: fillSeq.animate.value }}
-        transition={fillSeq.transition}
-      />
-      <motion.span
-        aria-hidden
-        className="absolute text-h3 font-heading font-bold text-primary"
-        initial={{ opacity: 1 }}
-        animate={{ opacity: numberSeq.animate.value }}
-        transition={numberSeq.transition}
-      >
-        {STEPS[index].number}
-      </motion.span>
-      <motion.span
-        aria-hidden
-        className="absolute text-h3 font-heading font-bold text-primary-foreground"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: fillSeq.animate.value }}
-        transition={fillSeq.transition}
-      >
-        {STEPS[index].number}
-      </motion.span>
-    </div>
-  )
-}
-
-function StepCard({ index, inView, reduce }: PulseProps) {
-  const step = STEPS[index]
-  const scaleFrames = pulse(index, 1, 1.03)
-  const glowFrames = pulse(index, 0, 1)
-  const opacityFrames = cardOpacity(index)
-
-  const scaleSeq = seq(inView, reduce, scaleFrames, index === LAST_INDEX ? 1.03 : 1)
-  const glowSeq = seq(inView, reduce, glowFrames, finalOn(index))
-  const opacitySeq = seq(inView, reduce, opacityFrames, 1)
-
-  return (
-    <motion.div
-      className="relative"
-      style={{ transformOrigin: "center" }}
-      initial={{ opacity: 1, scale: 1 }}
-      animate={{ opacity: opacitySeq.animate.value, scale: scaleSeq.animate.value }}
-      transition={{ opacity: opacitySeq.transition, scale: scaleSeq.transition }}
-    >
-      <motion.div
-        aria-hidden
-        className="pointer-events-none absolute -inset-3 -z-10 rounded-[2rem] bg-primary/25 blur-xl"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: glowSeq.animate.value }}
-        transition={glowSeq.transition}
-      />
-      <motion.div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 rounded-3xl border-2 border-primary shadow-lg"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: glowSeq.animate.value }}
-        transition={glowSeq.transition}
-      />
-      <Card className="flex flex-col items-center gap-3 p-6 text-center">
-        <span className="flex size-11 items-center justify-center rounded-2xl bg-primary/10 text-primary shadow-sm">
-          <Icon icon={step.icon} className="size-5" />
-        </span>
-        <p className="text-h3 font-heading font-semibold text-text">{step.title}</p>
-        <p className="text-small text-text-secondary">{step.description}</p>
-      </Card>
-    </motion.div>
-  )
-}
-
-const INITIAL_VISIBLE_STEPS = 3
 
 function Processus() {
   const reduce = Boolean(useReducedMotion())
-  const isMobile = useIsMobile()
   const floatIn = useFloatIn({ stiffness: 130, damping: 16, mass: 0.9 })
-  const [showAllSteps, setShowAllSteps] = useState(false)
-  const gridRef = useRef<HTMLDivElement | null>(null)
-  const inView = useInView(gridRef, { once: true, amount: 0.3 })
 
-  const visibleStepIndexes =
-    isMobile && !showAllSteps
-      ? STEPS.slice(0, INITIAL_VISIBLE_STEPS).map((_, i) => i)
-      : STEPS.map((_, i) => i)
-  const hiddenStepsCount = STEPS.length - INITIAL_VISIBLE_STEPS
+  const [activeIndex, setActiveIndex] = useState(0)
+  const [direction, setDirection] = useState(1)
+  const [isPaused, setIsPaused] = useState(false)
+  const resumeTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const active = STEPS[activeIndex]
+
+  function goTo(index: number, dir: number) {
+    setDirection(dir)
+    setActiveIndex(index)
+  }
+
+  function handleManualSelect(index: number) {
+    goTo(index, index > activeIndex ? 1 : -1)
+    setIsPaused(true)
+    if (resumeTimeout.current) clearTimeout(resumeTimeout.current)
+    resumeTimeout.current = setTimeout(() => setIsPaused(false), RESUME_DELAY)
+  }
+
+  useEffect(() => {
+    return () => {
+      if (resumeTimeout.current) clearTimeout(resumeTimeout.current)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (reduce || isPaused) return
+    const id = setInterval(() => {
+      setDirection(1)
+      setActiveIndex((current) => (current + 1) % STEP_COUNT)
+    }, AUTOPLAY_DELAY)
+    return () => clearInterval(id)
+  }, [reduce, isPaused])
 
   return (
     <Section id="ma-methode" className="scroll-mt-24">
@@ -323,160 +181,133 @@ function Processus() {
           variants={floatIn(0.22, { y: 40 })}
         >
           Un <strong className="font-semibold text-text">processus clair et éprouvé</strong>, de
-          la première idée à la mise en ligne de votre site. Vous savez toujours où vous en êtes,
-          sans jargon ni mauvaise surprise.
+          la première idée à la mise en ligne de votre site. Cliquez sur une étape pour en savoir
+          plus.
         </motion.p>
       </div>
 
-      <div ref={gridRef}>
-        {/* Desktop — frise horizontale, capsules alignées au centre, cartes en quinconce */}
-        <div
-          className="relative mt-20 hidden lg:grid lg:grid-cols-6 lg:gap-x-4"
-          style={{ gridTemplateRows: "auto auto auto", rowGap: "2.5rem" }}
-        >
-          <div
-            aria-hidden
-            className="pointer-events-none relative h-4 self-center"
-            style={{ gridColumn: "1 / -1", gridRow: 2 }}
-          >
-            <svg viewBox="0 0 100 16" preserveAspectRatio="none" className="absolute inset-0 h-4 w-full">
-              {STEPS.slice(0, -1).map((_, index) => {
-                const fill = fillOnce(activeEnd(index) - LINE_FILL, LINE_FILL)
-                const fillSeq = seq(inView, reduce, fill, 1)
-                return (
-                  <g key={index}>
-                    <motion.path
-                      d={`M ${centerOf(index)} 8 H ${centerOf(index + 1)}`}
-                      vectorEffect="non-scaling-stroke"
-                      stroke="var(--color-border)"
-                      strokeWidth={1.5}
-                      strokeDasharray="5 6"
-                      fill="none"
-                      initial="hidden"
-                      whileInView="visible"
-                      viewport={{ once: true, amount: 0.5 }}
-                      variants={{
-                        hidden: { pathLength: 0 },
-                        visible: {
-                          pathLength: 1,
-                          transition: { duration: 0.5, delay: 0.35 + index * 0.12, ease: EASE_NOVA },
-                        },
-                      }}
-                    />
-                    <motion.path
-                      d={`M ${centerOf(index)} 8 H ${centerOf(index + 1)}`}
-                      vectorEffect="non-scaling-stroke"
-                      stroke="var(--color-primary)"
-                      strokeWidth={2}
-                      strokeLinecap="round"
-                      fill="none"
-                      initial={{ pathLength: 0 }}
-                      animate={{ pathLength: fillSeq.animate.value }}
-                      transition={fillSeq.transition}
-                    />
-                  </g>
-                )
-              })}
-            </svg>
-          </div>
-
-          {STEPS.map((step, index) => (
-            <motion.div
-              key={step.number}
-              style={{ gridColumn: index + 1, gridRow: 2 }}
-              className="flex items-center justify-center"
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, amount: 0.4 }}
-              variants={floatIn(index * 0.12, { y: 70, scale: 0.85 })}
-            >
-              <Capsule index={index} inView={inView} reduce={reduce} />
-            </motion.div>
-          ))}
-
-          {STEPS.map((step, index) => (
-            <motion.div
-              key={step.number}
-              style={{ gridColumn: index + 1, gridRow: index % 2 === 0 ? 1 : 3 }}
-              className={index % 2 === 0 ? "self-end" : "self-start"}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, amount: 0.4 }}
-              variants={floatIn(index * 0.12, { y: index % 2 === 0 ? -70 : 70, scale: 0.85 }, { damping: 32, mass: 3.6 })}
-            >
-              <StepCard index={index} inView={inView} reduce={reduce} />
-            </motion.div>
-          ))}
-        </div>
-
-        {/* Mobile / tablette — repli en liste, capsule intégrée à chaque carte */}
-        <div className="mt-16 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:hidden">
+      <motion.div
+        className="mt-16"
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.3 }}
+        variants={floatIn(0.1, { y: 60, scale: 0.96 })}
+        onMouseEnter={() => setIsPaused(true)}
+        onMouseLeave={() => {
+          if (resumeTimeout.current) clearTimeout(resumeTimeout.current)
+          setIsPaused(false)
+        }}
+      >
+        {/* Frise cliquable */}
+        <div className="flex items-start">
           {STEPS.map((step, index) => {
-            if (!visibleStepIndexes.includes(index)) return null
-
-            const scaleFrames = pulse(index, 1, 1.02)
-            const glowFrames = pulse(index, 0, 1)
-            const opacityFrames = cardOpacity(index)
-            const scaleSeq = seq(inView, reduce, scaleFrames, index === LAST_INDEX ? 1.02 : 1)
-            const glowSeq = seq(inView, reduce, glowFrames, finalOn(index))
-            const opacitySeq = seq(inView, reduce, opacityFrames, 1)
+            const isActive = index === activeIndex
+            const isDone = index < activeIndex
 
             return (
-              <motion.div
-                key={step.number}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true, amount: 0.4 }}
-                variants={floatIn(index * 0.1, { y: 60, scale: 0.9 }, { damping: 32, mass: 3.6 })}
-              >
-                <motion.div
-                  className="relative"
-                  style={{ transformOrigin: "center" }}
-                  initial={{ opacity: 1, scale: 1 }}
-                  animate={{ opacity: opacitySeq.animate.value, scale: scaleSeq.animate.value }}
-                  transition={{ opacity: opacitySeq.transition, scale: scaleSeq.transition }}
+              <Fragment key={step.number}>
+                <button
+                  type="button"
+                  onClick={() => handleManualSelect(index)}
+                  aria-current={isActive ? "step" : undefined}
+                  aria-label={`Étape ${index + 1} : ${step.title}`}
+                  className="group flex flex-col items-center gap-2"
                 >
-                  <motion.div
-                    aria-hidden
-                    className="pointer-events-none absolute inset-0 rounded-3xl border-2 border-primary shadow-lg"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: glowSeq.animate.value }}
-                    transition={glowSeq.transition}
-                  />
-                  <Card className="flex flex-col items-center gap-3 p-6 text-center">
-                    <Capsule index={index} inView={inView} reduce={reduce} />
-                    <span className="flex size-11 items-center justify-center rounded-2xl bg-primary/10 text-primary shadow-sm">
-                      <Icon icon={step.icon} className="size-5" />
-                    </span>
-                    <p className="text-h3 font-heading font-semibold text-text">{step.title}</p>
-                    <p className="text-small text-text-secondary">{step.description}</p>
-                  </Card>
-                </motion.div>
-              </motion.div>
+                  <span
+                    className={cn(
+                      "flex size-11 shrink-0 items-center justify-center rounded-full border-2 font-heading text-small font-bold transition-all duration-200 ease-nova sm:size-12",
+                      isActive && "scale-110 border-primary bg-primary text-primary-foreground shadow-md",
+                      isDone && "border-primary bg-primary/10 text-primary",
+                      !isActive && !isDone && "border-border bg-surface text-text-secondary group-hover:-translate-y-0.5 group-hover:border-primary/50 group-hover:text-primary"
+                    )}
+                  >
+                    {isDone ? <Icon icon={Check} className="size-4" /> : <Icon icon={step.icon} className="size-4" />}
+                  </span>
+                  <span
+                    className={cn(
+                      "hidden text-[11px] transition-colors duration-200 ease-nova sm:block sm:text-small",
+                      isActive ? "font-semibold text-primary" : "text-text-secondary"
+                    )}
+                  >
+                    {step.title}
+                  </span>
+                </button>
+
+                {index < STEPS.length - 1 && (
+                  <div className="relative mx-1.5 mt-5 h-0.5 flex-1 self-start rounded-full bg-border sm:mx-2 sm:mt-6">
+                    <motion.div
+                      className="absolute inset-y-0 left-0 rounded-full bg-primary"
+                      initial={false}
+                      animate={{ width: index < activeIndex ? "100%" : "0%" }}
+                      transition={reduce ? { duration: 0 } : { duration: 0.4, ease: EASE_NOVA }}
+                    />
+                  </div>
+                )}
+              </Fragment>
             )
           })}
         </div>
 
-        {isMobile && hiddenStepsCount > 0 && (
-          <div className="mt-8 flex justify-center lg:hidden">
-            <Button
-              type="button"
-              variant="outline"
-              className="h-11 px-6 text-small"
-              onClick={() => setShowAllSteps((prev) => !prev)}
-            >
-              {showAllSteps ? "Afficher moins" : `Voir les ${hiddenStepsCount} autres étapes`}
-              <motion.span
-                animate={{ rotate: showAllSteps ? 180 : 0 }}
-                transition={{ duration: 0.2, ease: EASE_NOVA }}
-                className="flex items-center justify-center"
+        {/* Panneau de détail */}
+        <div className="mt-10 flex items-center gap-3 sm:gap-5">
+          <button
+            type="button"
+            onClick={() => handleManualSelect((activeIndex - 1 + STEP_COUNT) % STEP_COUNT)}
+            aria-label="Étape précédente"
+            className="flex size-11 shrink-0 items-center justify-center rounded-full border border-border bg-surface text-text-secondary transition-colors duration-150 ease-nova hover:border-primary hover:text-primary"
+          >
+            <Icon icon={ArrowLeft} className="size-4" />
+          </button>
+
+          <div className="relative min-h-64 flex-1 overflow-hidden sm:min-h-56">
+            <AnimatePresence mode="wait" custom={direction} initial={false}>
+              <motion.div
+                key={activeIndex}
+                custom={direction}
+                variants={cardVariants}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                transition={reduce ? { duration: 0 } : { duration: 0.35, ease: EASE_NOVA }}
               >
-                <Icon icon={ChevronDown} className="size-4" />
-              </motion.span>
-            </Button>
+                <Card className="relative flex flex-col items-center gap-4 overflow-hidden p-8 text-center sm:p-10">
+                  <span
+                    aria-hidden
+                    className="pointer-events-none absolute -right-4 -top-6 font-heading text-[7rem] font-bold leading-none text-text opacity-[0.04] sm:text-[9rem]"
+                  >
+                    {active.number}
+                  </span>
+
+                  <span
+                    className={cn(
+                      "relative flex size-14 shrink-0 items-center justify-center rounded-2xl shadow-sm",
+                      active.className
+                    )}
+                  >
+                    <Icon icon={active.icon} className="size-6" />
+                  </span>
+
+                  <Badge variant="outline" className="relative">
+                    Étape {activeIndex + 1}/{STEP_COUNT}
+                  </Badge>
+
+                  <h3 className="relative text-h3 font-heading font-semibold text-text">{active.title}</h3>
+                  <p className="relative max-w-md text-body text-text-secondary">{active.description}</p>
+                </Card>
+              </motion.div>
+            </AnimatePresence>
           </div>
-        )}
-      </div>
+
+          <button
+            type="button"
+            onClick={() => handleManualSelect((activeIndex + 1) % STEP_COUNT)}
+            aria-label="Étape suivante"
+            className="flex size-11 shrink-0 items-center justify-center rounded-full border border-border bg-surface text-text-secondary transition-colors duration-150 ease-nova hover:border-primary hover:text-primary"
+          >
+            <Icon icon={ArrowRight} className="size-4" />
+          </button>
+        </div>
+      </motion.div>
     </Section>
   )
 }

@@ -411,7 +411,7 @@ function FAQ() {
           viewport={{ once: true, amount: 0.4 }}
           variants={floatIn(0.12, { y: -60, scale: 0.94 })}
         >
-          <Heading variant="h2">Vos questions, mes réponses</Heading>
+          <Heading as="h1" variant="h2">Vos questions, mes réponses</Heading>
         </motion.div>
 
         <motion.p

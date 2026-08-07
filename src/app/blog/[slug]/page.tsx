@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
+import { JsonLd } from "@/components/seo/json-ld";
 import { ARTICLES, getArticleBySlug } from "@/lib/articles";
+import { blogPostingJsonLd, breadcrumbJsonLd, faqPageJsonLd, parseFrenchDateToIso } from "@/lib/seo";
 import { siteConfig } from "@/lib/site";
 
 import { ArticleContent } from "./article-content";
@@ -28,6 +30,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     title: article.title,
     description: article.metaDescription,
     keywords: [article.keywords.primary, ...article.keywords.secondary],
+    authors: [{ name: siteConfig.author.name, url: siteConfig.url }],
     alternates: {
       canonical: url,
     },
@@ -37,7 +40,15 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       url,
       type: "article",
       siteName: siteConfig.name,
-      locale: "fr_FR",
+      locale: siteConfig.locale,
+      authors: [siteConfig.author.name],
+      publishedTime: parseFrenchDateToIso(article.date),
+      section: article.category,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: article.title,
+      description: article.metaDescription,
     },
   };
 }
@@ -50,8 +61,21 @@ export default async function ArticlePage({ params }: PageProps) {
     notFound();
   }
 
+  const url = `${siteConfig.url}/blog/${article.slug}`;
+
   return (
     <main className="flex-1">
+      <JsonLd
+        data={[
+          blogPostingJsonLd(article),
+          breadcrumbJsonLd([
+            { name: "Accueil", url: siteConfig.url },
+            { name: "Blog", url: `${siteConfig.url}/blog` },
+            { name: article.title, url },
+          ]),
+          ...(article.faq.length > 0 ? [faqPageJsonLd(article.faq)] : []),
+        ]}
+      />
       <ArticleContent article={article} />
     </main>
   );

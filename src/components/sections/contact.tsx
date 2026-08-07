@@ -19,7 +19,6 @@ import {
   RotateCcw,
   Search,
   Send,
-  SendHorizontal,
   Server,
   Sparkles,
 } from "lucide-react"
@@ -55,18 +54,18 @@ const STEP_CONTENT = [
 ]
 
 const OFFERS = [
-  { id: "essentiel", name: "Essentiel", price: "À partir de 690 €", icon: Rocket },
-  { id: "pro", name: "Pro", price: "À partir de 990 €", icon: Sparkles, badge: "Le plus choisi" },
-  { id: "premium", name: "Premium", price: "À partir de 1 200 €", icon: Crown },
+  { id: "essentiel", name: "Essentiel", price: "690 €", icon: Rocket, className: "bg-accent-purple/15 text-accent-purple" },
+  { id: "pro", name: "Pro", price: "990 €", icon: Sparkles, badge: "Le plus choisi", className: "bg-accent-purple/15 text-accent-purple" },
+  { id: "premium", name: "Premium", price: "À partir de 1 200 €", icon: Crown, className: "bg-accent-green/15 text-accent-green" },
 ] as const
 
 const NEEDS = [
-  { id: "has-site", label: "Je possède déjà un site", icon: Globe },
-  { id: "no-site", label: "Je n'ai pas encore de site", icon: CirclePlus },
-  { id: "logo", label: "J'ai besoin d'un logo", icon: Palette },
-  { id: "hosting", label: "J'ai besoin d'un hébergement", icon: Server },
-  { id: "seo", label: "Je souhaite améliorer mon référencement", icon: Search },
-  { id: "support", label: "Je souhaite un accompagnement", icon: HeartHandshake },
+  { id: "has-site", label: "Je possède déjà un site", icon: Globe, className: "bg-primary/10 text-primary" },
+  { id: "no-site", label: "Je n'ai pas encore de site", icon: CirclePlus, className: "bg-accent-purple/15 text-accent-purple" },
+  { id: "logo", label: "J'ai besoin d'un logo", icon: Palette, className: "bg-accent-green/15 text-accent-green" },
+  { id: "hosting", label: "J'ai besoin d'un hébergement", icon: Server, className: "bg-warning/15 text-warning" },
+  { id: "seo", label: "Je souhaite améliorer mon référencement", icon: Search, className: "bg-primary/10 text-primary" },
+  { id: "support", label: "Je souhaite un accompagnement", icon: HeartHandshake, className: "bg-accent-purple/15 text-accent-purple" },
 ] as const
 
 const TRACKING_STEPS = [
@@ -184,42 +183,6 @@ function FormField({
   )
 }
 
-/** Illustration vectorielle — un message qui part, dans le langage du Hero. */
-function ContactIllustration({ reduce }: { reduce: boolean }) {
-  return (
-    <Card className="relative flex h-48 items-center justify-center overflow-hidden">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute left-1/2 top-1/2 h-56 w-56 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/10 blur-3xl"
-      />
-      <motion.div
-        className="relative flex size-20 items-center justify-center rounded-full shadow-sm"
-        style={{ backgroundImage: "linear-gradient(135deg, var(--color-primary), var(--color-accent-purple))" }}
-        animate={reduce ? { scale: 1 } : { scale: [1, 1.06, 1] }}
-        transition={reduce ? undefined : { duration: 2.2, repeat: Infinity, ease: EASE_NOVA }}
-      >
-        <Icon icon={SendHorizontal} className="size-9 text-primary-foreground" />
-      </motion.div>
-
-      <motion.span
-        className="absolute left-8 top-9 size-3 rounded-full bg-accent-green/60"
-        animate={reduce ? { y: 0 } : { y: [0, -8, 0] }}
-        transition={reduce ? undefined : { duration: 2.6, repeat: Infinity, ease: EASE_NOVA }}
-      />
-      <motion.span
-        className="absolute right-10 top-14 size-2 rounded-full bg-warning/60"
-        animate={reduce ? { y: 0 } : { y: [0, 6, 0] }}
-        transition={reduce ? undefined : { duration: 2.2, repeat: Infinity, delay: 0.3, ease: EASE_NOVA }}
-      />
-      <motion.span
-        className="absolute bottom-10 right-16 size-2.5 rounded-full bg-primary/50"
-        animate={reduce ? { y: 0 } : { y: [0, -6, 0] }}
-        transition={reduce ? undefined : { duration: 2.4, repeat: Infinity, delay: 0.6, ease: EASE_NOVA }}
-      />
-    </Card>
-  )
-}
-
 /** La frise de progression — même langage visuel que la section Processus. */
 function ProgressFrieze({
   step,
@@ -328,7 +291,7 @@ function StepOffer({ value, onSelect }: { value: OfferId | null; onSelect: (id: 
                 </Badge>
               </div>
             )}
-            <button type="button" onClick={() => onSelect(offer.id)} className="block w-full text-left">
+            <button type="button" onClick={() => onSelect(offer.id)} className="group block w-full text-left">
               <Card
                 className={cn(
                   "relative flex flex-col items-center gap-3 overflow-hidden p-6 text-center transition-[border-color,box-shadow,transform] duration-200 ease-nova",
@@ -343,8 +306,8 @@ function StepOffer({ value, onSelect }: { value: OfferId | null; onSelect: (id: 
                 )}
                 <span
                   className={cn(
-                    "relative flex size-11 shrink-0 items-center justify-center rounded-xl",
-                    selected ? "bg-primary text-primary-foreground shadow-sm" : "bg-primary/10 text-primary"
+                    "relative flex size-11 shrink-0 items-center justify-center rounded-xl shadow-sm transition-transform duration-200 ease-nova group-hover:-rotate-6 group-hover:scale-110",
+                    selected || offer.id === "pro" ? "bg-primary text-primary-foreground" : offer.className
                   )}
                 >
                   <Icon icon={offer.icon} className="size-5" />
@@ -379,7 +342,7 @@ function StepNeeds({ value, onToggle }: { value: NeedId[]; onToggle: (id: NeedId
       {NEEDS.map((need) => {
         const selected = value.includes(need.id)
         return (
-          <button key={need.id} type="button" onClick={() => onToggle(need.id)} className="text-left">
+          <button key={need.id} type="button" onClick={() => onToggle(need.id)} className="group text-left">
             <Card
               className={cn(
                 "flex items-center gap-3 p-4 transition-[border-color,box-shadow,background-color] duration-200 ease-nova",
@@ -388,8 +351,8 @@ function StepNeeds({ value, onToggle }: { value: NeedId[]; onToggle: (id: NeedId
             >
               <span
                 className={cn(
-                  "flex size-9 shrink-0 items-center justify-center rounded-lg",
-                  selected ? "bg-primary text-primary-foreground" : "bg-primary/10 text-primary"
+                  "flex size-9 shrink-0 items-center justify-center rounded-lg shadow-sm transition-transform duration-200 ease-nova group-hover:-rotate-6 group-hover:scale-110",
+                  selected ? "bg-primary text-primary-foreground" : need.className
                 )}
               >
                 <Icon icon={need.icon} className="size-4" />
@@ -897,15 +860,6 @@ function Contact() {
         </motion.div>
 
         <div className="flex flex-col gap-6">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, amount: 0.4 }}
-            variants={floatIn(0.15, { x: 160, rotate: 4 }, { damping: 30, mass: 4 })}
-          >
-            <ContactIllustration reduce={reduce} />
-          </motion.div>
-
           {BENEFITS.map((benefit, index) => (
             <motion.div
               key={benefit.title}
@@ -914,10 +868,10 @@ function Contact() {
               viewport={{ once: true, amount: 0.4 }}
               variants={floatIn(0.25 + index * 0.1, { y: 90 }, { damping: 30, mass: 4 })}
             >
-              <Card className="flex flex-col items-center gap-3 p-5 text-center">
+              <Card className="group flex flex-col items-center gap-3 p-5 text-center">
                 <span
                   className={cn(
-                    "flex size-10 shrink-0 items-center justify-center rounded-xl",
+                    "flex size-10 shrink-0 items-center justify-center rounded-xl shadow-sm transition-transform duration-200 ease-nova group-hover:-rotate-6 group-hover:scale-110",
                     benefit.className
                   )}
                 >

@@ -17,7 +17,14 @@
       "Bash(sort -k6,7)",
       "Bash(rm -rf out .next)",
       "Bash(grep -oE \".{0,20}Un projet.{0,40}\" out/blog.html)",
-      "Bash(npx eslint *)"
+      "Bash(npx eslint *)",
+      "Bash(cd \"C:\\\\Users\\\\geoff\\\\Desktop\\\\Projet Studio Digital Nova\\\\Studio Digital Nova Site\" && cp \"C:/Users/geoff/AppData/Local/Temp/claude/geoffrey-optimized.webp\" public/images/geoffrey.webp && ls -la public/images/geoffrey.webp)",
+      "Read(//c/Program Files/Google/Chrome/Application/**)",
+      "Read(//c/Program Files \\\\\\(x86\\\\\\)/Google/Chrome/Application/**)",
+      "Bash(export CHROME_PATH=\"C:\\\\Program Files\\\\Google\\\\Chrome\\\\Application\\\\chrome.exe\")",
+      "Bash(npx lighthouse *)",
+      "Bash(pkill -f \"serve -s out\")",
+      "Bash(curl -sI --http2 http://localhost:5050/ -o /dev/null -w \"Protocol: %{http_version}\\\\n\")"
     ]
   }
 }

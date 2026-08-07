@@ -37,10 +37,10 @@ type FloatFrom = { x?: number; y?: number; rotate?: number; scale?: number }
 /* ------------------------------------------------------------------------ */
 
 const STATS = [
-  { icon: FileText, value: String(ARTICLES.length), label: "Articles" },
-  { icon: Layers, value: "6", label: "Catégories" },
-  { icon: Clock, value: "8 min", label: "Temps de lecture moyen" },
-  { icon: Compass, value: "À venir", label: "Guides" },
+  { icon: FileText, value: String(ARTICLES.length), label: "Articles", className: "bg-primary/10 text-primary" },
+  { icon: Layers, value: "6", label: "Catégories", className: "bg-accent-purple/15 text-accent-purple" },
+  { icon: Clock, value: "8 min", label: "Temps de lecture moyen", className: "bg-accent-green/15 text-accent-green" },
+  { icon: Compass, value: "À venir", label: "Guides", className: "bg-warning/15 text-warning" },
 ]
 
 const CATEGORIES = [
@@ -179,8 +179,13 @@ function StatsRow() {
           viewport={{ once: true, amount: 0.4 }}
           variants={floatIn(index * 0.1, { y: 40, scale: 0.9 }, { damping: 30, mass: 4 })}
         >
-          <Card className="flex flex-col items-center gap-2 p-6 text-center">
-            <span className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+          <Card className="group flex flex-col items-center gap-2 p-6 text-center">
+            <span
+              className={cn(
+                "flex size-10 items-center justify-center rounded-xl shadow-sm transition-transform duration-200 ease-nova group-hover:-rotate-6 group-hover:scale-110",
+                stat.className
+              )}
+            >
               <Icon icon={stat.icon} className="size-5" />
             </span>
             <p className="text-h3 font-heading font-bold text-text">{stat.value}</p>
@@ -278,7 +283,7 @@ function ArticleCard({ article, index }: { article: Article; index: number }) {
 
         <div className="flex flex-1 flex-col items-center gap-3 p-6 text-center">
           <Badge variant="outline">{article.category}</Badge>
-          <p className="text-h3 font-heading font-semibold text-text">{article.title}</p>
+          <h3 className="text-h3 font-heading font-semibold text-text">{article.title}</h3>
           <p className="flex-1 text-small text-text-secondary">{article.excerpt}</p>
           <div className="flex items-center justify-center gap-4 text-small text-text-secondary">
             <span className="flex items-center gap-1.5">

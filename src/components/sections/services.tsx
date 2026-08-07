@@ -420,7 +420,7 @@ function Services() {
                   <Icon icon={service.icon} className="size-5" />
                 </span>
 
-                <p className="text-h3 font-heading font-semibold text-text">{service.title}</p>
+                <h3 className="text-h3 font-heading font-semibold text-text">{service.title}</h3>
 
                 <p className="text-body text-text-secondary">{service.description}</p>
 

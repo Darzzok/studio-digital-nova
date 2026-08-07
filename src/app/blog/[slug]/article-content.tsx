@@ -239,7 +239,7 @@ function RelatedArticleCard({ article, index }: { article: Article; index: numbe
           </div>
           <div className="flex flex-1 flex-col items-center gap-2 p-5 text-center">
             <Badge variant="outline">{article.category}</Badge>
-            <p className="text-small font-heading font-semibold text-text">{article.title}</p>
+            <h3 className="text-small font-heading font-semibold text-text">{article.title}</h3>
           </div>
         </Card>
       </Link>

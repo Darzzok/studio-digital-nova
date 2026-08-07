@@ -18,7 +18,8 @@ const PLANS = [
   {
     name: "Essentiel",
     icon: Rocket,
-    price: "À partir de 690 €",
+    className: "bg-accent-purple/15 text-accent-purple",
+    price: "690 €",
     scope: "One Page",
     tagline: "Pour démarrer votre présence en ligne rapidement.",
     idealFor: "Idéal pour lancer votre activité sans attendre.",
@@ -33,7 +34,8 @@ const PLANS = [
   {
     name: "Pro",
     icon: Sparkles,
-    price: "À partir de 990 €",
+    className: "bg-accent-purple/15 text-accent-purple",
+    price: "990 €",
     scope: "Site Vitrine",
     tagline: "La formule la plus complète pour convertir vos visiteurs.",
     idealFor: "Idéal pour une entreprise qui veut se démarquer durablement.",
@@ -49,6 +51,7 @@ const PLANS = [
   {
     name: "Premium",
     icon: Crown,
+    className: "bg-accent-green/15 text-accent-green",
     price: "À partir de 1 200 €",
     scope: "Projet sur mesure",
     tagline: "Un accompagnement sur mesure, sans compromis.",
@@ -135,7 +138,7 @@ function Tarifs() {
 
               <Card
                 className={cn(
-                  "relative flex h-full flex-col items-center gap-5 overflow-hidden text-center",
+                  "group relative flex h-full flex-col items-center gap-5 overflow-hidden text-center",
                   plan.featured && "border-primary/50 shadow-lg lg:scale-[1.05]"
                 )}
               >
@@ -148,15 +151,15 @@ function Tarifs() {
 
                 <span
                   className={cn(
-                    "relative flex size-11 shrink-0 items-center justify-center rounded-xl",
-                    plan.featured ? "bg-primary text-primary-foreground shadow-sm" : "bg-primary/10 text-primary"
+                    "relative flex size-11 shrink-0 items-center justify-center rounded-xl shadow-sm transition-transform duration-200 ease-nova group-hover:-rotate-6 group-hover:scale-110",
+                    plan.featured ? "bg-primary text-primary-foreground" : plan.className
                   )}
                 >
                   <Icon icon={plan.icon} className="size-5" />
                 </span>
 
                 <div className="relative">
-                  <p className="text-h3 font-heading font-semibold text-text">{plan.name}</p>
+                  <h3 className="text-h3 font-heading font-semibold text-text">{plan.name}</h3>
                   <p className="text-small text-text-secondary">{plan.scope}</p>
                 </div>
 

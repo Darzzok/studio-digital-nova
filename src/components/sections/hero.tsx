@@ -4,13 +4,9 @@ import { useEffect, useRef, useState } from "react"
 import { motion, useInView, useReducedMotion } from "framer-motion"
 import {
   ArrowRight,
-  Code2,
-  LayoutGrid,
   Palette,
-  PhoneCall,
   Smartphone,
   TrendingUp,
-  Type,
   Zap,
 } from "lucide-react"
 
@@ -20,13 +16,6 @@ import { Card } from "@/components/ui/card"
 import { Heading } from "@/components/ui/heading"
 import { Icon } from "@/components/ui/icon"
 import { EASE_NOVA, useFloatIn } from "@/lib/motion"
-
-const BUBBLES = [
-  { icon: Code2, className: "bg-warning/15 text-warning", pos: "left-[2%] top-[36%]", from: { x: -160, y: 40, rotate: -12 } },
-  { icon: Type, className: "bg-accent-purple/15 text-accent-purple", pos: "right-[2%] top-[36%]", from: { x: 160, y: -40, rotate: 12 } },
-  { icon: LayoutGrid, className: "bg-primary/15 text-primary", pos: "left-[2%] top-[58%]", from: { x: -140, y: 100, rotate: -10 } },
-  { icon: PhoneCall, className: "bg-accent-green/15 text-accent-green", pos: "right-[2%] top-[58%]", from: { x: 140, y: 90, rotate: 10 } },
-]
 
 function Hero() {
   const sectionRef = useRef<HTMLElement | null>(null)
@@ -51,6 +40,7 @@ function Hero() {
   }, [inView])
 
   const initial = "hidden"
+  const viewport = { once: true, amount: 0 } as const
 
   return (
     <section
@@ -82,7 +72,8 @@ function Hero() {
             className="absolute left-0 top-[8%] w-60"
             variants={floatIn(2.3, { x: -220, y: -60, rotate: -8 }, { stiffness: 110, damping: 30, mass: 4 })}
             initial={initial}
-            animate="visible"
+            whileInView="visible"
+            viewport={viewport}
           >
             <Card className="pointer-events-auto flex items-start gap-3 p-5">
               <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
@@ -99,7 +90,8 @@ function Hero() {
             className="absolute right-0 top-[4%] w-64"
             variants={floatIn(1.95, { x: 240, y: -50, rotate: 6 }, { stiffness: 100, damping: 30, mass: 4.4 })}
             initial={initial}
-            animate="visible"
+            whileInView="visible"
+            viewport={viewport}
           >
             <Card className="pointer-events-auto flex items-start gap-3 p-5">
               <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-accent-purple/15 text-accent-purple">
@@ -116,7 +108,8 @@ function Hero() {
             className="absolute bottom-[8%] left-0 w-60"
             variants={floatIn(2.4, { x: -200, y: 70, rotate: -6 }, { stiffness: 110, damping: 30, mass: 4 })}
             initial={initial}
-            animate="visible"
+            whileInView="visible"
+            viewport={viewport}
           >
             <Card className="pointer-events-auto flex items-start gap-3 p-5">
               <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-accent-green/15 text-accent-green">
@@ -133,7 +126,8 @@ function Hero() {
             className="absolute bottom-[2%] right-0 w-60"
             variants={floatIn(2.5, { x: 220, y: 80, rotate: 8 }, { stiffness: 110, damping: 30, mass: 4 })}
             initial={initial}
-            animate="visible"
+            whileInView="visible"
+            viewport={viewport}
           >
             <Card className="pointer-events-auto flex items-start gap-3 p-5">
               <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-warning/15 text-warning">
@@ -146,22 +140,6 @@ function Hero() {
             </Card>
           </motion.div>
 
-          {BUBBLES.map((bubble, index) => (
-            <motion.div
-              key={bubble.pos}
-              className={`absolute ${bubble.pos}`}
-              variants={floatIn(1.6 + index * 0.08, bubble.from, { stiffness: 170, damping: 14, mass: 0.6 })}
-              initial={initial}
-              animate="visible"
-            >
-              <span
-                className={`pointer-events-auto flex size-12 items-center justify-center rounded-full shadow-sm ${bubble.className}`}
-              >
-                <Icon icon={bubble.icon} className="size-5" />
-              </span>
-            </motion.div>
-          ))}
-
         </div>
 
         {/* Central composition */}
@@ -170,7 +148,8 @@ function Hero() {
             className="mb-6"
             variants={floatIn(0.75, { y: -40, scale: 0.85 })}
             initial={initial}
-            animate="visible"
+            whileInView="visible"
+            viewport={viewport}
           >
             <Badge variant="outline" className="gap-2 py-1.5">
               <motion.span
@@ -195,7 +174,8 @@ function Hero() {
           <motion.div
             variants={floatIn(0.95, { y: -90, scale: 0.92 }, { stiffness: 110, damping: 16, mass: 1.1 })}
             initial={initial}
-            animate="visible"
+            whileInView="visible"
+            viewport={viewport}
           >
             <Heading
               variant="display"
@@ -209,7 +189,8 @@ function Hero() {
             className="mt-6 max-w-xl text-body text-text-secondary"
             variants={floatIn(1.15, { y: 50 })}
             initial={initial}
-            animate="visible"
+            whileInView="visible"
+            viewport={viewport}
           >
             Je crée des sites vitrines modernes, rapides et optimisés pour{" "}
             <strong className="font-semibold text-text">convertir vos visiteurs en clients</strong>.
@@ -222,7 +203,8 @@ function Hero() {
             <motion.div
               variants={floatIn(1.35, { x: -160, rotate: -6 })}
               initial={initial}
-              animate="visible"
+              whileInView="visible"
+              viewport={viewport}
             >
               <a href="/#contact" className="group">
                 <Button variant="primary">
@@ -237,7 +219,8 @@ function Hero() {
             <motion.div
               variants={floatIn(1.45, { x: 160, rotate: 6 })}
               initial={initial}
-              animate="visible"
+              whileInView="visible"
+              viewport={viewport}
             >
               <a href="/#tarifs">
                 <Button variant="outline">Découvrir mes offres</Button>
