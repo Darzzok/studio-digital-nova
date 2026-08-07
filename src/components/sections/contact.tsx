@@ -31,40 +31,8 @@ import { Heading } from "@/components/ui/heading"
 import { Icon } from "@/components/ui/icon"
 import { Input } from "@/components/ui/input"
 import { Section } from "@/components/ui/section"
-import { useIsMobile } from "@/hooks/use-is-mobile"
-import { EASE_NOVA } from "@/lib/motion"
+import { EASE_NOVA, useFloatIn } from "@/lib/motion"
 import { cn } from "@/lib/utils"
-
-type FloatFrom = { x?: number; y?: number; rotate?: number; scale?: number }
-type FloatOptions = { stiffness?: number; damping?: number; mass?: number; opacityDuration?: number }
-
-function floatIn(delay: number, from: FloatFrom, options?: FloatOptions) {
-  const { stiffness = 110, damping = 15, mass = 1, opacityDuration = 0.4 } = options ?? {}
-  return {
-    hidden: {
-      opacity: 0,
-      x: from.x ?? 0,
-      y: from.y ?? 0,
-      rotate: from.rotate ?? 0,
-      scale: from.scale ?? 1,
-    },
-    visible: {
-      opacity: 1,
-      x: 0,
-      y: 0,
-      rotate: 0,
-      scale: 1,
-      transition: {
-        type: "spring" as const,
-        stiffness,
-        damping,
-        mass,
-        delay,
-        opacity: { duration: opacityDuration, delay },
-      },
-    },
-  }
-}
 
 /* ------------------------------------------------------------------------ */
 /* Contenu du configurateur — modifiable ici sans toucher à la logique.      */
@@ -594,7 +562,7 @@ function Confirmation({ data, reduce }: { data: ConfiguratorData; reduce: boolea
 
 function Contact() {
   const reduce = Boolean(useReducedMotion())
-  const isMobile = useIsMobile()
+  const floatIn = useFloatIn()
 
   const [hydrated, setHydrated] = useState(false)
   const [showResume, setShowResume] = useState(false)
@@ -713,7 +681,7 @@ function Contact() {
       <div className="mx-auto flex max-w-2xl flex-col items-center text-center md:max-w-3xl">
         <motion.div
           className="mb-4"
-          initial={reduce || isMobile ? false : "hidden"}
+          initial="hidden"
           whileInView="visible"
           viewport={{ once: true, amount: 0.4 }}
           variants={floatIn(0, { y: -40, scale: 0.85 })}
@@ -725,7 +693,7 @@ function Contact() {
         </motion.div>
 
         <motion.div
-          initial={reduce || isMobile ? false : "hidden"}
+          initial="hidden"
           whileInView="visible"
           viewport={{ once: true, amount: 0.4 }}
           variants={floatIn(0.12, { y: -60, scale: 0.94 })}
@@ -735,7 +703,7 @@ function Contact() {
 
         <motion.p
           className="mt-6 max-w-xl text-body text-text-secondary"
-          initial={reduce || isMobile ? false : "hidden"}
+          initial="hidden"
           whileInView="visible"
           viewport={{ once: true, amount: 0.4 }}
           variants={floatIn(0.22, { y: 40 })}
@@ -746,7 +714,7 @@ function Contact() {
 
       <div className="mt-16 grid grid-cols-1 gap-8 lg:grid-cols-2 lg:gap-12">
         <motion.div
-          initial={reduce || isMobile ? false : "hidden"}
+          initial="hidden"
           whileInView="visible"
           viewport={{ once: true, amount: 0.2 }}
           variants={floatIn(0.1, { x: -160, rotate: -4 }, { damping: 30, mass: 4 })}
@@ -930,7 +898,7 @@ function Contact() {
 
         <div className="flex flex-col gap-6">
           <motion.div
-            initial={reduce || isMobile ? false : "hidden"}
+            initial="hidden"
             whileInView="visible"
             viewport={{ once: true, amount: 0.4 }}
             variants={floatIn(0.15, { x: 160, rotate: 4 }, { damping: 30, mass: 4 })}
@@ -941,7 +909,7 @@ function Contact() {
           {BENEFITS.map((benefit, index) => (
             <motion.div
               key={benefit.title}
-              initial={reduce || isMobile ? false : "hidden"}
+              initial="hidden"
               whileInView="visible"
               viewport={{ once: true, amount: 0.4 }}
               variants={floatIn(0.25 + index * 0.1, { y: 90 }, { damping: 30, mass: 4 })}

@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react"
 import type { ReactNode } from "react"
 import Link from "next/link"
-import { motion, useReducedMotion } from "framer-motion"
+import { motion } from "framer-motion"
 import {
   ArrowRight,
   BarChart3,
@@ -26,41 +26,11 @@ import { Heading } from "@/components/ui/heading"
 import { Icon } from "@/components/ui/icon"
 import { Input } from "@/components/ui/input"
 import { Section } from "@/components/ui/section"
-import { useIsMobile } from "@/hooks/use-is-mobile"
 import { ARTICLES, CATEGORY_GRADIENT, CATEGORY_ICON, type Article } from "@/lib/articles"
-import { EASE_NOVA } from "@/lib/motion"
+import { useFloatIn } from "@/lib/motion"
 import { cn } from "@/lib/utils"
 
 type FloatFrom = { x?: number; y?: number; rotate?: number; scale?: number }
-type FloatOptions = { stiffness?: number; damping?: number; mass?: number; opacityDuration?: number }
-
-function floatIn(delay: number, from: FloatFrom, options?: FloatOptions) {
-  const { stiffness = 110, damping = 15, mass = 1, opacityDuration = 0.4 } = options ?? {}
-  return {
-    hidden: {
-      opacity: 0,
-      x: from.x ?? 0,
-      y: from.y ?? 0,
-      rotate: from.rotate ?? 0,
-      scale: from.scale ?? 1,
-    },
-    visible: {
-      opacity: 1,
-      x: 0,
-      y: 0,
-      rotate: 0,
-      scale: 1,
-      transition: {
-        type: "spring" as const,
-        stiffness,
-        damping,
-        mass,
-        delay,
-        opacity: { duration: opacityDuration, delay },
-      },
-    },
-  }
-}
 
 /* ------------------------------------------------------------------------ */
 /* Contenu — à remplacer par de vrais articles quand ils seront prêts.       */
@@ -94,7 +64,9 @@ const BUBBLES = [
   { icon: BarChart3, className: "bg-warning/15 text-warning", pos: "-right-4 -bottom-2", from: { x: 60, y: 30, rotate: 8 } },
 ]
 
-function BlogHeroIllustration({ reduce }: { reduce: boolean }) {
+function BlogHeroIllustration() {
+  const floatIn = useFloatIn()
+
   return (
     <div className="relative mx-auto w-full max-w-sm">
       <div
@@ -122,7 +94,7 @@ function BlogHeroIllustration({ reduce }: { reduce: boolean }) {
         <motion.div
           key={bubble.pos}
           className={cn("absolute", bubble.pos)}
-          initial={reduce ? false : "hidden"}
+          initial="hidden"
           whileInView="visible"
           viewport={{ once: true, amount: 0.6 }}
           variants={floatIn(0.3 + index * 0.1, bubble.from, { stiffness: 170, damping: 14, mass: 0.6 })}
@@ -137,8 +109,7 @@ function BlogHeroIllustration({ reduce }: { reduce: boolean }) {
 }
 
 function BlogHero() {
-  const reduce = Boolean(useReducedMotion())
-  const isMobile = useIsMobile()
+  const floatIn = useFloatIn()
 
   return (
     <Section spacing="lg">
@@ -146,7 +117,7 @@ function BlogHero() {
         <div className="flex flex-col items-center text-center">
           <motion.div
             className="mb-4"
-            initial={reduce || isMobile ? false : "hidden"}
+            initial="hidden"
             whileInView="visible"
             viewport={{ once: true, amount: 0.4 }}
             variants={floatIn(0, { y: -40, scale: 0.85 })}
@@ -158,7 +129,7 @@ function BlogHero() {
           </motion.div>
 
           <motion.div
-            initial={reduce || isMobile ? false : "hidden"}
+            initial="hidden"
             whileInView="visible"
             viewport={{ once: true, amount: 0.4 }}
             variants={floatIn(0.12, { y: -60, scale: 0.94 })}
@@ -168,7 +139,7 @@ function BlogHero() {
 
           <motion.p
             className="mt-6 max-w-xl text-body text-text-secondary"
-            initial={reduce || isMobile ? false : "hidden"}
+            initial="hidden"
             whileInView="visible"
             viewport={{ once: true, amount: 0.4 }}
             variants={floatIn(0.22, { y: 40 })}
@@ -183,12 +154,12 @@ function BlogHero() {
         </div>
 
         <motion.div
-          initial={reduce || isMobile ? false : "hidden"}
+          initial="hidden"
           whileInView="visible"
           viewport={{ once: true, amount: 0.2 }}
           variants={floatIn(0.15, { x: 100, rotate: 3 }, { damping: 30, mass: 4 })}
         >
-          <BlogHeroIllustration reduce={reduce} />
+          <BlogHeroIllustration />
         </motion.div>
       </div>
     </Section>
@@ -196,15 +167,14 @@ function BlogHero() {
 }
 
 function StatsRow() {
-  const reduce = Boolean(useReducedMotion())
-  const isMobile = useIsMobile()
+  const floatIn = useFloatIn()
 
   return (
     <div className="grid grid-cols-2 gap-4 lg:grid-cols-4 lg:gap-6">
       {STATS.map((stat, index) => (
         <motion.div
           key={stat.label}
-          initial={reduce || isMobile ? false : "hidden"}
+          initial="hidden"
           whileInView="visible"
           viewport={{ once: true, amount: 0.4 }}
           variants={floatIn(index * 0.1, { y: 40, scale: 0.9 }, { damping: 30, mass: 4 })}
@@ -223,13 +193,12 @@ function StatsRow() {
 }
 
 function SearchBar({ value, onChange }: { value: string; onChange: (value: string) => void }) {
-  const reduce = Boolean(useReducedMotion())
-  const isMobile = useIsMobile()
+  const floatIn = useFloatIn()
 
   return (
     <motion.div
       className="relative mx-auto w-full max-w-xl"
-      initial={reduce || isMobile ? false : "hidden"}
+      initial="hidden"
       whileInView="visible"
       viewport={{ once: true, amount: 0.4 }}
       variants={floatIn(0.1, { y: 30 })}
@@ -250,13 +219,12 @@ function SearchBar({ value, onChange }: { value: string; onChange: (value: strin
 }
 
 function CategoryFilters({ active, onSelect }: { active: string; onSelect: (category: string) => void }) {
-  const reduce = Boolean(useReducedMotion())
-  const isMobile = useIsMobile()
+  const floatIn = useFloatIn()
 
   return (
     <motion.div
       className="flex flex-wrap justify-center gap-3"
-      initial={reduce || isMobile ? false : "hidden"}
+      initial="hidden"
       whileInView="visible"
       viewport={{ once: true, amount: 0.4 }}
       variants={floatIn(0.18, { y: 30 })}
@@ -277,8 +245,7 @@ function CategoryFilters({ active, onSelect }: { active: string; onSelect: (cate
 }
 
 function ArticleCard({ article, index }: { article: Article; index: number }) {
-  const reduce = Boolean(useReducedMotion())
-  const isMobile = useIsMobile()
+  const floatIn = useFloatIn()
   const column = index % 3
   const from: FloatFrom =
     column === 0 ? { x: -160, rotate: -5 } : column === 2 ? { x: 160, rotate: 5 } : { y: 90 }
@@ -288,7 +255,7 @@ function ArticleCard({ article, index }: { article: Article; index: number }) {
 
   return (
     <motion.div
-      initial={reduce || isMobile ? false : "hidden"}
+      initial="hidden"
       whileInView="visible"
       viewport={{ once: true, amount: 0.3 }}
       variants={floatIn(index * 0.1, from, { damping: 30, mass: 4 })}
@@ -362,8 +329,7 @@ function EmptyState({
 }
 
 function FinalCta() {
-  const reduce = Boolean(useReducedMotion())
-  const isMobile = useIsMobile()
+  const floatIn = useFloatIn()
 
   return (
     <Card className="relative mx-auto max-w-3xl overflow-hidden text-center">
@@ -373,7 +339,7 @@ function FinalCta() {
       />
       <div className="relative flex flex-col items-center">
         <motion.div
-          initial={reduce || isMobile ? false : "hidden"}
+          initial="hidden"
           animate="visible"
           variants={floatIn(0, { y: -60, scale: 0.94 })}
         >
@@ -382,7 +348,7 @@ function FinalCta() {
 
         <motion.p
           className="mt-6 max-w-xl text-body text-text-secondary"
-          initial={reduce || isMobile ? false : "hidden"}
+          initial="hidden"
           animate="visible"
           variants={floatIn(0.12, { y: 40 })}
         >
@@ -392,7 +358,7 @@ function FinalCta() {
 
         <div className="mt-10 flex flex-col gap-4 sm:flex-row">
           <motion.div
-            initial={reduce || isMobile ? false : "hidden"}
+            initial="hidden"
             animate="visible"
             variants={floatIn(0.22, { x: -160, rotate: -6 })}
           >
@@ -401,7 +367,7 @@ function FinalCta() {
             </a>
           </motion.div>
           <motion.div
-            initial={reduce || isMobile ? false : "hidden"}
+            initial="hidden"
             animate="visible"
             variants={floatIn(0.3, { x: 160, rotate: 6 })}
           >

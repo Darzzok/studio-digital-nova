@@ -11,38 +11,7 @@ import { Heading } from "@/components/ui/heading"
 import { Icon } from "@/components/ui/icon"
 import { Section } from "@/components/ui/section"
 import { useIsMobile } from "@/hooks/use-is-mobile"
-import { EASE_NOVA } from "@/lib/motion"
-
-type FloatFrom = { x?: number; y?: number; rotate?: number; scale?: number }
-type FloatOptions = { stiffness?: number; damping?: number; mass?: number; opacityDuration?: number }
-
-function floatIn(delay: number, from: FloatFrom, options?: FloatOptions) {
-  const { stiffness = 130, damping = 16, mass = 0.9, opacityDuration = 0.4 } = options ?? {}
-  return {
-    hidden: {
-      opacity: 0,
-      x: from.x ?? 0,
-      y: from.y ?? 0,
-      rotate: from.rotate ?? 0,
-      scale: from.scale ?? 1,
-    },
-    visible: {
-      opacity: 1,
-      x: 0,
-      y: 0,
-      rotate: 0,
-      scale: 1,
-      transition: {
-        type: "spring" as const,
-        stiffness,
-        damping,
-        mass,
-        delay,
-        opacity: { duration: opacityDuration, delay },
-      },
-    },
-  }
-}
+import { EASE_NOVA, useFloatIn } from "@/lib/motion"
 
 const STEPS = [
   {
@@ -310,6 +279,7 @@ const INITIAL_VISIBLE_STEPS = 3
 function Processus() {
   const reduce = Boolean(useReducedMotion())
   const isMobile = useIsMobile()
+  const floatIn = useFloatIn({ stiffness: 130, damping: 16, mass: 0.9 })
   const [showAllSteps, setShowAllSteps] = useState(false)
   const gridRef = useRef<HTMLDivElement | null>(null)
   const inView = useInView(gridRef, { once: true, amount: 0.3 })
@@ -325,7 +295,7 @@ function Processus() {
       <div className="mx-auto flex max-w-2xl flex-col items-center text-center md:max-w-3xl">
         <motion.div
           className="mb-4"
-          initial={reduce || isMobile ? false : "hidden"}
+          initial="hidden"
           whileInView="visible"
           viewport={{ once: true, amount: 0.4 }}
           variants={floatIn(0, { y: -40, scale: 0.85 })}
@@ -337,7 +307,7 @@ function Processus() {
         </motion.div>
 
         <motion.div
-          initial={reduce || isMobile ? false : "hidden"}
+          initial="hidden"
           whileInView="visible"
           viewport={{ once: true, amount: 0.4 }}
           variants={floatIn(0.12, { y: -60, scale: 0.94 })}
@@ -347,7 +317,7 @@ function Processus() {
 
         <motion.p
           className="mt-6 max-w-xl text-body text-text-secondary"
-          initial={reduce || isMobile ? false : "hidden"}
+          initial="hidden"
           whileInView="visible"
           viewport={{ once: true, amount: 0.4 }}
           variants={floatIn(0.22, { y: 40 })}
@@ -382,7 +352,7 @@ function Processus() {
                       strokeWidth={1.5}
                       strokeDasharray="5 6"
                       fill="none"
-                      initial={reduce || isMobile ? false : "hidden"}
+                      initial="hidden"
                       whileInView="visible"
                       viewport={{ once: true, amount: 0.5 }}
                       variants={{
@@ -415,7 +385,7 @@ function Processus() {
               key={step.number}
               style={{ gridColumn: index + 1, gridRow: 2 }}
               className="flex items-center justify-center"
-              initial={reduce || isMobile ? false : "hidden"}
+              initial="hidden"
               whileInView="visible"
               viewport={{ once: true, amount: 0.4 }}
               variants={floatIn(index * 0.12, { y: 70, scale: 0.85 })}
@@ -429,7 +399,7 @@ function Processus() {
               key={step.number}
               style={{ gridColumn: index + 1, gridRow: index % 2 === 0 ? 1 : 3 }}
               className={index % 2 === 0 ? "self-end" : "self-start"}
-              initial={reduce || isMobile ? false : "hidden"}
+              initial="hidden"
               whileInView="visible"
               viewport={{ once: true, amount: 0.4 }}
               variants={floatIn(index * 0.12, { y: index % 2 === 0 ? -70 : 70, scale: 0.85 }, { damping: 32, mass: 3.6 })}
@@ -454,7 +424,7 @@ function Processus() {
             return (
               <motion.div
                 key={step.number}
-                initial={reduce || isMobile ? false : "hidden"}
+                initial="hidden"
                 whileInView="visible"
                 viewport={{ once: true, amount: 0.4 }}
                 variants={floatIn(index * 0.1, { y: 60, scale: 0.9 }, { damping: 32, mass: 3.6 })}

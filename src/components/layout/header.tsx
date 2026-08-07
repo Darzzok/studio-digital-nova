@@ -24,9 +24,11 @@ const NAV_ITEMS = [
 function Header() {
   const [scrolled, setScrolled] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
-  const reduce = useReducedMotion()
+  const reduce = Boolean(useReducedMotion())
   const isMobile = useIsMobile()
-  const initial = reduce || isMobile ? false : "hidden"
+  const skip = reduce || isMobile
+  const initial = "hidden"
+  const withSkip = (transition: Record<string, unknown>) => (skip ? { duration: 0, delay: 0 } : transition)
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8)
@@ -60,14 +62,14 @@ function Header() {
                 x: 0,
                 y: 0,
                 rotate: 0,
-                transition: {
+                transition: withSkip({
                   type: "spring",
                   stiffness: 130,
                   damping: 15,
                   mass: 0.8,
                   delay: 0.15,
                   opacity: { duration: 0.35, delay: 0.15 },
-                },
+                }),
               },
             }}
           >
@@ -96,14 +98,14 @@ function Header() {
                   visible: {
                     opacity: 1,
                     y: 0,
-                    transition: {
+                    transition: withSkip({
                       type: "spring",
                       stiffness: 150,
                       damping: 16,
                       mass: 0.7,
                       delay: 0.4 + index * 0.07,
                       opacity: { duration: 0.3, delay: 0.4 + index * 0.07 },
-                    },
+                    }),
                   },
                 }}
               >
@@ -127,14 +129,14 @@ function Header() {
                   x: 0,
                   y: 0,
                   rotate: 0,
-                  transition: {
+                  transition: withSkip({
                     type: "spring",
                     stiffness: 130,
                     damping: 15,
                     mass: 0.8,
                     delay: 0.75,
                     opacity: { duration: 0.35, delay: 0.75 },
-                  },
+                  }),
                 },
               }}
             >
@@ -159,14 +161,14 @@ function Header() {
                   x: 0,
                   y: 0,
                   rotate: 0,
-                  transition: {
+                  transition: withSkip({
                     type: "spring",
                     stiffness: 130,
                     damping: 15,
                     mass: 0.8,
                     delay: 0.75,
                     opacity: { duration: 0.35, delay: 0.75 },
-                  },
+                  }),
                 },
               }}
             >

@@ -5,37 +5,7 @@ import { motion } from "framer-motion";
 import { Card } from "@/components/ui/card";
 import { Heading } from "@/components/ui/heading";
 import { Section } from "@/components/ui/section";
-
-type FloatFrom = { x?: number; y?: number; rotate?: number; scale?: number };
-type FloatOptions = { stiffness?: number; damping?: number; mass?: number; opacityDuration?: number };
-
-function floatIn(delay: number, from: FloatFrom, options?: FloatOptions) {
-  const { stiffness = 110, damping = 15, mass = 1, opacityDuration = 0.4 } = options ?? {};
-  return {
-    hidden: {
-      opacity: 0,
-      x: from.x ?? 0,
-      y: from.y ?? 0,
-      rotate: from.rotate ?? 0,
-      scale: from.scale ?? 1,
-    },
-    visible: {
-      opacity: 1,
-      x: 0,
-      y: 0,
-      rotate: 0,
-      scale: 1,
-      transition: {
-        type: "spring" as const,
-        stiffness,
-        damping,
-        mass,
-        delay,
-        opacity: { duration: opacityDuration, delay },
-      },
-    },
-  };
-}
+import { useFloatIn } from "@/lib/motion";
 
 const SECTIONS = [
   {
@@ -97,6 +67,8 @@ const SECTIONS = [
 ];
 
 function PrivacyContent() {
+  const floatIn = useFloatIn();
+
   return (
     <Section>
       <div className="mx-auto flex max-w-2xl flex-col items-center text-center md:max-w-3xl">

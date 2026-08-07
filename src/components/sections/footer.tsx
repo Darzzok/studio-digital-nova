@@ -2,42 +2,11 @@
 
 import Link from "next/link"
 import { Mail } from "lucide-react"
-import { motion, useReducedMotion } from "framer-motion"
+import { motion } from "framer-motion"
 
 import { Container } from "@/components/ui/container"
 import { Icon } from "@/components/ui/icon"
-import { useIsMobile } from "@/hooks/use-is-mobile"
-
-type FloatFrom = { x?: number; y?: number; rotate?: number; scale?: number }
-type FloatOptions = { stiffness?: number; damping?: number; mass?: number; opacityDuration?: number }
-
-function floatIn(delay: number, from: FloatFrom, options?: FloatOptions) {
-  const { stiffness = 110, damping = 15, mass = 1, opacityDuration = 0.4 } = options ?? {}
-  return {
-    hidden: {
-      opacity: 0,
-      x: from.x ?? 0,
-      y: from.y ?? 0,
-      rotate: from.rotate ?? 0,
-      scale: from.scale ?? 1,
-    },
-    visible: {
-      opacity: 1,
-      x: 0,
-      y: 0,
-      rotate: 0,
-      scale: 1,
-      transition: {
-        type: "spring" as const,
-        stiffness,
-        damping,
-        mass,
-        delay,
-        opacity: { duration: opacityDuration, delay },
-      },
-    },
-  }
-}
+import { useFloatIn } from "@/lib/motion"
 
 const NAV_ITEMS = [
   { label: "Mes services", href: "/#services" },
@@ -59,8 +28,7 @@ const LEGAL_LINKS = [
 ]
 
 function Footer() {
-  const reduce = Boolean(useReducedMotion())
-  const isMobile = useIsMobile()
+  const floatIn = useFloatIn()
 
   return (
     <footer data-slot="footer" className="w-full border-t border-border bg-surface">
@@ -68,7 +36,7 @@ function Footer() {
         <div className="grid grid-cols-1 gap-12 sm:grid-cols-2 lg:grid-cols-4">
           <motion.div
             className="flex flex-col gap-4 lg:col-span-2 lg:pr-12"
-            initial={reduce || isMobile ? false : "hidden"}
+            initial="hidden"
             whileInView="visible"
             viewport={{ once: true, amount: 0.4 }}
             variants={floatIn(0, { x: -140, rotate: -4 })}
@@ -92,7 +60,7 @@ function Footer() {
           </motion.div>
 
           <motion.div
-            initial={reduce || isMobile ? false : "hidden"}
+            initial="hidden"
             whileInView="visible"
             viewport={{ once: true, amount: 0.4 }}
             variants={floatIn(0.1, { y: 90 })}
@@ -113,7 +81,7 @@ function Footer() {
           </motion.div>
 
           <motion.div
-            initial={reduce || isMobile ? false : "hidden"}
+            initial="hidden"
             whileInView="visible"
             viewport={{ once: true, amount: 0.4 }}
             variants={floatIn(0.2, { x: 140, rotate: 4 })}
@@ -137,7 +105,7 @@ function Footer() {
 
         <motion.div
           className="mt-16 flex flex-col items-center gap-4 border-t border-border pt-8 sm:flex-row sm:justify-between"
-          initial={reduce || isMobile ? false : "hidden"}
+          initial="hidden"
           whileInView="visible"
           viewport={{ once: true, amount: 0.4 }}
           variants={floatIn(0.3, { y: 40 })}

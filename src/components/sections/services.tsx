@@ -22,38 +22,9 @@ import { Heading } from "@/components/ui/heading"
 import { Icon } from "@/components/ui/icon"
 import { Section } from "@/components/ui/section"
 import { useIsMobile } from "@/hooks/use-is-mobile"
-import { EASE_NOVA } from "@/lib/motion"
+import { EASE_NOVA, useFloatIn } from "@/lib/motion"
 
 type FloatFrom = { x?: number; y?: number; rotate?: number; scale?: number }
-type FloatOptions = { stiffness?: number; damping?: number; mass?: number; opacityDuration?: number }
-
-function floatIn(delay: number, from: FloatFrom, options?: FloatOptions) {
-  const { stiffness = 110, damping = 15, mass = 1, opacityDuration = 0.4 } = options ?? {}
-  return {
-    hidden: {
-      opacity: 0,
-      x: from.x ?? 0,
-      y: from.y ?? 0,
-      rotate: from.rotate ?? 0,
-      scale: from.scale ?? 1,
-    },
-    visible: {
-      opacity: 1,
-      x: 0,
-      y: 0,
-      rotate: 0,
-      scale: 1,
-      transition: {
-        type: "spring" as const,
-        stiffness,
-        damping,
-        mass,
-        delay,
-        opacity: { duration: opacityDuration, delay },
-      },
-    },
-  }
-}
 
 const FRAME = "relative h-40 w-full overflow-hidden rounded-xl border border-border bg-background"
 
@@ -377,6 +348,7 @@ const INITIAL_VISIBLE_SERVICES = 3
 function Services() {
   const reduce = useReducedMotion()
   const isMobile = useIsMobile()
+  const floatIn = useFloatIn()
   const [showAll, setShowAll] = useState(false)
 
   const visibleServices =
@@ -388,7 +360,7 @@ function Services() {
       <div className="mx-auto flex max-w-2xl flex-col items-center text-center md:max-w-3xl">
         <motion.div
           className="mb-4"
-          initial={reduce || isMobile ? false : "hidden"}
+          initial="hidden"
           whileInView="visible"
           viewport={{ once: true, amount: 0.4 }}
           variants={floatIn(0, { y: -40, scale: 0.85 })}
@@ -400,7 +372,7 @@ function Services() {
         </motion.div>
 
         <motion.div
-          initial={reduce || isMobile ? false : "hidden"}
+          initial="hidden"
           whileInView="visible"
           viewport={{ once: true, amount: 0.4 }}
           variants={floatIn(0.12, { y: -60, scale: 0.94 })}
@@ -410,7 +382,7 @@ function Services() {
 
         <motion.p
           className="mt-6 max-w-xl text-body text-text-secondary"
-          initial={reduce || isMobile ? false : "hidden"}
+          initial="hidden"
           whileInView="visible"
           viewport={{ once: true, amount: 0.4 }}
           variants={floatIn(0.22, { y: 40 })}
@@ -434,7 +406,7 @@ function Services() {
           return (
             <motion.div
               key={service.title}
-              initial={reduce || isMobile ? false : "hidden"}
+              initial="hidden"
               whileInView="visible"
               viewport={{ once: true, amount: 0.3 }}
               variants={floatIn(index * 0.12, from, { damping: 30, mass: 4 })}

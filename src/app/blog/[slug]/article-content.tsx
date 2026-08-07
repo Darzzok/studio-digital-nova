@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { motion, useReducedMotion } from "framer-motion"
+import { motion } from "framer-motion"
 import {
   ArrowLeft,
   ArrowRight,
@@ -21,7 +21,7 @@ import { Card } from "@/components/ui/card"
 import { Heading } from "@/components/ui/heading"
 import { Icon } from "@/components/ui/icon"
 import { Section } from "@/components/ui/section"
-import { useIsMobile } from "@/hooks/use-is-mobile"
+import { useFloatIn } from "@/lib/motion"
 import { cn } from "@/lib/utils"
 import {
   CATEGORY_GRADIENT,
@@ -30,37 +30,6 @@ import {
   type Article,
   type ArticleBlock,
 } from "@/lib/articles"
-
-type FloatFrom = { x?: number; y?: number; rotate?: number; scale?: number }
-type FloatOptions = { stiffness?: number; damping?: number; mass?: number; opacityDuration?: number }
-
-function floatIn(delay: number, from: FloatFrom, options?: FloatOptions) {
-  const { stiffness = 110, damping = 15, mass = 1, opacityDuration = 0.4 } = options ?? {}
-  return {
-    hidden: {
-      opacity: 0,
-      x: from.x ?? 0,
-      y: from.y ?? 0,
-      rotate: from.rotate ?? 0,
-      scale: from.scale ?? 1,
-    },
-    visible: {
-      opacity: 1,
-      x: 0,
-      y: 0,
-      rotate: 0,
-      scale: 1,
-      transition: {
-        type: "spring" as const,
-        stiffness,
-        damping,
-        mass,
-        delay,
-        opacity: { duration: opacityDuration, delay },
-      },
-    },
-  }
-}
 
 const CALLOUT_TONE: Record<string, string> = {
   primary: "border-primary/30 bg-primary/5",
@@ -242,14 +211,13 @@ function ArticleBlockRenderer({ block }: { block: ArticleBlock }) {
 }
 
 function RelatedArticleCard({ article, index }: { article: Article; index: number }) {
-  const reduce = Boolean(useReducedMotion())
-  const isMobile = useIsMobile()
+  const floatIn = useFloatIn()
   const gradient = CATEGORY_GRADIENT[article.category]
   const icon = CATEGORY_ICON[article.category]
 
   return (
     <motion.div
-      initial={reduce || isMobile ? false : "hidden"}
+      initial="hidden"
       whileInView="visible"
       viewport={{ once: true, amount: 0.3 }}
       variants={floatIn(index * 0.1, { y: 60 }, { damping: 30, mass: 4 })}
@@ -307,8 +275,7 @@ function ArticleConversionCta() {
 }
 
 function ArticleContent({ article }: { article: Article }) {
-  const reduce = Boolean(useReducedMotion())
-  const isMobile = useIsMobile()
+  const floatIn = useFloatIn()
   const gradient = CATEGORY_GRADIENT[article.category]
   const toc = article.blocks
     .filter((block): block is Extract<ArticleBlock, { type: "heading" }> => block.type === "heading")
@@ -320,7 +287,7 @@ function ArticleContent({ article }: { article: Article }) {
     <>
       <Section spacing="lg">
         <motion.div
-          initial={reduce || isMobile ? false : "hidden"}
+          initial="hidden"
           whileInView="visible"
           viewport={{ once: true, amount: 0.4 }}
           variants={floatIn(0, { y: -30 })}
@@ -338,7 +305,7 @@ function ArticleContent({ article }: { article: Article }) {
           <div className="flex flex-col items-center text-center">
             <motion.div
               className="mb-4"
-              initial={reduce || isMobile ? false : "hidden"}
+              initial="hidden"
               whileInView="visible"
               viewport={{ once: true, amount: 0.4 }}
               variants={floatIn(0, { y: -40, scale: 0.85 })}
@@ -349,7 +316,7 @@ function ArticleContent({ article }: { article: Article }) {
             </motion.div>
 
             <motion.div
-              initial={reduce || isMobile ? false : "hidden"}
+              initial="hidden"
               whileInView="visible"
               viewport={{ once: true, amount: 0.4 }}
               variants={floatIn(0.12, { y: -60, scale: 0.94 })}
@@ -361,7 +328,7 @@ function ArticleContent({ article }: { article: Article }) {
 
             <motion.div
               className="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-small text-text-secondary"
-              initial={reduce || isMobile ? false : "hidden"}
+              initial="hidden"
               whileInView="visible"
               viewport={{ once: true, amount: 0.4 }}
               variants={floatIn(0.2, { y: 30 })}
@@ -382,7 +349,7 @@ function ArticleContent({ article }: { article: Article }) {
           </div>
 
           <motion.div
-            initial={reduce || isMobile ? false : "hidden"}
+            initial="hidden"
             whileInView="visible"
             viewport={{ once: true, amount: 0.2 }}
             variants={floatIn(0.15, { x: 100, rotate: 3 }, { damping: 30, mass: 4 })}
@@ -399,7 +366,7 @@ function ArticleContent({ article }: { article: Article }) {
               <motion.p
                 key={index}
                 className="text-h3 font-heading font-medium leading-snug text-text"
-                initial={reduce || isMobile ? false : "hidden"}
+                initial="hidden"
                 whileInView="visible"
                 viewport={{ once: true, amount: 0.4 }}
                 variants={floatIn(index * 0.08, { y: 30 })}
@@ -411,7 +378,7 @@ function ArticleContent({ article }: { article: Article }) {
             {article.blocks.map((block, index) => (
               <motion.div
                 key={index}
-                initial={reduce || isMobile ? false : "hidden"}
+                initial="hidden"
                 whileInView="visible"
                 viewport={{ once: true, amount: 0.25 }}
                 variants={floatIn(0, { y: 30 })}
@@ -450,7 +417,7 @@ function ArticleContent({ article }: { article: Article }) {
       {related.length > 0 && (
         <Section spacing="sm">
           <motion.div
-            initial={reduce || isMobile ? false : "hidden"}
+            initial="hidden"
             whileInView="visible"
             viewport={{ once: true, amount: 0.4 }}
             variants={floatIn(0, { y: -30 })}

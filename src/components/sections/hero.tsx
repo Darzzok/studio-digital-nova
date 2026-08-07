@@ -19,39 +19,7 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Heading } from "@/components/ui/heading"
 import { Icon } from "@/components/ui/icon"
-import { useIsMobile } from "@/hooks/use-is-mobile"
-import { EASE_NOVA } from "@/lib/motion"
-
-type FloatFrom = { x?: number; y?: number; rotate?: number; scale?: number }
-type FloatOptions = { stiffness?: number; damping?: number; mass?: number; opacityDuration?: number }
-
-function floatIn(delay: number, from: FloatFrom, options?: FloatOptions) {
-  const { stiffness = 140, damping = 16, mass = 0.9, opacityDuration = 0.4 } = options ?? {}
-  return {
-    hidden: {
-      opacity: 0,
-      x: from.x ?? 0,
-      y: from.y ?? 0,
-      rotate: from.rotate ?? 0,
-      scale: from.scale ?? 1,
-    },
-    visible: {
-      opacity: 1,
-      x: 0,
-      y: 0,
-      rotate: 0,
-      scale: 1,
-      transition: {
-        type: "spring" as const,
-        stiffness,
-        damping,
-        mass,
-        delay,
-        opacity: { duration: opacityDuration, delay },
-      },
-    },
-  }
-}
+import { EASE_NOVA, useFloatIn } from "@/lib/motion"
 
 const BUBBLES = [
   { icon: Code2, className: "bg-warning/15 text-warning", pos: "left-[2%] top-[36%]", from: { x: -160, y: 40, rotate: -12 } },
@@ -64,7 +32,7 @@ function Hero() {
   const sectionRef = useRef<HTMLElement | null>(null)
   const inView = useInView(sectionRef, { amount: 0 })
   const reduce = useReducedMotion()
-  const isMobile = useIsMobile()
+  const floatIn = useFloatIn({ stiffness: 140, damping: 16, mass: 0.9 })
 
   const hasEverBeenInView = useRef(false)
   const hasLeft = useRef(false)
@@ -82,7 +50,7 @@ function Hero() {
     }
   }, [inView])
 
-  const initial = reduce || isMobile ? false : "hidden"
+  const initial = "hidden"
 
   return (
     <section
