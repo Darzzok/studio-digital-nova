@@ -13,7 +13,7 @@ import {
   Search,
   Zap,
 } from "lucide-react"
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion"
+import { AnimatePresence, motion, useInView, useReducedMotion } from "framer-motion"
 
 import { Badge } from "@/components/ui/badge"
 import { Card } from "@/components/ui/card"
@@ -36,6 +36,11 @@ const STEPS = [
         marché.
       </>
     ),
+    details: [
+      "Échange sur vos besoins et vos objectifs",
+      "Analyse de votre marché et de la concurrence",
+      "Définition claire du périmètre du projet",
+    ],
   },
   {
     number: "02",
@@ -48,6 +53,11 @@ const STEPS = [
         vous ressemble.
       </>
     ),
+    details: [
+      "Choix des couleurs et de la typographie",
+      "Structure des pages pensée pour convertir",
+      "Allers-retours jusqu'à votre validation",
+    ],
   },
   {
     number: "03",
@@ -60,6 +70,11 @@ const STEPS = [
         <strong className="font-semibold text-text">propre et performant</strong>.
       </>
     ),
+    details: [
+      "Intégration responsive mobile et desktop",
+      "Code propre, rapide et maintenable",
+      "Tests sur tous les navigateurs",
+    ],
   },
   {
     number: "04",
@@ -72,6 +87,11 @@ const STEPS = [
         peaufinés en détail.
       </>
     ),
+    details: [
+      "Vitesse de chargement optimisée",
+      "Référencement SEO technique et éditorial",
+      "Accessibilité vérifiée pour tous les visiteurs",
+    ],
   },
   {
     number: "05",
@@ -85,6 +105,11 @@ const STEPS = [
         ligne.
       </>
     ),
+    details: [
+      "Relecture complète avec vous",
+      "Ajustements de dernière minute",
+      "Vérification sur mobile et sur ordinateur",
+    ],
   },
   {
     number: "06",
@@ -97,12 +122,17 @@ const STEPS = [
         <strong className="font-semibold text-text">convertir vos visiteurs</strong>.
       </>
     ),
+    details: [
+      "Publication sur votre nom de domaine",
+      "Configuration finale sécurisée",
+      "Site prêt à convertir vos visiteurs",
+    ],
   },
 ]
 
 const STEP_COUNT = STEPS.length
-const AUTOPLAY_DELAY = 4500
-const RESUME_DELAY = 9000
+const AUTOPLAY_DELAY = 2800
+const RESUME_DELAY = 6000
 
 const cardVariants = {
   enter: (direction: number) => ({ opacity: 0, x: direction >= 0 ? 32 : -32 }),
@@ -113,6 +143,11 @@ const cardVariants = {
 function Processus() {
   const reduce = Boolean(useReducedMotion())
   const floatIn = useFloatIn({ stiffness: 130, damping: 16, mass: 0.9 })
+
+  const friezeRef = useRef<HTMLDivElement | null>(null)
+  const inView = useInView(friezeRef, { amount: 0.5 })
+  const hasEverBeenInView = useRef(false)
+  const hasLeft = useRef(false)
 
   const [activeIndex, setActiveIndex] = useState(0)
   const [direction, setDirection] = useState(1)
@@ -139,17 +174,31 @@ function Processus() {
     }
   }, [])
 
+  // Repart de l'étape 1 à chaque fois qu'on revient sur la section après l'avoir quittée.
   useEffect(() => {
-    if (reduce || isPaused) return
+    if (inView) {
+      if (hasEverBeenInView.current && hasLeft.current) {
+        setDirection(1)
+        setActiveIndex(0)
+      }
+      hasEverBeenInView.current = true
+      hasLeft.current = false
+    } else if (hasEverBeenInView.current) {
+      hasLeft.current = true
+    }
+  }, [inView])
+
+  useEffect(() => {
+    if (reduce || isPaused || !inView) return
     const id = setInterval(() => {
       setDirection(1)
       setActiveIndex((current) => (current + 1) % STEP_COUNT)
     }, AUTOPLAY_DELAY)
     return () => clearInterval(id)
-  }, [reduce, isPaused])
+  }, [reduce, isPaused, inView])
 
   return (
-    <Section id="ma-methode" className="scroll-mt-24">
+    <Section id="ma-methode" className="scroll-mt-24 bg-surface">
       <div className="mx-auto flex max-w-2xl flex-col items-center text-center md:max-w-3xl">
         <motion.div
           className="mb-4"
@@ -187,6 +236,7 @@ function Processus() {
       </div>
 
       <motion.div
+        ref={friezeRef}
         className="mt-16"
         initial="hidden"
         whileInView="visible"
@@ -259,7 +309,7 @@ function Processus() {
             <Icon icon={ArrowLeft} className="size-4" />
           </button>
 
-          <div className="relative min-h-64 flex-1 overflow-hidden sm:min-h-56">
+          <div className="relative min-h-[26rem] flex-1 overflow-hidden sm:min-h-[22rem]">
             <AnimatePresence mode="wait" custom={direction} initial={false}>
               <motion.div
                 key={activeIndex}
@@ -270,29 +320,33 @@ function Processus() {
                 exit="exit"
                 transition={reduce ? { duration: 0 } : { duration: 0.35, ease: EASE_NOVA }}
               >
-                <Card className="relative flex flex-col items-center gap-4 overflow-hidden p-8 text-center sm:p-10">
-                  <span
-                    aria-hidden
-                    className="pointer-events-none absolute -right-4 -top-6 font-heading text-[7rem] font-bold leading-none text-text opacity-[0.04] sm:text-[9rem]"
-                  >
-                    {active.number}
-                  </span>
-
+                <Card className="flex flex-col items-center gap-4 bg-surface-sunken p-8 text-center sm:p-10">
                   <span
                     className={cn(
-                      "relative flex size-14 shrink-0 items-center justify-center rounded-2xl shadow-sm",
+                      "flex size-14 shrink-0 items-center justify-center rounded-2xl shadow-sm",
                       active.className
                     )}
                   >
                     <Icon icon={active.icon} className="size-6" />
                   </span>
 
-                  <Badge variant="outline" className="relative">
+                  <Badge variant="outline">
                     Étape {activeIndex + 1}/{STEP_COUNT}
                   </Badge>
 
-                  <h3 className="relative text-h3 font-heading font-semibold text-text">{active.title}</h3>
-                  <p className="relative max-w-md text-body text-text-secondary">{active.description}</p>
+                  <h3 className="text-h3 font-heading font-semibold text-text">{active.title}</h3>
+                  <p className="max-w-md text-body text-text-secondary">{active.description}</p>
+
+                  <div className="h-px w-full max-w-xs bg-border" />
+
+                  <ul className="flex w-full max-w-sm flex-col gap-2.5">
+                    {active.details.map((detail) => (
+                      <li key={detail} className="flex items-start justify-center gap-2 text-small text-text-secondary">
+                        <Icon icon={Check} className="mt-0.5 size-3.5 shrink-0 text-success" />
+                        {detail}
+                      </li>
+                    ))}
+                  </ul>
                 </Card>
               </motion.div>
             </AnimatePresence>

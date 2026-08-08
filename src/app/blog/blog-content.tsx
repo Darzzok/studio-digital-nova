@@ -394,7 +394,7 @@ function BlogContent() {
     <>
       <BlogHero />
 
-      <Section>
+      <Section className="bg-surface">
         <div className="flex flex-col gap-10">
           <StatsRow />
 

@@ -346,7 +346,7 @@ function ArticleContent({ article }: { article: Article }) {
         </div>
       </Section>
 
-      <Section>
+      <Section className="bg-surface">
         <div className="grid grid-cols-1 gap-12 lg:grid-cols-[minmax(0,1fr)_320px]">
           <article id="article-body" className="flex flex-col gap-6 text-center">
             {article.intro.map((paragraph, index) => (

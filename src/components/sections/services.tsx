@@ -356,7 +356,7 @@ function Services() {
   const hiddenCount = SERVICES.length - INITIAL_VISIBLE_SERVICES
 
   return (
-    <Section id="services" className="scroll-mt-24">
+    <Section id="services" className="scroll-mt-24 bg-surface">
       <div className="mx-auto flex max-w-2xl flex-col items-center text-center md:max-w-3xl">
         <motion.div
           className="mb-4"
@@ -411,7 +411,7 @@ function Services() {
               viewport={{ once: true, amount: 0.3 }}
               variants={floatIn(index * 0.12, from, { damping: 30, mass: 4 })}
             >
-              <Card className="group flex h-full flex-col items-center gap-5 text-center">
+              <Card className="group flex h-full flex-col items-center gap-5 bg-surface-sunken text-center">
                 <service.Preview reduce={Boolean(reduce)} />
 
                 <span

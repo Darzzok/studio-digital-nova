@@ -1,19 +1,14 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
+import Image from "next/image"
 import Link from "next/link"
 import { motion, useInView, useReducedMotion } from "framer-motion"
-import {
-  ArrowRight,
-  Palette,
-  Smartphone,
-  TrendingUp,
-  Zap,
-} from "lucide-react"
+import { ArrowRight } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
+import { Container } from "@/components/ui/container"
 import { Heading } from "@/components/ui/heading"
 import { Icon } from "@/components/ui/icon"
 import { EASE_NOVA, useFloatIn } from "@/lib/motion"
@@ -46,95 +41,37 @@ function Hero() {
   return (
     <section
       ref={sectionRef}
-      className="relative flex min-h-screen w-full items-center justify-center overflow-hidden bg-background"
+      className="relative flex min-h-screen w-full items-center justify-center overflow-hidden bg-[#0a0a0a]"
     >
-      <div key={playKey} className="relative flex w-full items-center justify-center">
-        {/* Floating layer — gravitates around the central content, one single scene */}
-        <div className="pointer-events-none absolute inset-0 mx-auto hidden max-w-[1400px] xl:block">
-          <motion.div
-            className="absolute left-0 top-[8%] w-60"
-            variants={floatIn(2.3, { x: -220, y: -60, rotate: -8 }, { stiffness: 110, damping: 30, mass: 4 })}
-            initial={initial}
-            whileInView="visible"
-            viewport={viewport}
-          >
-            <Card className="pointer-events-auto flex items-start gap-3 p-5">
-              <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                <Icon icon={Palette} className="size-5" />
-              </span>
-              <div>
-                <p className="text-small font-semibold text-text">Design personnalisé</p>
-                <p className="text-small text-text-secondary">Un design unique à votre image.</p>
-              </div>
-            </Card>
-          </motion.div>
+      <Image
+        src="https://images.unsplash.com/photo-1568918460973-fe7f54f82482?auto=format&fit=crop&w=2400&q=80"
+        alt=""
+        fill
+        priority
+        sizes="100vw"
+        className="object-cover"
+      />
+      <div
+        aria-hidden
+        className="absolute inset-0"
+        style={{
+          backgroundImage:
+            "linear-gradient(180deg, rgba(10,10,10,0.72) 0%, rgba(10,10,10,0.6) 45%, rgba(10,10,10,0.85) 100%), radial-gradient(80% 60% at 50% 40%, rgba(10,10,10,0.15) 0%, rgba(10,10,10,0.55) 100%)",
+        }}
+      />
 
-          <motion.div
-            className="absolute right-0 top-[4%] w-64"
-            variants={floatIn(1.95, { x: 240, y: -50, rotate: 6 }, { stiffness: 100, damping: 30, mass: 4.4 })}
-            initial={initial}
-            whileInView="visible"
-            viewport={viewport}
-          >
-            <Card className="pointer-events-auto flex items-start gap-3 p-5">
-              <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-accent-purple/15 text-accent-purple">
-                <Icon icon={Smartphone} className="size-5" />
-              </span>
-              <div>
-                <p className="text-small font-semibold text-text">100% responsive</p>
-                <p className="text-small text-text-secondary">Parfait sur mobile et tablette.</p>
-              </div>
-            </Card>
-          </motion.div>
-
-          <motion.div
-            className="absolute bottom-[8%] left-0 w-60"
-            variants={floatIn(2.4, { x: -200, y: 70, rotate: -6 }, { stiffness: 110, damping: 30, mass: 4 })}
-            initial={initial}
-            whileInView="visible"
-            viewport={viewport}
-          >
-            <Card className="pointer-events-auto flex items-start gap-3 p-5">
-              <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-accent-green/15 text-accent-green">
-                <Icon icon={TrendingUp} className="size-5" />
-              </span>
-              <div>
-                <p className="text-small font-semibold text-text">Optimisation SEO</p>
-                <p className="text-small text-text-secondary">Meilleure visibilité sur Google.</p>
-              </div>
-            </Card>
-          </motion.div>
-
-          <motion.div
-            className="absolute bottom-[2%] right-0 w-60"
-            variants={floatIn(2.5, { x: 220, y: 80, rotate: 8 }, { stiffness: 110, damping: 30, mass: 4 })}
-            initial={initial}
-            whileInView="visible"
-            viewport={viewport}
-          >
-            <Card className="pointer-events-auto flex items-start gap-3 p-5">
-              <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-warning/15 text-warning">
-                <Icon icon={Zap} className="size-5" />
-              </span>
-              <div>
-                <p className="text-small font-semibold text-text">Ultra rapide</p>
-                <p className="text-small text-text-secondary">Sites rapides et fluides.</p>
-              </div>
-            </Card>
-          </motion.div>
-
-        </div>
-
+      <div key={playKey} className="relative flex w-full items-center">
         {/* Central composition */}
-        <div className="relative z-10 mx-auto flex max-w-2xl flex-col items-center px-6 pt-28 text-center md:max-w-3xl lg:pt-0">
-          <motion.div
-            className="mb-6"
+        <Container className="relative z-10 pt-28 lg:pt-0">
+          <div className="mx-auto flex max-w-4xl flex-col items-center text-center">
+            <motion.div
+              className="mb-6"
             variants={floatIn(0.75, { y: -40, scale: 0.85 })}
             initial={initial}
             whileInView="visible"
             viewport={viewport}
           >
-            <Badge variant="outline" className="gap-2 py-1.5">
+            <Badge variant="outline" className="gap-2 border-white/25 bg-white/10 py-1.5 text-white backdrop-blur-md">
               <motion.span
                 className="size-2 rounded-full bg-success"
                 animate={
@@ -162,27 +99,28 @@ function Hero() {
           >
             <Heading
               variant="display"
-              className="text-balance text-4xl leading-[1.1] sm:text-5xl md:text-6xl lg:text-display lg:leading-[1.05]"
+              className="text-balance text-5xl leading-[1.05] text-white sm:text-6xl md:text-7xl lg:text-[4.5rem] xl:text-[5rem]"
             >
-              Votre entreprise mérite un site qui inspire confiance.
+              Votre entreprise mérite un site qui inspire{" "}
+              <span className="text-primary">confiance</span>.
             </Heading>
           </motion.div>
 
           <motion.p
-            className="mt-6 max-w-xl text-body text-text-secondary"
+            className="mt-8 max-w-2xl text-lg text-white/75 sm:text-xl"
             variants={floatIn(1.15, { y: 50 })}
             initial={initial}
             whileInView="visible"
             viewport={viewport}
           >
             Je crée des sites vitrines modernes, rapides et optimisés pour{" "}
-            <strong className="font-semibold text-text">convertir vos visiteurs en clients</strong>.
+            <strong className="font-semibold text-white">convertir vos visiteurs en clients</strong>.
             De la conception au référencement, je m&apos;occupe de tout, en direct et sans
-            intermédiaire. <strong className="font-semibold text-text">Un interlocuteur unique</strong>,
+            intermédiaire. <strong className="font-semibold text-white">Un interlocuteur unique</strong>,
             disponible du premier échange jusqu&apos;à la mise en ligne de votre site.
           </motion.p>
 
-          <div className="mt-10 flex flex-col gap-4 sm:flex-row">
+          <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
             <motion.div
               variants={floatIn(1.35, { x: -160, rotate: -6 })}
               initial={initial}
@@ -206,11 +144,14 @@ function Hero() {
               viewport={viewport}
             >
               <Link href="/#tarifs">
-                <Button variant="outline">Découvrir mes offres</Button>
+                <Button variant="outline" className="border-white/30 bg-white/5 text-white backdrop-blur-md hover:border-white hover:text-white">
+                  Découvrir mes offres
+                </Button>
               </Link>
             </motion.div>
           </div>
-        </div>
+          </div>
+        </Container>
       </div>
     </section>
   )

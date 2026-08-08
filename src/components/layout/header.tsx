@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
+import { usePathname } from "next/navigation"
 import { Dialog } from "@base-ui/react/dialog"
 import { motion, useReducedMotion } from "framer-motion"
 import { ArrowRight, Menu, X } from "lucide-react"
@@ -30,6 +31,10 @@ function Header() {
   const skip = reduce || isMobile
   const initial = "hidden"
   const withSkip = (transition: Record<string, unknown>) => (skip ? { duration: 0, delay: 0 } : transition)
+  const pathname = usePathname()
+  // Le hero de l'accueil est une photo sombre : tant qu'on n'a pas scrollé, le header
+  // doit rester lisible en clair plutôt qu'en texte sombre par défaut.
+  const overDarkHero = pathname === "/" && !scrolled
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8)
@@ -77,7 +82,12 @@ function Header() {
             <span className="flex size-10 items-center justify-center rounded-xl bg-[#0a0a0a] text-[11px] font-extrabold tracking-wider text-white">
               SDN
             </span>
-            <span className="font-sans text-small font-semibold tracking-wide text-[#0a0a0a]">
+            <span
+              className={cn(
+                "font-sans text-small font-semibold tracking-wide transition-colors duration-300 ease-nova",
+                overDarkHero ? "text-white" : "text-[#0a0a0a]"
+              )}
+            >
               Studio Digital Nova
             </span>
           </motion.a>
@@ -87,7 +97,10 @@ function Header() {
               <motion.a
                 key={item.label}
                 href={item.href}
-                className="group relative shrink-0 whitespace-nowrap text-body font-medium text-text-secondary transition-colors duration-200 ease-nova hover:text-text"
+                className={cn(
+                  "group relative shrink-0 whitespace-nowrap text-body font-medium transition-colors duration-200 ease-nova",
+                  overDarkHero ? "text-white/75 hover:text-white" : "text-text-secondary hover:text-text"
+                )}
                 initial={initial}
                 animate="visible"
                 variants={{
@@ -171,7 +184,10 @@ function Header() {
             >
               <Dialog.Trigger
                 aria-label="Ouvrir le menu"
-                className="flex size-11 items-center justify-center rounded-xl border border-border bg-surface text-text transition-colors duration-150 ease-nova hover:border-primary hover:text-primary lg:hidden"
+                className={cn(
+                  "flex size-11 items-center justify-center rounded-xl border transition-colors duration-150 ease-nova hover:border-primary hover:text-primary lg:hidden",
+                  overDarkHero ? "border-white/30 bg-white/10 text-white backdrop-blur-md" : "border-border bg-surface text-text"
+                )}
               >
                 <Icon icon={Menu} className="size-5" />
               </Dialog.Trigger>
