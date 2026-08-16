@@ -25,7 +25,7 @@ export default async function Image({ params }: Props) {
           height: "100%",
           display: "flex",
           position: "relative",
-          backgroundColor: "#0a0a0a",
+          backgroundColor: "#0b1726",
           fontFamily: "sans-serif",
         }}
       >
@@ -44,7 +44,7 @@ export default async function Image({ params }: Props) {
             position: "absolute",
             inset: 0,
             display: "flex",
-            backgroundImage: "linear-gradient(180deg, rgba(10,10,10,0.35) 0%, rgba(10,10,10,0.15) 35%, rgba(10,10,10,0.94) 100%)",
+            backgroundImage: "linear-gradient(180deg, rgba(11,23,38,0.42) 0%, rgba(11,23,38,0.2) 35%, rgba(11,23,38,0.96) 100%)",
           }}
         />
 
@@ -72,13 +72,13 @@ export default async function Image({ params }: Props) {
                 width: 56,
                 height: 56,
                 borderRadius: 14,
-                backgroundColor: "#0a0a0a",
+                backgroundColor: "#0b1726",
                 alignItems: "center",
                 justifyContent: "center",
                 fontSize: 18,
                 fontWeight: 800,
                 letterSpacing: 0.5,
-                color: "#ffffff",
+                color: "#fcfbf8",
               }}
             >
               SDN
@@ -88,7 +88,7 @@ export default async function Image({ params }: Props) {
                 display: "flex",
                 fontSize: 28,
                 fontWeight: 600,
-                color: "#ffffff",
+                color: "#fcfbf8",
                 textShadow: "0 2px 14px rgba(0,0,0,0.7)",
               }}
             >
@@ -103,7 +103,7 @@ export default async function Image({ params }: Props) {
                   display: "flex",
                   fontSize: 26,
                   fontWeight: 600,
-                  color: "rgba(255,255,255,0.85)",
+                  color: "rgba(252,251,248,0.78)",
                   textTransform: "uppercase",
                   letterSpacing: 2,
                   textShadow: "0 2px 12px rgba(0,0,0,0.7)",
@@ -118,7 +118,7 @@ export default async function Image({ params }: Props) {
                 fontSize: 58,
                 fontWeight: 700,
                 lineHeight: 1.15,
-                color: "#ffffff",
+                color: "#fcfbf8",
                 maxWidth: 1000,
                 textShadow: "0 2px 16px rgba(0,0,0,0.7)",
               }}

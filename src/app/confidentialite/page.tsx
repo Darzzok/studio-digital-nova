@@ -16,8 +16,9 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Politique de confidentialité",
     description,
-    url: `${siteConfig.url}/confidentialite`,
+    url: `${siteConfig.url}/confidentialite/`,
     type: "website",
+    images: [`${siteConfig.url}/opengraph-image`],
   },
 };
 

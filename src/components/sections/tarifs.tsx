@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Heading } from "@/components/ui/heading"
 import { Icon } from "@/components/ui/icon"
+import { CHIP, DrawRule, NovaCorner } from "@/components/ui/nova"
 import { Section } from "@/components/ui/section"
 import { useFloatIn } from "@/lib/motion"
 import { cn } from "@/lib/utils"
@@ -19,7 +20,7 @@ const PLANS = [
   {
     name: "Essentiel",
     icon: Rocket,
-    className: "bg-accent-purple/15 text-accent-purple",
+    className: CHIP.mineral,
     price: "690 €",
     scope: "One Page",
     tagline: "Pour démarrer votre présence en ligne rapidement.",
@@ -35,7 +36,7 @@ const PLANS = [
   {
     name: "Pro",
     icon: Sparkles,
-    className: "bg-accent-purple/15 text-accent-purple",
+    className: CHIP.terracotta,
     price: "990 €",
     scope: "Site Vitrine",
     tagline: "La formule la plus complète pour convertir vos visiteurs.",
@@ -52,7 +53,7 @@ const PLANS = [
   {
     name: "Premium",
     icon: Crown,
-    className: "bg-accent-green/15 text-accent-green",
+    className: CHIP.ink,
     price: "À partir de 1 200 €",
     scope: "Projet sur mesure",
     tagline: "Un accompagnement sur mesure, sans compromis.",
@@ -67,6 +68,9 @@ const PLANS = [
   },
 ]
 
+/** Paliers de la gamme — chiffrage romain, purement décoratif. */
+const TIERS = ["I", "II", "III"]
+
 function Tarifs() {
   const floatIn = useFloatIn()
 
@@ -80,8 +84,8 @@ function Tarifs() {
           viewport={{ once: true, amount: 0.4 }}
           variants={floatIn(0, { y: -40, scale: 0.85 })}
         >
-          <Badge variant="outline" className="gap-2 py-1.5">
-            <Icon icon={Tag} className="size-3.5" />
+          <Badge variant="outline">
+            <Icon icon={Tag} className="size-3.5 text-accent" />
             Tarifs
           </Badge>
         </motion.div>
@@ -96,7 +100,7 @@ function Tarifs() {
         </motion.div>
 
         <motion.p
-          className="mt-6 max-w-xl text-body text-text-secondary"
+          className="measure mt-6 text-lead text-text-secondary"
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, amount: 0.4 }}
@@ -109,7 +113,7 @@ function Tarifs() {
         </motion.p>
       </div>
 
-      <div className="mt-16 grid grid-cols-1 gap-6 lg:grid-cols-3">
+      <div className="mt-[var(--section-gap)] grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
         {PLANS.map((plan, index) => {
           const column = index % 3
           const from: FloatFrom =
@@ -130,7 +134,7 @@ function Tarifs() {
             >
               {plan.featured && (
                 <div className="absolute -top-3.5 left-1/2 z-10 -translate-x-1/2">
-                  <Badge variant="primary" className="gap-1.5 shadow-sm">
+                  <Badge variant="accent" className="whitespace-nowrap border-accent bg-accent text-ink">
                     <Icon icon={Sparkles} className="size-3" />
                     Le plus populaire
                   </Badge>
@@ -138,60 +142,160 @@ function Tarifs() {
               )}
 
               <Card
+                tone={plan.featured ? "ink" : "paper"}
                 className={cn(
-                  "group relative flex h-full flex-col items-center gap-5 overflow-hidden text-center",
-                  plan.featured && "border-primary/50 shadow-lg lg:scale-[1.05]"
+                  "group relative flex h-full flex-col overflow-hidden text-left",
+                  "transition-[transform,box-shadow,border-color] duration-500 ease-nova hover:-translate-y-1",
+                  plan.featured
+                    ? "shadow-lg hover:border-accent/60 hover:shadow-lg"
+                    : "hover:border-border-strong hover:shadow-[var(--shadow-lift)]"
                 )}
               >
+                {/*
+                  Lavis d'accent qui monte du haut de la carte au survol.
+                  Très bas en opacité : on doit le sentir, pas le voir.
+                */}
                 <span
+                  aria-hidden
                   className={cn(
-                    "relative flex size-11 shrink-0 items-center justify-center rounded-xl shadow-sm transition-transform duration-200 ease-nova group-hover:-rotate-6 group-hover:scale-110",
-                    plan.featured ? "bg-primary text-primary-foreground" : plan.className
+                    "pointer-events-none absolute inset-x-0 top-0 h-40 opacity-0",
+                    "transition-opacity duration-700 ease-editorial group-hover:opacity-100",
+                    plan.featured
+                      ? "bg-gradient-to-b from-accent/12 to-transparent"
+                      : "bg-gradient-to-b from-accent/[0.06] to-transparent"
                   )}
-                >
-                  <Icon icon={plan.icon} className="size-5" />
-                </span>
+                />
+                <NovaCorner tone={plan.featured ? "ink" : "light"} />
 
-                <div className="relative">
-                  <h3 className="text-h3 font-heading font-semibold text-text">{plan.name}</h3>
-                  <p className="text-small text-text-secondary">{plan.scope}</p>
+                {/*
+                  Palier et rail de progression : trois segments, remplis
+                  jusqu'au rang de l'offre. On lit la gamme d'un coup d'œil.
+                */}
+                <div aria-hidden className="relative flex items-center gap-3">
+                  <span
+                    className={cn(
+                      "font-heading text-small leading-none transition-colors duration-500 ease-nova delay-75",
+                      plan.featured ? "text-accent" : "text-text-muted group-hover:text-accent-strong"
+                    )}
+                  >
+                    {TIERS[index]}
+                  </span>
+                  <span aria-hidden className="flex flex-1 items-center gap-1">
+                    {PLANS.map((_, segment) => (
+                      <span
+                        key={segment}
+                        className={cn(
+                          "h-px flex-1 transition-colors duration-500 ease-nova",
+                          segment <= index
+                            ? "bg-accent"
+                            : cn(
+                                plan.featured ? "bg-border-ink" : "bg-border",
+                                // Le palier suivant se devine au survol.
+                                segment === index + 1 && "group-hover:bg-accent/40"
+                              )
+                        )}
+                      />
+                    ))}
+                  </span>
                 </div>
 
-                <p className="relative text-small text-text-secondary">{plan.tagline}</p>
+                <div className="relative mt-7 flex items-start justify-between gap-4">
+                  <div>
+                    <p
+                      className={cn(
+                        "text-eyebrow uppercase",
+                        plan.featured ? "text-on-ink-soft" : "text-text-muted"
+                      )}
+                    >
+                      {plan.scope}
+                    </p>
+                    <h3
+                      className={cn(
+                        "mt-2 font-heading text-h3",
+                        plan.featured ? "text-on-ink" : "text-text"
+                      )}
+                    >
+                      {plan.name}
+                    </h3>
+                  </div>
+                  <span
+                    className={cn(
+                      "flex size-9 shrink-0 items-center justify-center rounded-md group-hover:-translate-y-0.5",
+                      plan.featured
+                        ? "border border-accent bg-accent text-ink transition-colors duration-500 ease-nova"
+                        : plan.className
+                    )}
+                  >
+                    <Icon icon={plan.icon} className="size-4" />
+                  </span>
+                </div>
 
-                <p className="relative whitespace-nowrap text-[2rem] font-heading font-bold leading-none text-text">
+                <p
+                  className={cn(
+                    "relative mt-6 whitespace-nowrap font-heading text-[clamp(1.375rem,0.9rem+1.5vw,2rem)] leading-none",
+                    "transition-transform duration-500 ease-editorial delay-100 group-hover:-translate-y-0.5",
+                    plan.featured ? "text-on-ink" : "text-text"
+                  )}
+                >
                   {plan.price}
                 </p>
 
-                <div className="relative flex flex-1 flex-col gap-3">
+                <p
+                  className={cn(
+                    "relative mt-4 text-small",
+                    plan.featured ? "text-on-ink-soft" : "text-text-secondary"
+                  )}
+                >
+                  {plan.tagline}
+                </p>
+
+                <DrawRule className="mt-6" tone={plan.featured ? "ink" : "light"} />
+
+                <div className="relative mt-5 flex flex-1 flex-col gap-3">
                   {plan.features.map((feature) => (
-                    <div key={feature} className="flex items-start justify-center gap-2.5">
-                      <span
+                    <div key={feature} className="flex items-baseline gap-3">
+                      <Icon
+                        icon={Check}
                         className={cn(
-                          "mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full",
-                          plan.featured ? "bg-primary/15 text-primary" : "bg-primary/10 text-primary"
+                          "size-3 shrink-0 translate-y-0.5",
+                          plan.featured ? "text-accent" : "text-accent-strong"
+                        )}
+                      />
+                      <p
+                        className={cn(
+                          "text-small",
+                          plan.featured ? "text-on-ink-soft" : "text-text-secondary"
                         )}
                       >
-                        <Icon icon={Check} className="size-2.5" />
-                      </span>
-                      <p className="text-small text-text-secondary">{feature}</p>
+                        {feature}
+                      </p>
                     </div>
                   ))}
                 </div>
 
-                <p className="relative w-full border-t border-border pt-4 text-small text-text-secondary">
+                <p
+                  className={cn(
+                    "relative mt-6 border-t pt-5 text-small italic",
+                    plan.featured
+                      ? "border-border-ink text-on-ink-soft"
+                      : "border-border text-text-muted"
+                  )}
+                >
                   {plan.idealFor}
                 </p>
 
-                <Link href="/#contact" className="group relative w-full">
+                <Link href="/#contact" className="group/cta relative mt-6 w-full">
                   <Button
                     variant={plan.featured ? "primary" : "outline"}
-                    className="h-11 w-full text-small"
+                    className={cn(
+                      "h-11 w-full",
+                      plan.featured && "bg-paper text-ink hover:bg-accent hover:text-ink"
+                    )}
                   >
                     Demander un devis
                     <Icon
                       icon={ArrowRight}
-                      className="size-4 transition-transform duration-200 ease-nova group-hover:translate-x-0.5"
+                      className="transition-transform duration-200 ease-nova group-hover/cta:translate-x-0.5"
                     />
                   </Button>
                 </Link>

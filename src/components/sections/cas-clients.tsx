@@ -7,12 +7,13 @@ import { Badge } from "@/components/ui/badge"
 import { Card } from "@/components/ui/card"
 import { Heading } from "@/components/ui/heading"
 import { Icon } from "@/components/ui/icon"
+import { CardIndex, DrawRule } from "@/components/ui/nova"
 import { Section } from "@/components/ui/section"
 import { EASE_NOVA, useFloatIn } from "@/lib/motion"
 
 type FloatFrom = { x?: number; y?: number; rotate?: number; scale?: number }
 
-const FRAME = "relative h-40 w-full overflow-hidden rounded-xl border border-border bg-background"
+const FRAME = "relative h-40 w-full overflow-hidden rounded-lg border border-border bg-background"
 
 type PreviewVariant = "restaurant" | "artisan" | "pme"
 
@@ -61,18 +62,18 @@ function CasePreview({
             <span className="h-1 w-1/2 rounded-full bg-border" />
           </div>
           <motion.div
-            className="flex flex-col gap-1.5 rounded-lg border border-primary/30 bg-surface p-2 shadow-sm"
+            className="flex flex-col gap-1.5 rounded-md border border-accent/35 bg-surface p-2 shadow-sm"
             initial={{ opacity: 0, y: 8 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.6 }}
             transition={{ duration: 0.4, delay: 0.2, ease: EASE_NOVA }}
           >
-            <span className="text-[9px] font-semibold uppercase tracking-wide text-primary">
+            <span className="text-[9px] font-semibold uppercase tracking-wide text-accent-strong">
               Après
             </span>
             <span className="h-2 w-full rounded-full" style={{ backgroundImage: gradient }} />
-            <span className="h-1 w-full rounded-full bg-primary/25" />
-            <span className="h-1 w-2/3 rounded-full bg-primary/25" />
+            <span className="h-1 w-full rounded-full bg-accent/25" />
+            <span className="h-1 w-2/3 rounded-full bg-accent/25" />
           </motion.div>
         </div>
         {pulse}
@@ -146,8 +147,8 @@ const CASES: {
       "Création d'un site moderne présentant le menu, les horaires, la localisation et les moyens de réservation.",
     outcome: "Un site clair qui rassure les clients et facilite la réservation.",
     variant: "restaurant",
-    gradientFrom: "var(--color-primary)",
-    gradientTo: "var(--color-accent-purple)",
+    gradientFrom: "var(--color-ink)",
+    gradientTo: "var(--color-mineral)",
   },
   {
     sector: "Artisanat",
@@ -158,8 +159,8 @@ const CASES: {
       "Création d'un site vitrine optimisé permettant de présenter les prestations, les réalisations et de générer des demandes de devis.",
     outcome: "Une image professionnelle qui génère plus de demandes de devis.",
     variant: "artisan",
-    gradientFrom: "var(--color-accent-purple)",
-    gradientTo: "var(--color-accent-green)",
+    gradientFrom: "var(--color-mineral)",
+    gradientTo: "var(--color-success)",
   },
   {
     sector: "TPE",
@@ -170,8 +171,8 @@ const CASES: {
       "Refonte complète avec un design moderne, responsive, rapide et optimisé pour le référencement.",
     outcome: "Un site moderne qui inspire confiance et convertit mieux.",
     variant: "pme",
-    gradientFrom: "var(--color-primary)",
-    gradientTo: "var(--color-accent-green)",
+    gradientFrom: "var(--color-ink)",
+    gradientTo: "var(--color-accent)",
   },
 ]
 
@@ -189,8 +190,8 @@ function CasClients() {
           viewport={{ once: true, amount: 0.4 }}
           variants={floatIn(0, { y: -40, scale: 0.85 })}
         >
-          <Badge variant="outline" className="gap-2 py-1.5">
-            <Icon icon={Lightbulb} className="size-3.5" />
+          <Badge variant="outline">
+            <Icon icon={Lightbulb} className="size-3.5 text-accent" />
             Cas client
           </Badge>
         </motion.div>
@@ -205,7 +206,7 @@ function CasClients() {
         </motion.div>
 
         <motion.p
-          className="mt-6 max-w-xl text-body text-text-secondary"
+          className="measure mt-6 text-lead text-text-secondary"
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, amount: 0.4 }}
@@ -216,7 +217,7 @@ function CasClients() {
         </motion.p>
       </div>
 
-      <div className="mt-16 grid grid-cols-1 gap-6 lg:grid-cols-3">
+      <div className="mt-[var(--section-gap)] grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
         {CASES.map((item, index) => {
           const column = index % 3
           const from: FloatFrom =
@@ -234,41 +235,59 @@ function CasClients() {
               viewport={{ once: true, amount: 0.3 }}
               variants={floatIn(index * 0.12, from, { damping: 30, mass: 4 })}
             >
-              <Card className="flex h-full flex-col items-center gap-5 bg-surface-sunken text-center">
-                <CasePreview
-                  variant={item.variant}
-                  from={item.gradientFrom}
-                  to={item.gradientTo}
-                  reduce={Boolean(reduce)}
-                />
+              <Card
+                tone="ivory"
+                padding="md"
+                className="group relative flex h-full flex-col overflow-hidden text-left transition-colors duration-500 ease-nova hover:border-border-strong"
+              >
+                <div className="flex items-center gap-4">
+                  <CardIndex value={String(index + 1).padStart(2, "0")} className="flex-1" />
+                  <Badge variant="outline">{item.sector}</Badge>
+                </div>
 
-                <Badge variant="outline">{item.sector}</Badge>
+                <div className="mt-6 overflow-hidden rounded-lg">
+                  <div className="transition-transform duration-700 ease-editorial group-hover:-translate-y-1">
+                    <CasePreview
+                      variant={item.variant}
+                      from={item.gradientFrom}
+                      to={item.gradientTo}
+                      reduce={Boolean(reduce)}
+                    />
+                  </div>
+                </div>
 
-                <h3 className="text-h3 font-heading font-semibold text-text">{item.title}</h3>
+                <h3 className="mt-7 font-heading text-h3 text-text">{item.title}</h3>
 
-                <div className="flex w-full flex-1 flex-col gap-3">
-                  <div className="flex flex-col items-center gap-1.5 rounded-xl bg-background p-4">
-                    <span className="flex items-center gap-1.5 text-small font-semibold text-text">
-                      <Icon icon={CircleAlert} className="size-3.5 text-warning" />
+                <DrawRule className="mt-6" />
+
+                {/*
+                  Problématique → Solution → Résultat : une progression lue de
+                  haut en bas, portée par trois filets verticaux plutôt que par
+                  trois aplats. Le dernier filet est terracotta et signé.
+                */}
+                <div className="mt-6 flex w-full flex-1 flex-col gap-6">
+                  <div className="border-l border-l-warning pl-4">
+                    <span className="flex items-center gap-2 text-eyebrow uppercase text-text-muted">
+                      <Icon icon={CircleAlert} className="size-3 text-warning" />
                       Problématique
                     </span>
-                    <p className="text-small text-text-secondary">{item.problem}</p>
+                    <p className="mt-2 text-small text-text-secondary">{item.problem}</p>
                   </div>
 
-                  <div className="flex flex-col items-center gap-1.5 rounded-xl bg-primary/5 p-4">
-                    <span className="flex items-center gap-1.5 text-small font-semibold text-primary">
-                      <Icon icon={CircleCheck} className="size-3.5" />
+                  <div className="border-l border-l-mineral pl-4">
+                    <span className="flex items-center gap-2 text-eyebrow uppercase text-text-muted">
+                      <Icon icon={CircleCheck} className="size-3 text-mineral" />
                       Solution
                     </span>
-                    <p className="text-small text-text-secondary">{item.solution}</p>
+                    <p className="mt-2 text-small text-text-secondary">{item.solution}</p>
                   </div>
 
-                  <div className="flex flex-col items-center gap-1.5 rounded-xl bg-success/10 p-4">
-                    <span className="flex items-center gap-1.5 text-small font-semibold text-success">
-                      <Icon icon={Sparkles} className="size-3.5" />
+                  <div className="border-l border-l-accent pl-4">
+                    <span className="flex items-center gap-2 text-eyebrow uppercase text-accent-strong">
+                      <Icon icon={Sparkles} className="size-3 text-accent" />
                       Résultat
                     </span>
-                    <p className="text-small text-text-secondary">{item.outcome}</p>
+                    <p className="mt-2 text-small text-text">{item.outcome}</p>
                   </div>
                 </div>
               </Card>

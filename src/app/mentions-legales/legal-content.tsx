@@ -78,7 +78,7 @@ function LegalContent() {
         </motion.div>
 
         <motion.p
-          className="mt-6 max-w-xl text-body text-text-secondary"
+          className="measure mt-6 text-lead text-text-secondary"
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, amount: 0.4 }}
@@ -89,7 +89,7 @@ function LegalContent() {
       </div>
 
       <motion.div
-        className="mx-auto mt-16 max-w-3xl"
+        className="mx-auto mt-[var(--section-gap)] max-w-3xl"
         initial="hidden"
         whileInView="visible"
         viewport={{ once: true, amount: 0.2 }}

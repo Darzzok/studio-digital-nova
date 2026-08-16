@@ -19,7 +19,7 @@ export default function Image() {
           alignItems: "center",
           justifyContent: "center",
           gap: 32,
-          backgroundColor: "#3b5bff",
+          backgroundColor: "#0b1726",
           fontFamily: "sans-serif",
         }}
       >
@@ -28,14 +28,14 @@ export default function Image() {
             display: "flex",
             width: 120,
             height: 120,
-            borderRadius: 28,
-            backgroundColor: "#0a0a0a",
+            borderRadius: 10,
+            backgroundColor: "#d96c4f",
             alignItems: "center",
             justifyContent: "center",
             fontSize: 42,
             fontWeight: 800,
             letterSpacing: 1,
-            color: "#ffffff",
+            color: "#fcfbf8",
           }}
         >
           SDN
@@ -45,7 +45,7 @@ export default function Image() {
             display: "flex",
             fontSize: 64,
             fontWeight: 700,
-            color: "#ffffff",
+            color: "#fcfbf8",
             textAlign: "center",
           }}
         >
@@ -55,7 +55,7 @@ export default function Image() {
           style={{
             display: "flex",
             fontSize: 30,
-            color: "rgba(255,255,255,0.85)",
+            color: "rgba(252,251,248,0.78)",
             textAlign: "center",
             maxWidth: 900,
           }}

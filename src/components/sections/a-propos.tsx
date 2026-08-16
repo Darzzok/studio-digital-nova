@@ -11,15 +11,16 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Heading } from "@/components/ui/heading"
 import { Icon } from "@/components/ui/icon"
+import { CHIP } from "@/components/ui/nova"
 import { Section } from "@/components/ui/section"
 import { useFloatIn } from "@/lib/motion"
 import { cn } from "@/lib/utils"
 
 const STRENGTHS = [
-  { icon: UserCheck, label: "Interlocuteur unique", className: "bg-primary/10 text-primary" },
-  { icon: Sparkles, label: "Site sur mesure", className: "bg-accent-purple/15 text-accent-purple" },
-  { icon: Search, label: "Optimisé SEO", className: "bg-accent-green/15 text-accent-green" },
-  { icon: Smartphone, label: "Compatible mobile", className: "bg-warning/15 text-warning" },
+  { icon: UserCheck, label: "Interlocuteur unique", className: CHIP.ink },
+  { icon: Sparkles, label: "Site sur mesure", className: CHIP.terracotta },
+  { icon: Search, label: "Optimisé SEO", className: CHIP.mineral },
+  { icon: Smartphone, label: "Compatible mobile", className: CHIP.ochre },
 ]
 
 /** Portrait intégré dans une carte premium — fond DS, radius et ombre du Card, photo inchangée. */
@@ -27,15 +28,21 @@ function AboutPortrait() {
   const [imgError, setImgError] = useState(false)
 
   return (
-    <Card className="relative overflow-hidden p-5 sm:p-6">
-      <div className="relative aspect-4/5 w-full overflow-hidden rounded-3xl border border-border bg-background">
+    <Card padding="sm" className="relative overflow-hidden">
+      <div className="relative aspect-4/5 w-full overflow-hidden rounded-md border border-border bg-background">
         {!imgError ? (
           <Image
             src="/images/geoffrey.webp"
             alt="Geoffrey, développeur web freelance et fondateur de Studio Digital Nova"
             fill
             sizes="(min-width: 1024px) 480px, 90vw"
-            className="object-cover"
+            /*
+              La source est un paysage 960×768 recadré en 4/5 : 36 % de la
+              largeur disparaît. Centré par défaut, le visage — situé à 54,7 %
+              de l'image — retombait à 57 % du cadre, visiblement décalé vers
+              la droite. 63 % sur l'axe horizontal le ramène au milieu exact.
+            */
+            className="object-cover object-[63%_50%]"
             loading="lazy"
             onError={() => setImgError(true)}
           />
@@ -43,10 +50,10 @@ function AboutPortrait() {
           <div
             className="absolute inset-0 flex items-center justify-center"
             style={{
-              backgroundImage: "linear-gradient(135deg, var(--color-primary), var(--color-accent-purple))",
+              backgroundImage: "var(--gradient-ink)",
             }}
           >
-            <span className="font-heading text-display font-bold text-primary-foreground">G</span>
+            <span className="font-heading text-display text-paper">G</span>
           </div>
         )}
       </div>
@@ -77,8 +84,8 @@ function APropos() {
             viewport={{ once: true, amount: 0.4 }}
             variants={floatIn(0, { y: -40, scale: 0.85 })}
           >
-            <Badge variant="outline" className="gap-2 py-1.5">
-              <Icon icon={User} className="size-3.5" />
+            <Badge variant="outline">
+              <Icon icon={User} className="size-3.5 text-accent" />
               À propos
             </Badge>
           </motion.div>
@@ -93,7 +100,7 @@ function APropos() {
           </motion.div>
 
           <motion.p
-            className="mt-6 max-w-xl text-body text-text-secondary"
+            className="measure mt-6 text-body text-text-secondary"
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, amount: 0.4 }}
@@ -116,11 +123,11 @@ function APropos() {
             et prêt à soutenir le développement de votre activité.
           </motion.p>
 
-          <div className="mx-auto mt-8 grid w-full max-w-md grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="mx-auto mt-8 grid w-full max-w-md grid-cols-2 gap-x-4 gap-y-5">
             {STRENGTHS.map((strength, index) => (
               <motion.div
                 key={strength.label}
-                className="flex items-center gap-3"
+                className="flex flex-col items-start gap-2.5 sm:flex-row sm:items-center sm:gap-3"
                 initial="hidden"
                 whileInView="visible"
                 viewport={{ once: true, amount: 0.4 }}
@@ -128,13 +135,13 @@ function APropos() {
               >
                 <span
                   className={cn(
-                    "flex size-10 shrink-0 items-center justify-center rounded-xl",
+                    "flex size-10 shrink-0 items-center justify-center rounded-md",
                     strength.className
                   )}
                 >
                   <Icon icon={strength.icon} className="size-5" />
                 </span>
-                <p className="text-small font-semibold text-text">{strength.label}</p>
+                <p className="text-small font-medium text-text">{strength.label}</p>
               </motion.div>
             ))}
           </div>

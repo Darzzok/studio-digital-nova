@@ -23,4 +23,4 @@ export const siteConfig = {
   social: {} as Record<string, string>,
 } as const;
 
-export const siteRoutes = ["/", "/blog", "/faq", "/mentions-legales", "/confidentialite"] as const;
+export const siteRoutes = ["/", "/audit-gratuit", "/blog", "/faq", "/mentions-legales", "/confidentialite"] as const;

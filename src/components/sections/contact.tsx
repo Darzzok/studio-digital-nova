@@ -27,6 +27,8 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
+import { Frieze } from "@/components/ui/frieze"
+import { CHIP, CardIndex } from "@/components/ui/nova"
 import { Heading } from "@/components/ui/heading"
 import { Icon } from "@/components/ui/icon"
 import { Input } from "@/components/ui/input"
@@ -39,6 +41,9 @@ import { cn } from "@/lib/utils"
 /* ------------------------------------------------------------------------ */
 
 const STEP_LABELS = ["Formule", "Besoins", "Coordonnées", "Projet"]
+
+/** Projection des libellés dans le format de la frise partagée. */
+const FRIEZE_STEPS = STEP_LABELS.map((label) => ({ key: label, label }))
 
 const PROGRESS_MESSAGES = [
   "Plus que 3 étapes avant votre proposition.",
@@ -55,18 +60,18 @@ const STEP_CONTENT = [
 ]
 
 const OFFERS = [
-  { id: "essentiel", name: "Essentiel", price: "690 €", icon: Rocket, className: "bg-accent-purple/15 text-accent-purple" },
-  { id: "pro", name: "Pro", price: "990 €", icon: Sparkles, badge: "Le plus choisi", className: "bg-accent-purple/15 text-accent-purple" },
-  { id: "premium", name: "Premium", price: "À partir de 1 200 €", icon: Crown, className: "bg-accent-green/15 text-accent-green" },
+  { id: "essentiel", name: "Essentiel", price: "690 €", icon: Rocket, className: CHIP.mineral },
+  { id: "pro", name: "Pro", price: "990 €", icon: Sparkles, badge: "Le plus choisi", className: CHIP.terracotta },
+  { id: "premium", name: "Premium", price: "À partir de 1 200 €", icon: Crown, className: CHIP.ink },
 ] as const
 
 const NEEDS = [
-  { id: "has-site", label: "Je possède déjà un site", icon: Globe, className: "bg-primary/10 text-primary" },
-  { id: "no-site", label: "Je n'ai pas encore de site", icon: CirclePlus, className: "bg-accent-purple/15 text-accent-purple" },
-  { id: "logo", label: "J'ai besoin d'un logo", icon: Palette, className: "bg-accent-green/15 text-accent-green" },
-  { id: "hosting", label: "J'ai besoin d'un hébergement", icon: Server, className: "bg-warning/15 text-warning" },
-  { id: "seo", label: "Je souhaite améliorer mon référencement", icon: Search, className: "bg-primary/10 text-primary" },
-  { id: "support", label: "Je souhaite un accompagnement", icon: HeartHandshake, className: "bg-accent-purple/15 text-accent-purple" },
+  { id: "has-site", label: "Je possède déjà un site", icon: Globe, className: CHIP.ink },
+  { id: "no-site", label: "Je n'ai pas encore de site", icon: CirclePlus, className: CHIP.mineral },
+  { id: "logo", label: "J'ai besoin d'un logo", icon: Palette, className: CHIP.terracotta },
+  { id: "hosting", label: "J'ai besoin d'un hébergement", icon: Server, className: CHIP.ochre },
+  { id: "seo", label: "Je souhaite améliorer mon référencement", icon: Search, className: CHIP.ochre },
+  { id: "support", label: "Je souhaite un accompagnement", icon: HeartHandshake, className: CHIP.sage },
 ] as const
 
 const TRACKING_STEPS = [
@@ -79,7 +84,7 @@ const TRACKING_STEPS = [
 const BENEFITS = [
   {
     icon: Clock,
-    className: "bg-primary/10 text-primary",
+    className: CHIP.ink,
     title: "Réponse sous 24h",
     description: (
       <>
@@ -89,7 +94,7 @@ const BENEFITS = [
   },
   {
     icon: Gift,
-    className: "bg-accent-purple/15 text-accent-purple",
+    className: CHIP.terracotta,
     title: "Devis gratuit",
     description: (
       <>
@@ -99,7 +104,7 @@ const BENEFITS = [
   },
   {
     icon: Rocket,
-    className: "bg-accent-green/15 text-accent-green",
+    className: CHIP.mineral,
     title: "Site livré rapidement",
     description: (
       <>
@@ -178,7 +183,7 @@ function FormField({
         className
       )}
     >
-      <label htmlFor={htmlFor} className="text-small font-medium text-text">
+      <label htmlFor={htmlFor} className="text-eyebrow uppercase text-text-secondary">
         {label}
       </label>
       {children}
@@ -187,7 +192,7 @@ function FormField({
   )
 }
 
-/** La frise de progression — même langage visuel que la section Processus. */
+/** La frise de progression — même composant que la section Processus. */
 function ProgressFrieze({
   step,
   maxStep,
@@ -201,56 +206,14 @@ function ProgressFrieze({
 }) {
   return (
     <div>
-      <div className="flex items-center">
-        {STEP_LABELS.map((label, index) => {
-          const completed = index < step
-          const active = index === step
-          const clickable = index <= maxStep && index !== step
-
-          return (
-            <Fragment key={label}>
-              <div className="flex flex-col items-center gap-2">
-                <button
-                  type="button"
-                  disabled={!clickable}
-                  onClick={() => clickable && onJump(index)}
-                  aria-current={active ? "step" : undefined}
-                  aria-label={`Étape ${index + 1} : ${label}`}
-                  className={cn(
-                    "flex size-10 shrink-0 items-center justify-center rounded-full border-2 font-heading text-small font-bold transition-colors duration-200 ease-nova sm:size-11",
-                    completed && "border-primary bg-primary text-primary-foreground",
-                    active && "border-primary bg-surface text-primary shadow-sm",
-                    !completed && !active && "border-border bg-surface text-text-secondary",
-                    clickable && "cursor-pointer hover:-translate-y-0.5",
-                    !clickable && !active && "cursor-not-allowed opacity-60"
-                  )}
-                >
-                  {completed ? <Icon icon={Check} className="size-4" /> : index + 1}
-                </button>
-                <span
-                  className={cn(
-                    "hidden text-[11px] sm:block sm:text-small",
-                    active ? "font-semibold text-text" : "text-text-secondary"
-                  )}
-                >
-                  {label}
-                </span>
-              </div>
-
-              {index < STEP_LABELS.length - 1 && (
-                <div className="relative mx-1.5 mt-5 h-0.5 flex-1 self-start rounded-full bg-border sm:mx-2">
-                  <motion.div
-                    className="absolute inset-y-0 left-0 rounded-full bg-primary"
-                    initial={false}
-                    animate={{ width: index < step ? "100%" : "0%" }}
-                    transition={reduce ? { duration: 0 } : { duration: 0.5, ease: EASE_NOVA }}
-                  />
-                </div>
-              )}
-            </Fragment>
-          )
-        })}
-      </div>
+      <Frieze
+        id="configurateur"
+        steps={FRIEZE_STEPS}
+        activeIndex={step}
+        reachableIndex={maxStep}
+        onSelect={onJump}
+        labelPrefix="Étape"
+      />
 
       <AnimatePresence mode="wait">
         <motion.p
@@ -259,7 +222,7 @@ function ProgressFrieze({
           animate={{ opacity: 1, y: 0 }}
           exit={reduce ? undefined : { opacity: 0, y: 6 }}
           transition={{ duration: 0.3, ease: EASE_NOVA }}
-          className="mt-4 text-center text-small font-medium text-primary"
+          className="mt-5 text-center text-small text-text-secondary"
         >
           {PROGRESS_MESSAGES[step]}
         </motion.p>
@@ -289,7 +252,7 @@ function StepOffer({ value, onSelect }: { value: OfferId | null; onSelect: (id: 
           <div key={offer.id} className="relative">
             {"badge" in offer && offer.badge && (
               <div className="absolute -top-3 left-1/2 z-10 -translate-x-1/2">
-                <Badge variant="primary" className="gap-1.5 shadow-sm">
+                <Badge variant="accent" className="whitespace-nowrap border-accent bg-accent text-ink">
                   <Icon icon={Sparkles} className="size-3" />
                   {offer.badge}
                 </Badge>
@@ -297,21 +260,26 @@ function StepOffer({ value, onSelect }: { value: OfferId | null; onSelect: (id: 
             )}
             <button type="button" onClick={() => onSelect(offer.id)} className="group block w-full text-left">
               <Card
+                padding="sm"
+                interactive
+                accent={selected ? "top" : "none"}
                 className={cn(
-                  "relative flex flex-col items-center gap-3 overflow-hidden p-6 text-center transition-[border-color,box-shadow,transform] duration-200 ease-nova",
-                  selected ? "scale-[1.02] border-primary shadow-lg" : "hover:border-primary/40"
+                  "relative flex h-full flex-col items-center gap-3 overflow-hidden text-center",
+                  selected && "border-ink shadow-md"
                 )}
               >
                 <span
                   className={cn(
-                    "relative flex size-11 shrink-0 items-center justify-center rounded-xl shadow-sm transition-transform duration-200 ease-nova group-hover:-rotate-6 group-hover:scale-110",
-                    selected || offer.id === "pro" ? "bg-primary text-primary-foreground" : offer.className
+                    "relative flex size-10 shrink-0 items-center justify-center rounded-md group-hover:-translate-y-0.5",
+                    selected
+                      ? "border border-ink bg-ink text-paper transition-colors duration-500 ease-nova"
+                      : offer.className
                   )}
                 >
-                  <Icon icon={offer.icon} className="size-5" />
+                  <Icon icon={offer.icon} className="size-4" />
                 </span>
-                <p className="relative text-h3 font-heading font-semibold text-text">{offer.name}</p>
-                <p className="relative whitespace-nowrap text-body font-semibold text-text">{offer.price}</p>
+                <p className="relative font-heading text-h3 leading-none text-text">{offer.name}</p>
+                <p className="relative whitespace-nowrap font-heading text-body text-text-secondary">{offer.price}</p>
                 <AnimatePresence>
                   {selected && (
                     <motion.span
@@ -319,7 +287,7 @@ function StepOffer({ value, onSelect }: { value: OfferId | null; onSelect: (id: 
                       animate={{ scale: 1, opacity: 1 }}
                       exit={{ scale: 0, opacity: 0 }}
                       transition={{ type: "spring", stiffness: 300, damping: 18 }}
-                      className="relative flex size-7 items-center justify-center rounded-full bg-primary text-primary-foreground"
+                      className="relative flex size-6 items-center justify-center rounded-full bg-accent text-accent-foreground"
                     >
                       <Icon icon={Check} className="size-4" />
                     </motion.span>
@@ -342,15 +310,19 @@ function StepNeeds({ value, onToggle }: { value: NeedId[]; onToggle: (id: NeedId
         return (
           <button key={need.id} type="button" onClick={() => onToggle(need.id)} className="group text-left">
             <Card
+              padding="none"
+              interactive
               className={cn(
-                "flex items-center gap-3 p-4 transition-[border-color,box-shadow,background-color] duration-200 ease-nova",
-                selected ? "border-primary bg-primary/5 shadow-sm" : "hover:border-primary/40"
+                "flex items-center gap-3 p-4",
+                selected && "border-ink bg-secondary"
               )}
             >
               <span
                 className={cn(
-                  "flex size-9 shrink-0 items-center justify-center rounded-lg shadow-sm transition-transform duration-200 ease-nova group-hover:-rotate-6 group-hover:scale-110",
-                  selected ? "bg-primary text-primary-foreground" : need.className
+                  "flex size-9 shrink-0 items-center justify-center rounded-md group-hover:-translate-y-0.5",
+                  selected
+                    ? "border border-ink bg-ink text-paper transition-colors duration-500 ease-nova"
+                    : need.className
                 )}
               >
                 <Icon icon={need.icon} className="size-4" />
@@ -358,8 +330,8 @@ function StepNeeds({ value, onToggle }: { value: NeedId[]; onToggle: (id: NeedId
               <p className="flex-1 text-small font-medium text-text">{need.label}</p>
               <span
                 className={cn(
-                  "flex size-5 shrink-0 items-center justify-center rounded-full border-2",
-                  selected ? "border-primary bg-primary text-primary-foreground" : "border-border"
+                  "flex size-5 shrink-0 items-center justify-center rounded-full border",
+                  selected ? "border-accent bg-accent text-accent-foreground" : "border-border-strong"
                 )}
               >
                 {selected && <Icon icon={Check} className="size-3" />}
@@ -394,8 +366,8 @@ function SummaryContent({ data }: { data: ConfiguratorData }) {
     <div className="flex flex-col gap-3">
       {rows.map((row) => (
         <div key={row.label} className="flex flex-col gap-0.5">
-          <span className="text-small font-medium text-text-secondary">{row.label}</span>
-          <span className="text-small font-semibold text-text">{row.value}</span>
+          <span className="text-eyebrow uppercase text-text-muted">{row.label}</span>
+          <span className="text-small font-medium text-text">{row.value}</span>
         </div>
       ))}
     </div>
@@ -405,7 +377,7 @@ function SummaryContent({ data }: { data: ConfiguratorData }) {
 function ResumePrompt({ onResume, onRestart }: { onResume: () => void; onRestart: () => void }) {
   return (
     <div className="flex flex-col items-center gap-4 py-4 text-center">
-      <span className="flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+      <span className="flex size-12 items-center justify-center rounded-full border border-border text-accent">
         <Icon icon={RotateCcw} className="size-5" />
       </span>
       <div>
@@ -443,8 +415,8 @@ function Confirmation({ data, reduce }: { data: ConfiguratorData; reduce: boolea
         initial={reduce ? false : { scale: 0 }}
         animate={{ scale: 1 }}
         transition={{ type: "spring", stiffness: 200, damping: 14, delay: 0.1 }}
-        className="flex size-16 items-center justify-center rounded-full text-3xl shadow-sm"
-        style={{ backgroundImage: "linear-gradient(135deg, var(--color-primary), var(--color-accent-purple))" }}
+        className="flex size-16 items-center justify-center rounded-full border border-border text-3xl"
+        style={{ backgroundImage: "var(--gradient-ink)" }}
       >
         🎉
       </motion.span>
@@ -465,31 +437,31 @@ function Confirmation({ data, reduce }: { data: ConfiguratorData; reduce: boolea
             <Fragment key={item.label}>
               <span
                 className={cn(
-                  "flex size-10 shrink-0 items-center justify-center rounded-full border-2",
+                  "flex size-10 shrink-0 items-center justify-center rounded-full border",
                   index === 0
-                    ? "border-primary bg-primary text-primary-foreground"
-                    : "border-border bg-surface text-text-secondary"
+                    ? "border-ink bg-ink text-paper"
+                    : "border-border-strong bg-surface text-text-muted"
                 )}
               >
                 <Icon icon={item.icon} className="size-4" />
               </span>
               {index < TRACKING_STEPS.length - 1 && (
-                <div className="mx-1.5 h-0.5 flex-1 rounded-full bg-border sm:mx-2" />
+                <div className="mx-1.5 h-px flex-1 bg-border sm:mx-2" />
               )}
             </Fragment>
           ))}
         </div>
         <div className="mt-3 grid grid-cols-4 gap-1">
           {TRACKING_STEPS.map((item) => (
-            <span key={item.label} className="text-center text-[10px] leading-tight text-text-secondary sm:text-small">
+            <span key={item.label} className="text-center text-[10px] uppercase leading-tight tracking-[0.12em] text-text-muted">
               {item.label}
             </span>
           ))}
         </div>
       </div>
 
-      <div className="w-full rounded-2xl bg-background p-5 text-left">
-        <p className="mb-3 text-small font-semibold text-text">Récapitulatif</p>
+      <div className="w-full rounded-md border border-border bg-background p-5 text-left">
+        <p className="mb-3 text-eyebrow uppercase text-text-muted">Récapitulatif</p>
         <div className="flex flex-col gap-2">
           {rows.map((row) => (
             <div key={row.label} className="flex items-center justify-between gap-3 text-small">
@@ -680,8 +652,8 @@ function Contact() {
           viewport={{ once: true, amount: 0.4 }}
           variants={floatIn(0, { y: -40, scale: 0.85 })}
         >
-          <Badge variant="outline" className="gap-2 py-1.5">
-            <Icon icon={MessageSquare} className="size-3.5" />
+          <Badge variant="outline">
+            <Icon icon={MessageSquare} className="size-3.5 text-accent" />
             Contact
           </Badge>
         </motion.div>
@@ -696,7 +668,7 @@ function Contact() {
         </motion.div>
 
         <motion.p
-          className="mt-6 max-w-xl text-body text-text-secondary"
+          className="measure mt-6 text-lead text-text-secondary"
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, amount: 0.4 }}
@@ -706,7 +678,7 @@ function Contact() {
         </motion.p>
       </div>
 
-      <div className="mt-16 grid grid-cols-1 gap-8 lg:grid-cols-2 lg:gap-12">
+      <div className="mt-[var(--section-gap)] grid grid-cols-1 gap-6 lg:grid-cols-2 lg:gap-10">
         <motion.div
           initial="hidden"
           whileInView="visible"
@@ -748,7 +720,7 @@ function Contact() {
                     <button
                       type="button"
                       onClick={() => goTo(step - 1)}
-                      className="mt-6 flex items-center gap-1.5 text-small font-medium text-text-secondary transition-colors duration-150 ease-nova hover:text-primary"
+                      className="mt-6 flex items-center gap-1.5 text-eyebrow uppercase text-text-muted transition-colors duration-200 ease-nova hover:text-accent-strong"
                     >
                       <Icon icon={ArrowLeft} className="size-3.5" />
                       Retour
@@ -856,7 +828,7 @@ function Contact() {
                                   placeholder="Décrivez votre projet en quelques lignes..."
                                   value={data.description}
                                   onChange={(e) => setData((d) => ({ ...d, description: e.target.value }))}
-                                  className="w-full min-w-0 rounded-xl border border-border bg-surface px-4 py-3 text-body text-text placeholder:text-text-secondary transition-colors outline-none focus-visible:border-primary focus-visible:ring-3 focus-visible:ring-ring/50"
+                                  className="w-full min-w-0 rounded-lg border border-input bg-surface px-4 py-3 text-body text-text placeholder:text-text-muted transition-[border-color,box-shadow] duration-200 ease-nova outline-none focus-visible:border-accent focus-visible:ring-3 focus-visible:ring-ring/30"
                                 />
                               </FormField>
                               <FormField label="Délai souhaité (facultatif)" htmlFor="config-timeline">
@@ -869,8 +841,8 @@ function Contact() {
                               </FormField>
 
                               <div className="lg:hidden">
-                                <Card className="bg-background">
-                                  <p className="mb-3 text-small font-semibold text-text">Récapitulatif</p>
+                                <Card tone="ivory" padding="sm">
+                                  <p className="mb-3 text-eyebrow uppercase text-text-muted">Récapitulatif</p>
                                   <SummaryContent data={data} />
                                 </Card>
                               </div>
@@ -906,19 +878,24 @@ function Contact() {
               viewport={{ once: true, amount: 0.4 }}
               variants={floatIn(0.25 + index * 0.1, { y: 90 }, { damping: 30, mass: 4 })}
             >
-              <Card className="group flex flex-col items-center gap-3 p-5 text-center">
-                <span
-                  className={cn(
-                    "flex size-10 shrink-0 items-center justify-center rounded-xl shadow-sm transition-transform duration-200 ease-nova group-hover:-rotate-6 group-hover:scale-110",
-                    benefit.className
-                  )}
-                >
-                  <Icon icon={benefit.icon} className="size-5" />
-                </span>
-                <div>
-                  <p className="text-small font-semibold text-text">{benefit.title}</p>
-                  <p className="text-small text-text-secondary">{benefit.description}</p>
+              <Card
+                tone="ivory"
+                padding="sm"
+                className="group flex flex-col text-left transition-colors duration-500 ease-nova hover:border-border-strong"
+              >
+                <div className="flex items-center gap-4">
+                  <CardIndex value={String(index + 1).padStart(2, "0")} className="flex-1" />
+                  <span
+                    className={cn(
+                      "flex size-9 shrink-0 items-center justify-center rounded-md group-hover:-translate-y-0.5",
+                      benefit.className
+                    )}
+                  >
+                    <Icon icon={benefit.icon} className="size-4" />
+                  </span>
                 </div>
+                <p className="mt-5 text-eyebrow uppercase text-text">{benefit.title}</p>
+                <p className="mt-2 text-small text-text-secondary">{benefit.description}</p>
               </Card>
             </motion.div>
           ))}

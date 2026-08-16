@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Lora } from "next/font/google";
+import { DM_Serif_Display, Manrope } from "next/font/google";
 import "@/styles/globals.css";
 
 import { Header } from "@/components/layout/header";
@@ -8,14 +8,19 @@ import { JsonLd } from "@/components/seo/json-ld";
 import { organizationJsonLd, websiteJsonLd } from "@/lib/seo";
 import { siteConfig } from "@/lib/site";
 
-const sans = Inter({
+/** Manrope porte tout le corps de texte : humaniste, chaleureux, très lisible. */
+const sans = Manrope({
   variable: "--font-sans-body",
   subsets: ["latin"],
+  display: "swap",
 });
 
-const serif = Lora({
+/** DM Serif Display porte les titres — une seule graisse (400), par nature. */
+const serif = DM_Serif_Display({
   variable: "--font-serif-heading",
   subsets: ["latin"],
+  weight: ["400"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {

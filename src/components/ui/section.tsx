@@ -4,12 +4,13 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 import { Container } from "@/components/ui/container"
 
+/* Le rythme vertical est fluide et centralisé dans `--section-y*`. */
 const sectionVariants = cva("w-full", {
   variants: {
     spacing: {
-      sm: "py-16",
-      default: "py-24",
-      lg: "py-32",
+      sm: "section-y-sm",
+      default: "section-y",
+      lg: "section-y-lg",
     },
   },
   defaultVariants: {

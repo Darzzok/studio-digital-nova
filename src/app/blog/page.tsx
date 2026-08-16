@@ -18,8 +18,9 @@ export const metadata: Metadata = {
     title: "Blog — Conseils et guides pour votre site internet",
     description:
       "Conseils pratiques, guides et ressources pour développer votre présence en ligne et faire évoluer votre activité.",
-    url: `${siteConfig.url}/blog`,
+    url: `${siteConfig.url}/blog/`,
     type: "website",
+    images: [`${siteConfig.url}/opengraph-image`],
   },
   twitter: {
     card: "summary_large_image",

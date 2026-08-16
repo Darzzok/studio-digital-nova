@@ -16,8 +16,9 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Mentions légales",
     description,
-    url: `${siteConfig.url}/mentions-legales`,
+    url: `${siteConfig.url}/mentions-legales/`,
     type: "website",
+    images: [`${siteConfig.url}/opengraph-image`],
   },
 };
 

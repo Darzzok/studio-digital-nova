@@ -10,13 +10,14 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Heading } from "@/components/ui/heading"
 import { Icon } from "@/components/ui/icon"
+import { NovaMark } from "@/components/ui/nova"
 import { Section } from "@/components/ui/section"
 import { EASE_NOVA, useFloatIn } from "@/lib/motion"
 
 type FloatFrom = { x?: number; y?: number; rotate?: number; scale?: number }
 
 const READ_MORE_LINK_CLASSNAME =
-  "font-semibold text-primary underline decoration-primary/30 underline-offset-2 transition-colors duration-150 ease-nova hover:text-primary-hover"
+  "font-medium text-accent-strong underline decoration-accent/40 underline-offset-4 transition-colors duration-200 ease-nova hover:decoration-accent"
 
 const QUESTIONS = [
   {
@@ -354,19 +355,24 @@ function FaqCta() {
       viewport={{ once: true, amount: 0.4 }}
       variants={floatIn(0, { y: 60, scale: 0.94 })}
     >
-      <Card className="relative mx-auto max-w-3xl overflow-hidden text-center">
+      <Card tone="ink" className="grain-ink relative mx-auto max-w-3xl overflow-hidden text-center">
         <div className="relative flex flex-col items-center gap-4 py-4">
-          <Heading variant="h2">Une autre question ?</Heading>
-          <p className="max-w-xl text-body text-text-secondary">
-            <strong className="font-semibold text-text">Je réponds personnellement à chaque message</strong>.
+          <span aria-hidden className="mb-2 flex items-center gap-2 text-accent">
+            <span className="h-px w-8 bg-accent/50" />
+            <NovaMark className="size-3" />
+            <span className="h-px w-8 bg-accent/50" />
+          </span>
+          <Heading variant="h2" className="text-on-ink">Une autre question ?</Heading>
+          <p className="max-w-xl text-body text-on-ink-soft">
+            <strong className="font-semibold text-on-ink">Je réponds personnellement à chaque message</strong>.
             Parlons de votre projet et voyons ensemble comment je peux vous aider.
           </p>
           <Link href="/#contact" className="group">
-            <Button variant="primary">
+            <Button variant="primary" className="bg-paper text-ink hover:bg-accent hover:text-accent-foreground">
               Construisons votre projet
               <Icon
                 icon={ArrowRight}
-                className="size-4 transition-transform duration-200 ease-nova group-hover:translate-x-0.5"
+                className="transition-transform duration-200 ease-nova group-hover:translate-x-0.5"
               />
             </Button>
           </Link>
@@ -395,8 +401,8 @@ function FAQ() {
           viewport={{ once: true, amount: 0.4 }}
           variants={floatIn(0, { y: -40, scale: 0.85 })}
         >
-          <Badge variant="outline" className="gap-2 py-1.5">
-            <Icon icon={HelpCircle} className="size-3.5" />
+          <Badge variant="outline">
+            <Icon icon={HelpCircle} className="size-3.5 text-accent" />
             Questions fréquentes
           </Badge>
         </motion.div>
@@ -411,7 +417,7 @@ function FAQ() {
         </motion.div>
 
         <motion.p
-          className="mt-6 max-w-xl text-body text-text-secondary"
+          className="measure mt-6 text-lead text-text-secondary"
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, amount: 0.4 }}
@@ -422,7 +428,7 @@ function FAQ() {
         </motion.p>
       </div>
 
-      <div className="mx-auto mt-16 flex max-w-3xl flex-col gap-4">
+      <div className="mx-auto mt-[var(--section-gap)] flex max-w-3xl flex-col gap-3">
         {visibleQuestions.map((item, index) => {
           const isOpen = openIndex === index
           const from: FloatFrom =
@@ -436,20 +442,20 @@ function FAQ() {
               viewport={{ once: true, amount: 0.3 }}
               variants={floatIn(index * 0.08, from, { damping: 30, mass: 4 })}
             >
-              <Card className="overflow-hidden p-0">
+              <Card padding="none" className="overflow-hidden transition-colors duration-300 ease-nova hover:border-border-strong">
                 <button
                   type="button"
                   onClick={() => setOpenIndex(isOpen ? null : index)}
                   aria-expanded={isOpen}
-                  className="group flex w-full items-center justify-between gap-4 p-6 text-left"
+                  className="group flex w-full items-center justify-between gap-4 rounded-xl p-6 text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/35"
                 >
-                  <span className="text-body font-semibold text-text transition-colors duration-150 ease-nova group-hover:text-primary">
+                  <span className="text-body font-medium text-text transition-colors duration-200 ease-nova group-hover:text-accent-strong">
                     {item.question}
                   </span>
                   <motion.span
                     animate={{ rotate: isOpen ? 180 : 0 }}
                     transition={{ duration: 0.2, ease: EASE_NOVA }}
-                    className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary transition-colors duration-150 ease-nova group-hover:bg-primary/20"
+                    className="flex size-8 shrink-0 items-center justify-center rounded-full border border-border-strong text-text-secondary transition-colors duration-200 ease-nova group-hover:border-accent group-hover:text-accent-strong"
                   >
                     <Icon icon={ChevronDown} className="size-4" />
                   </motion.span>
@@ -465,7 +471,7 @@ function FAQ() {
                       transition={{ duration: 0.3, ease: EASE_NOVA }}
                       className="overflow-hidden"
                     >
-                      <p className="px-6 pb-6 text-body text-text-secondary">{item.answer}</p>
+                      <p className="border-t border-border px-6 pb-6 pt-5 text-body text-text-secondary">{item.answer}</p>
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -479,7 +485,7 @@ function FAQ() {
             <Button
               type="button"
               variant="outline"
-              className="h-11 px-6 text-small"
+              className="h-11 px-6"
               onClick={() => setShowAll((prev) => !prev)}
             >
               {showAll ? "Afficher moins de questions" : `Voir les ${hiddenCount} autres questions`}

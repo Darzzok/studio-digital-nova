@@ -38,11 +38,11 @@ export const CATEGORY_ICON: Record<ArticleCategory, LucideIcon> = {
 }
 
 export const CATEGORY_GRADIENT: Record<ArticleCategory, { from: string; to: string }> = {
-  "Création de site": { from: "var(--color-primary)", to: "var(--color-accent-purple)" },
-  SEO: { from: "var(--color-accent-purple)", to: "var(--color-accent-green)" },
-  Webdesign: { from: "var(--color-primary)", to: "var(--color-accent-green)" },
-  Marketing: { from: "var(--color-accent-green)", to: "var(--color-primary)" },
-  "Conseils TPE": { from: "var(--color-accent-purple)", to: "var(--color-primary)" },
+  "Création de site": { from: "var(--color-ink)", to: "var(--color-mineral)" },
+  SEO: { from: "var(--color-mineral)", to: "var(--color-success)" },
+  Webdesign: { from: "var(--color-ink)", to: "var(--color-accent)" },
+  Marketing: { from: "var(--color-accent)", to: "var(--color-warning)" },
+  "Conseils TPE": { from: "var(--color-mineral)", to: "var(--color-ink)" },
 }
 
 export type Article = {

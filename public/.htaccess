@@ -1,34 +1,24 @@
-# Studio Digital Nova — configuration Apache pour l'export statique Next.js
+# Studio Digital Nova — configuration Apache / LiteSpeed pour l'export statique
 # À placer à la racine du site sur Hostinger (public_html), aux côtés d'index.html.
+#
+# IMPORTANT : ce fichier n'est plus indispensable au fonctionnement du site.
+# L'export est généré avec `trailingSlash`, donc chaque route possède son
+# propre `index.html` (faq/index.html, blog/index.html…) que le serveur sert
+# nativement. Si ce fichier venait à manquer, les pages resteraient
+# accessibles — on perdrait seulement le cache, la compression et l'aperçu
+# des images de partage.
 
 DirectoryIndex index.html
 
 # Next.js exporte les images Open Graph / Twitter Card sans extension
 # (ex. /opengraph-image, /blog/mon-article/opengraph-image). Sans ça, Apache
-# ne devine pas leur type et les sert sans Content-Type — LinkedIn, Facebook
-# etc. ne peuvent alors pas afficher l'aperçu image du lien.
+# les sert sans Content-Type — LinkedIn, Facebook etc. ne peuvent alors pas
+# afficher l'aperçu image du lien.
 <IfModule mod_mime.c>
   <FilesMatch "^(opengraph-image|twitter-image)$">
     ForceType image/png
   </FilesMatch>
 </IfModule>
-
-RewriteEngine On
-
-# Sert les pages sans extension (ex. /blog -> blog.html) sans changer l'URL affichée.
-# Les fichiers réels (assets _next/static, images...) sont servis tels quels grâce à !-f.
-# Pas de condition "!-d" : Next.js génère à la fois blog.html ET un dossier blog/
-# (pour les articles enfants) — le fichier .html doit toujours avoir la priorité.
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME}\.html -f
-RewriteRule ^(.*)$ $1.html [L]
-
-# Si une URL est tapée avec un slash final (ex. /blog/) alors qu'un dossier du
-# même nom existe (cas des routes ayant des sous-pages), sert quand même le
-# fichier .html correspondant plutôt que de chercher un index dans ce dossier.
-RewriteCond %{REQUEST_FILENAME} -d
-RewriteCond %{REQUEST_FILENAME}\.html -f
-RewriteRule ^(.*)/$ $1.html [L]
 
 # Page 404 personnalisée (générée par Next.js)
 ErrorDocument 404 /404.html

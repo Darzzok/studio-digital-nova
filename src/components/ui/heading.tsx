@@ -3,7 +3,12 @@ import { cva, type VariantProps } from "class-variance-authority"
 
 import { cn } from "@/lib/utils"
 
-const headingVariants = cva("font-heading text-text", {
+/*
+  DM Serif Display n'a qu'une graisse : la hiérarchie repose sur la taille,
+  l'interlignage et l'approche, définis dans les tokens `--text-*`.
+  `text-balance` évite les veuves sur les titres courts.
+*/
+const headingVariants = cva("font-heading font-normal text-balance text-text", {
   variants: {
     variant: {
       display: "text-display",

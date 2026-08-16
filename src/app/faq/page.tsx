@@ -18,8 +18,9 @@ export const metadata: Metadata = {
   openGraph: {
     title: "FAQ — Questions fréquentes sur la création de site internet",
     description,
-    url: `${siteConfig.url}/faq`,
+    url: `${siteConfig.url}/faq/`,
     type: "website",
+    images: [`${siteConfig.url}/opengraph-image`],
   },
   twitter: {
     card: "summary_large_image",

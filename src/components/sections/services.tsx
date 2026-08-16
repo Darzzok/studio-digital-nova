@@ -20,13 +20,15 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Heading } from "@/components/ui/heading"
 import { Icon } from "@/components/ui/icon"
+import { CHIP, CardIndex, DrawRule } from "@/components/ui/nova"
 import { Section } from "@/components/ui/section"
 import { useIsMobile } from "@/hooks/use-is-mobile"
 import { EASE_NOVA, useFloatIn } from "@/lib/motion"
+import { cn } from "@/lib/utils"
 
 type FloatFrom = { x?: number; y?: number; rotate?: number; scale?: number }
 
-const FRAME = "relative h-40 w-full overflow-hidden rounded-xl border border-border bg-background"
+const FRAME = "relative h-40 w-full overflow-hidden rounded-lg border border-border bg-background"
 
 type PreviewProps = { reduce: boolean }
 
@@ -42,7 +44,7 @@ function HeroPreview({ reduce }: PreviewProps) {
       <div className="h-2 w-24 rounded-full bg-text/70" />
       <div className="h-2 w-16 rounded-full bg-border" />
       <motion.div
-        className="mt-2 h-5 w-20 rounded-full bg-primary"
+        className="mt-2 h-5 w-20 rounded-md bg-accent"
         animate={reduce ? { scale: 1 } : { scale: [1, 1.07, 1] }}
         transition={reduce ? undefined : { duration: 2, repeat: Infinity, ease: EASE_NOVA }}
       />
@@ -64,7 +66,7 @@ function HomePreview() {
       </div>
       <div
         className="h-10 w-full rounded-lg"
-        style={{ backgroundImage: "linear-gradient(135deg, var(--color-primary), var(--color-accent-purple))" }}
+        style={{ backgroundImage: "var(--gradient-ink)" }}
       />
       <div className="grid flex-1 grid-cols-3 gap-1.5">
         {[0, 1, 2].map((i) => (
@@ -94,10 +96,10 @@ function RefontePreview({ reduce }: PreviewProps) {
         </div>
         <div className="flex flex-col items-center justify-center gap-1.5 bg-surface p-3">
           <div className="h-2 w-14 rounded-full bg-text/80" />
-          <div className="h-2 w-10 rounded-full bg-primary/70" />
+          <div className="h-2 w-10 rounded-full bg-accent/70" />
           <div
             className="mt-1 h-6 w-16 rounded-md"
-            style={{ backgroundImage: "linear-gradient(135deg, var(--color-primary), var(--color-accent-purple))" }}
+            style={{ backgroundImage: "var(--gradient-ink)" }}
           />
         </div>
       </div>
@@ -125,7 +127,7 @@ function SeoPreview() {
           {SEO_BARS.map((h, i) => (
             <motion.div
               key={i}
-              className="w-full rounded-t-sm bg-primary/70"
+              className="w-full rounded-t-xs bg-mineral/70"
               style={{ height: `${h}%`, transformOrigin: "bottom" }}
               initial={{ scaleY: 0 }}
               whileInView={{ scaleY: 1 }}
@@ -134,7 +136,7 @@ function SeoPreview() {
             />
           ))}
         </div>
-        <p className="text-[10px] font-medium text-text-secondary">Trafic organique</p>
+        <p className="text-[10px] font-medium text-text-muted">Trafic organique</p>
       </div>
       <div className="relative flex size-16 shrink-0 items-center justify-center">
         <svg viewBox="0 0 36 36" className="size-16 -rotate-90">
@@ -144,7 +146,7 @@ function SeoPreview() {
             cy="18"
             r="15.5"
             fill="none"
-            stroke="var(--color-success)"
+            stroke="var(--color-accent)"
             strokeWidth="3"
             strokeLinecap="round"
             initial={{ pathLength: 0 }}
@@ -153,7 +155,7 @@ function SeoPreview() {
             transition={{ duration: 0.9, delay: 0.2, ease: EASE_NOVA }}
           />
         </svg>
-        <span className="absolute text-body font-bold text-text">98</span>
+        <span className="absolute font-heading text-body text-text">98</span>
       </div>
     </div>
   )
@@ -177,12 +179,12 @@ function MaintenancePreview({ reduce }: PreviewProps) {
             transition={reduce ? undefined : { duration: 2, repeat: Infinity, delay: i * 0.3, ease: EASE_NOVA }}
           />
           <span className="h-1.5 flex-1 rounded-full bg-border" />
-          <span className="text-[10px] text-text-secondary">{row.label}</span>
+          <span className="text-[10px] text-text-muted">{row.label}</span>
         </div>
       ))}
       <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-border">
         <motion.div
-          className="h-full rounded-full bg-primary"
+          className="h-full rounded-full bg-accent"
           initial={{ scaleX: 0 }}
           whileInView={{ scaleX: 0.78 }}
           viewport={{ once: true, amount: 0.6 }}
@@ -213,7 +215,7 @@ function ServerPreview({ reduce }: PreviewProps) {
       <motion.div
         className="mt-1 flex items-center justify-center gap-1.5 rounded-full bg-success/10 px-3 py-1.5"
         initial={{ backgroundColor: "var(--color-border)" }}
-        whileInView={{ backgroundColor: "rgba(16,185,129,0.1)" }}
+        whileInView={{ backgroundColor: "rgba(74,107,87,0.12)" }}
         viewport={{ once: true, amount: 0.6 }}
         transition={{ duration: 0.6, delay: 0.3, ease: EASE_NOVA }}
       >
@@ -221,18 +223,18 @@ function ServerPreview({ reduce }: PreviewProps) {
           className="size-2 rounded-full bg-success"
           animate={
             reduce
-              ? { boxShadow: "0 0 0 0 rgba(16,185,129,0)" }
+              ? { boxShadow: "0 0 0 0 rgba(74,107,87,0)" }
               : {
                   boxShadow: [
-                    "0 0 0 0 rgba(16,185,129,0.35)",
-                    "0 0 0 6px rgba(16,185,129,0)",
-                    "0 0 0 0 rgba(16,185,129,0)",
+                    "0 0 0 0 rgba(74,107,87,0.4)",
+                    "0 0 0 6px rgba(74,107,87,0)",
+                    "0 0 0 0 rgba(74,107,87,0)",
                   ],
                 }
           }
           transition={reduce ? undefined : { duration: 1.8, repeat: Infinity, ease: EASE_NOVA }}
         />
-        <span className="text-small font-semibold text-success">En ligne</span>
+        <span className="text-eyebrow uppercase text-success">En ligne</span>
       </motion.div>
     </div>
   )
@@ -248,7 +250,7 @@ const SERVICES = [
       </>
     ),
     icon: LayoutTemplate,
-    className: "bg-primary/10 text-primary",
+    className: CHIP.ink,
     features: [
       "Design sur mesure, pensé pour convertir",
       "Livré en 5 jours",
@@ -265,7 +267,7 @@ const SERVICES = [
       </>
     ),
     icon: Globe,
-    className: "bg-accent-purple/15 text-accent-purple",
+    className: CHIP.terracotta,
     features: [
       "Jusqu'à 5 pages incluses",
       "Structure pensée pour le référencement",
@@ -282,7 +284,7 @@ const SERVICES = [
       </>
     ),
     icon: RefreshCw,
-    className: "bg-accent-green/15 text-accent-green",
+    className: CHIP.mineral,
     features: [
       "Reprise de votre contenu existant",
       "Design entièrement modernisé",
@@ -299,7 +301,7 @@ const SERVICES = [
       </>
     ),
     icon: Search,
-    className: "bg-warning/15 text-warning",
+    className: CHIP.ochre,
     features: [
       "Audit complet de votre site",
       "Optimisation technique et éditoriale",
@@ -316,7 +318,7 @@ const SERVICES = [
       </>
     ),
     icon: Wrench,
-    className: "bg-primary/10 text-primary",
+    className: CHIP.ink,
     features: [
       "Mises à jour de sécurité",
       "Sauvegardes automatiques",
@@ -333,7 +335,7 @@ const SERVICES = [
       </>
     ),
     icon: Server,
-    className: "bg-accent-purple/15 text-accent-purple",
+    className: CHIP.sage,
     features: [
       "Hébergement rapide et sécurisé",
       "Certificat SSL inclus",
@@ -365,8 +367,8 @@ function Services() {
           viewport={{ once: true, amount: 0.4 }}
           variants={floatIn(0, { y: -40, scale: 0.85 })}
         >
-          <Badge variant="outline" className="gap-2 py-1.5">
-            <Icon icon={Layers} className="size-3.5" />
+          <Badge variant="outline">
+            <Icon icon={Layers} className="size-3.5 text-accent" />
             Mes services
           </Badge>
         </motion.div>
@@ -381,7 +383,7 @@ function Services() {
         </motion.div>
 
         <motion.p
-          className="mt-6 max-w-xl text-body text-text-secondary"
+          className="measure mt-6 text-lead text-text-secondary"
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, amount: 0.4 }}
@@ -393,7 +395,7 @@ function Services() {
         </motion.p>
       </div>
 
-      <div className="mt-16 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="mt-[var(--section-gap)] grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {visibleServices.map((service, index) => {
           const column = index % 3
           const from: FloatFrom =
@@ -411,32 +413,51 @@ function Services() {
               viewport={{ once: true, amount: 0.3 }}
               variants={floatIn(index * 0.12, from, { damping: 30, mass: 4 })}
             >
-              <Card className="group flex h-full flex-col items-center gap-5 bg-surface-sunken text-center">
-                <service.Preview reduce={Boolean(reduce)} />
+              <Card
+                tone="ivory"
+                padding="md"
+                className="group relative flex h-full flex-col overflow-hidden text-left transition-colors duration-500 ease-nova hover:border-border-strong"
+              >
+                {/* Ouverture éditoriale : rang, filet, pastille de service. */}
+                <div className="flex items-center gap-4">
+                  <CardIndex value={String(index + 1).padStart(2, "0")} className="flex-1" />
+                  <span
+                    className={cn(
+                      "flex size-9 shrink-0 items-center justify-center rounded-md group-hover:-translate-y-0.5",
+                      service.className
+                    )}
+                  >
+                    <Icon icon={service.icon} className="size-4" />
+                  </span>
+                </div>
 
-                <span
-                  className={`flex size-12 shrink-0 items-center justify-center rounded-2xl shadow-sm transition-transform duration-200 ease-nova group-hover:-rotate-6 group-hover:scale-110 ${service.className}`}
-                >
-                  <Icon icon={service.icon} className="size-5" />
-                </span>
+                {/*
+                  L'aperçu dérive légèrement de son cadre au survol : c'est le
+                  contenu qui bouge, jamais la carte entière.
+                */}
+                <div className="mt-6 overflow-hidden rounded-lg">
+                  <div className="transition-transform duration-700 ease-editorial group-hover:-translate-y-1">
+                    <service.Preview reduce={Boolean(reduce)} />
+                  </div>
+                </div>
 
-                <h3 className="text-h3 font-heading font-semibold text-text">{service.title}</h3>
+                <h3 className="mt-7 font-heading text-h3 text-text">{service.title}</h3>
 
-                <p className="text-body text-text-secondary">{service.description}</p>
+                <p className="mt-3 text-small text-text-secondary">{service.description}</p>
 
-                <div className="h-px w-full bg-border" />
+                <DrawRule className="mt-6" />
 
-                <ul className="flex w-full flex-col gap-2">
+                <ul className="mt-5 flex w-full flex-1 flex-col gap-3">
                   {service.features.map((feature, featureIndex) => (
                     <motion.li
                       key={feature}
-                      className="flex items-start justify-center gap-2 text-small text-text-secondary"
+                      className="flex items-baseline gap-3 text-small text-text-secondary"
                       initial={{ opacity: 0, x: -8 }}
                       whileInView={{ opacity: 1, x: 0 }}
                       viewport={{ once: true, amount: 0.6 }}
                       transition={{ duration: 0.35, delay: 0.15 + featureIndex * 0.08, ease: EASE_NOVA }}
                     >
-                      <Icon icon={Check} className="mt-0.5 size-3.5 shrink-0 text-success" />
+                      <Icon icon={Check} className="size-3 shrink-0 translate-y-0.5 text-accent" />
                       {feature}
                     </motion.li>
                   ))}

@@ -1,9 +1,10 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useRef, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { motion } from "framer-motion"
+import { motion, useMotionValueEvent, useScroll, useSpring } from "framer-motion"
+import type { MotionValue } from "framer-motion"
 import {
   ArrowLeft,
   ArrowRight,
@@ -21,6 +22,7 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Heading } from "@/components/ui/heading"
 import { Icon } from "@/components/ui/icon"
+import { CardIndex, NovaMark } from "@/components/ui/nova"
 import { Section } from "@/components/ui/section"
 import { useFloatIn } from "@/lib/motion"
 import { cn } from "@/lib/utils"
@@ -32,46 +34,40 @@ import {
 } from "@/lib/articles"
 
 const CALLOUT_TONE: Record<string, string> = {
-  primary: "border-primary/30 bg-primary/5",
-  success: "border-success/30 bg-success/10",
-  warning: "border-warning/30 bg-warning/10",
+  primary: "border-l-mineral bg-mineral/6",
+  success: "border-l-success bg-success/8",
+  warning: "border-l-warning bg-warning/8",
 }
 
-/** Suit la lecture : quelle section est active, et à quel pourcentage de l'article se trouve le lecteur. */
-function useReadingProgress(headingIds: string[]) {
+/**
+ * Suit la lecture : quelle section est active, et où en est le lecteur.
+ * La progression est une MotionValue lissée par un spring — plus de
+ * `setState` à chaque frame ni de transition CSS sur la largeur.
+ */
+function useReadingProgress(
+  articleRef: React.RefObject<HTMLElement | null>,
+  headingIds: string[]
+) {
   const [activeId, setActiveId] = useState<string | null>(headingIds[0] ?? null)
-  const [progress, setProgress] = useState(0)
 
-  useEffect(() => {
-    function update() {
-      const offset = 140
-      let current = headingIds[0] ?? null
-      for (const id of headingIds) {
-        const el = document.getElementById(id)
-        if (el && el.getBoundingClientRect().top - offset <= 0) {
-          current = id
-        }
-      }
-      setActiveId(current)
+  const { scrollYProgress } = useScroll({
+    target: articleRef,
+    offset: ["start start", "end end"],
+  })
+  const progress = useSpring(scrollYProgress, { stiffness: 140, damping: 30, mass: 0.4 })
 
-      const article = document.getElementById("article-body")
-      if (article) {
-        const rect = article.getBoundingClientRect()
-        const total = rect.height - window.innerHeight
-        const scrolled = -rect.top
-        setProgress(total > 0 ? Math.min(1, Math.max(0, scrolled / total)) : 0)
+  const { scrollY } = useScroll()
+  useMotionValueEvent(scrollY, "change", () => {
+    const offset = 140
+    let current = headingIds[0] ?? null
+    for (const id of headingIds) {
+      const el = document.getElementById(id)
+      if (el && el.getBoundingClientRect().top - offset <= 0) {
+        current = id
       }
     }
-
-    update()
-    window.addEventListener("scroll", update, { passive: true })
-    window.addEventListener("resize", update)
-    return () => {
-      window.removeEventListener("scroll", update)
-      window.removeEventListener("resize", update)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [headingIds.join("|")])
+    setActiveId((previous) => (previous === current ? previous : current))
+  })
 
   return { activeId, progress }
 }
@@ -79,7 +75,7 @@ function useReadingProgress(headingIds: string[]) {
 function ArticleHeroIllustration({ article }: { article: Article }) {
   return (
     <div className="relative mx-auto w-full max-w-md">
-      <Card className="relative overflow-hidden p-0">
+      <Card padding="none" className="relative overflow-hidden">
         <div className="relative h-64 w-full sm:h-72">
           <Image
             src={article.image.url}
@@ -102,21 +98,21 @@ function TableOfContents({
 }: {
   toc: { id: string; text: string }[]
   activeId: string | null
-  progress: number
+  progress: MotionValue<number>
 }) {
   if (toc.length === 0) return null
 
   return (
-    <Card className="p-6">
-      <p className="mb-4 flex items-center gap-2 text-small font-semibold text-text">
-        <Icon icon={ListTree} className="size-4 text-primary" />
+    <Card padding="sm">
+      <p className="mb-4 flex items-center gap-2 text-eyebrow uppercase text-text-muted">
+        <Icon icon={ListTree} className="size-3.5 text-accent" />
         Sommaire
       </p>
 
-      <div className="mb-4 h-1 w-full overflow-hidden rounded-full bg-border">
-        <div
-          className="h-full rounded-full bg-primary transition-[width] duration-150 ease-nova"
-          style={{ width: `${Math.round(progress * 100)}%` }}
+      <div className="mb-5 h-px w-full overflow-hidden bg-border">
+        <motion.div
+          className="h-full origin-left bg-accent"
+          style={{ scaleX: progress }}
         />
       </div>
 
@@ -131,10 +127,10 @@ function TableOfContents({
                   aria-current={isActive ? "location" : undefined}
                   className={cn(
                     "flex items-start gap-2.5 rounded-lg px-2 py-1.5 text-small transition-colors duration-150 ease-nova",
-                    isActive ? "bg-primary/10 font-semibold text-primary" : "text-text-secondary hover:text-primary"
+                    isActive ? "bg-accent/8 font-medium text-accent-strong" : "text-text-secondary hover:text-accent-strong"
                   )}
                 >
-                  <span className={cn("mt-0.5 font-semibold", isActive ? "text-primary" : "text-primary/60")}>
+                  <span className={cn("mt-0.5 font-heading", isActive ? "text-accent-strong" : "text-text-muted")}>
                     {String(index + 1).padStart(2, "0")}
                   </span>
                   {item.text}
@@ -151,7 +147,7 @@ function TableOfContents({
 function ArticleBlockRenderer({ block }: { block: ArticleBlock }) {
   switch (block.type) {
     case "paragraph":
-      return <p className="text-body leading-relaxed text-text-secondary">{block.text}</p>
+      return <p className="measure mx-auto text-body text-text-secondary">{block.text}</p>
     case "heading":
       return (
         <Heading id={block.id} variant="h2" className="scroll-mt-24">
@@ -162,10 +158,10 @@ function ArticleBlockRenderer({ block }: { block: ArticleBlock }) {
       return <Heading variant="h3">{block.text}</Heading>
     case "list":
       return (
-        <ul className="flex w-full flex-col gap-3 text-left">
+        <ul className="measure mx-auto flex w-full flex-col gap-3 text-left">
           {block.items.map((item) => (
             <li key={item} className="flex items-start gap-3 text-body text-text-secondary">
-              <Icon icon={Circle} className="mt-2 size-1.5 shrink-0 fill-current text-primary" />
+              <Icon icon={Circle} className="mt-2.5 size-1.5 shrink-0 fill-current text-accent" />
               {item}
             </li>
           ))}
@@ -173,27 +169,27 @@ function ArticleBlockRenderer({ block }: { block: ArticleBlock }) {
       )
     case "quote":
       return (
-        <Card className="flex flex-col items-center border-l-4 border-l-primary bg-background text-center">
-          <Icon icon={Quote} className="size-6 text-primary/40" />
-          <p className="mt-3 text-h3 font-heading italic leading-snug text-text">{block.text}</p>
-          <p className="mt-3 text-small text-text-secondary">{block.author}</p>
+        <Card tone="outline" className="flex flex-col items-center border-x-0 border-y-0 border-l border-l-accent bg-transparent text-center">
+          <Icon icon={Quote} className="size-5 text-accent" />
+          <p className="mt-4 font-heading text-h3 italic text-text">{block.text}</p>
+          <p className="mt-4 text-eyebrow uppercase text-text-muted">{block.author}</p>
         </Card>
       )
     case "callout":
       return (
-        <Card className={cn("flex flex-col items-center text-center", "border", CALLOUT_TONE[block.tone ?? "primary"])}>
-          <p className="text-small font-semibold text-text">{block.title}</p>
+        <Card padding="md" className={cn("flex flex-col items-center border-l text-center", CALLOUT_TONE[block.tone ?? "primary"])}>
+          <p className="text-eyebrow uppercase text-text">{block.title}</p>
           <p className="mt-2 text-body text-text-secondary">{block.text}</p>
         </Card>
       )
     case "checklist":
       return (
-        <Card className="flex flex-col items-center bg-background text-center">
-          <p className="mb-4 text-small font-semibold text-text">{block.title}</p>
+        <Card tone="ivory" padding="md" className="flex flex-col items-center text-center">
+          <p className="mb-5 text-eyebrow uppercase text-text">{block.title}</p>
           <div className="flex w-full flex-col gap-3 text-left">
             {block.items.map((item) => (
               <div key={item} className="flex items-start gap-2.5">
-                <span className="mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full bg-success/15 text-success">
+                <span className="mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full bg-accent/15 text-accent-strong">
                   <Icon icon={Check} className="size-2.5" />
                 </span>
                 <p className="text-small text-text-secondary">{item}</p>
@@ -218,19 +214,20 @@ function RelatedArticleCard({ article, index }: { article: Article; index: numbe
       variants={floatIn(index * 0.1, { y: 60 }, { damping: 30, mass: 4 })}
     >
       <Link href={`/blog/${article.slug}`}>
-        <Card className="group relative flex h-full flex-col gap-0 overflow-hidden p-0">
-          <div className="relative h-32 w-full overflow-hidden">
+        <Card padding="none" interactive className="group relative flex h-full flex-col gap-0 overflow-hidden">
+          <div className="relative h-36 w-full overflow-hidden border-b border-border">
             <Image
               src={article.image.url}
               alt={article.image.alt}
               fill
               sizes="(min-width: 1024px) 320px, 90vw"
-              className="object-cover transition-transform duration-300 ease-nova group-hover:scale-110"
+              className="scale-[1.02] object-cover transition-transform duration-[900ms] ease-editorial group-hover:-translate-y-1.5 group-hover:scale-[1.06]"
             />
           </div>
-          <div className="flex flex-1 flex-col items-center gap-2 p-5 text-center">
-            <Badge variant="outline">{article.category}</Badge>
-            <h3 className="text-small font-heading font-semibold text-text">{article.title}</h3>
+          <div className="flex flex-1 flex-col p-5 text-left">
+            <CardIndex value={String(index + 1).padStart(2, "0")} />
+            <Badge variant="outline" className="mt-4">{article.category}</Badge>
+            <h3 className="mt-3 font-heading text-body text-text transition-colors duration-300 ease-nova group-hover:text-accent-strong">{article.title}</h3>
           </div>
         </Card>
       </Link>
@@ -240,19 +237,24 @@ function RelatedArticleCard({ article, index }: { article: Article; index: numbe
 
 function ArticleConversionCta() {
   return (
-    <Card className="relative overflow-hidden text-center">
+    <Card tone="ink" className="grain-ink relative overflow-hidden text-center">
       <div className="relative flex flex-col items-center gap-4 py-4">
-        <Heading variant="h2">🚀 Construisons votre projet</Heading>
-        <p className="max-w-xl text-body text-text-secondary">
+        <span aria-hidden className="mb-2 flex items-center gap-2 text-accent">
+          <span className="h-px w-8 bg-accent/50" />
+          <NovaMark className="size-3" />
+          <span className="h-px w-8 bg-accent/50" />
+        </span>
+        <Heading variant="h2" className="text-on-ink">🚀 Construisons votre projet</Heading>
+        <p className="max-w-xl text-body text-on-ink-soft">
           Vous souhaitez un site moderne, performant et adapté à votre activité ? Construisons
           ensemble votre futur site internet.
         </p>
         <Link href="/#contact" className="group">
-          <Button variant="primary">
+          <Button variant="primary" className="bg-paper text-ink hover:bg-accent hover:text-accent-foreground">
             Construisons votre projet
             <Icon
               icon={ArrowRight}
-              className="size-4 transition-transform duration-200 ease-nova group-hover:translate-x-0.5"
+              className="transition-transform duration-200 ease-nova group-hover:translate-x-0.5"
             />
           </Button>
         </Link>
@@ -268,7 +270,8 @@ function ArticleContent({ article }: { article: Article }) {
     .filter((block): block is Extract<ArticleBlock, { type: "heading" }> => block.type === "heading")
     .map((block) => ({ id: block.id, text: block.text }))
   const related = getRelatedArticles(article)
-  const { activeId, progress } = useReadingProgress(toc.map((item) => item.id))
+  const articleRef = useRef<HTMLElement | null>(null)
+  const { activeId, progress } = useReadingProgress(articleRef, toc.map((item) => item.id))
 
   return (
     <>
@@ -281,7 +284,7 @@ function ArticleContent({ article }: { article: Article }) {
         >
           <Link
             href="/blog"
-            className="inline-flex items-center gap-1.5 text-small font-medium text-text-secondary transition-colors duration-150 ease-nova hover:text-primary"
+            className="inline-flex items-center gap-1.5 text-eyebrow uppercase text-text-muted transition-colors duration-200 ease-nova hover:text-accent-strong"
           >
             <Icon icon={ArrowLeft} className="size-3.5" />
             Retour au blog
@@ -314,7 +317,7 @@ function ArticleContent({ article }: { article: Article }) {
             </motion.div>
 
             <motion.div
-              className="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-small text-text-secondary"
+              className="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-small text-text-muted"
               initial="hidden"
               whileInView="visible"
               viewport={{ once: true, amount: 0.4 }}
@@ -348,11 +351,11 @@ function ArticleContent({ article }: { article: Article }) {
 
       <Section className="bg-surface">
         <div className="grid grid-cols-1 gap-12 lg:grid-cols-[minmax(0,1fr)_320px]">
-          <article id="article-body" className="flex flex-col gap-6 text-center">
+          <article ref={articleRef} id="article-body" className="flex flex-col gap-6 text-center">
             {article.intro.map((paragraph, index) => (
               <motion.p
                 key={index}
-                className="text-h3 font-heading font-medium leading-snug text-text"
+                className="measure mx-auto font-heading text-h3 text-text"
                 initial="hidden"
                 whileInView="visible"
                 viewport={{ once: true, amount: 0.4 }}
@@ -383,15 +386,16 @@ function ArticleContent({ article }: { article: Article }) {
             <div className="sticky top-28 flex flex-col gap-6">
               <TableOfContents toc={toc} activeId={activeId} progress={progress} />
               <Card
-                className="relative overflow-hidden p-6 text-center"
-                style={{ backgroundImage: `linear-gradient(160deg, ${gradient.from}1a, transparent)` }}
+                padding="sm"
+                className="relative overflow-hidden border-l border-l-accent text-center"
+                style={{ backgroundImage: `linear-gradient(160deg, ${gradient.from}14, transparent 60%)` }}
               >
-                <p className="text-small font-semibold text-text">Un projet en tête ?</p>
+                <p className="text-eyebrow uppercase text-text">Un projet en tête ?</p>
                 <p className="mt-2 text-small text-text-secondary">
                   Discutons de votre projet de site internet, sans engagement.
                 </p>
                 <Link href="/#contact" className="mt-4 block">
-                  <Button variant="primary" className="h-11 w-full text-small">
+                  <Button variant="primary" className="h-11 w-full">
                     Construisons votre projet
                   </Button>
                 </Link>

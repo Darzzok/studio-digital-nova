@@ -26,6 +26,7 @@ import { Card } from "@/components/ui/card"
 import { Heading } from "@/components/ui/heading"
 import { Icon } from "@/components/ui/icon"
 import { Input } from "@/components/ui/input"
+import { CHIP, CardIndex, NovaMark } from "@/components/ui/nova"
 import { Section } from "@/components/ui/section"
 import { ARTICLES, type Article } from "@/lib/articles"
 import { useFloatIn } from "@/lib/motion"
@@ -38,10 +39,10 @@ type FloatFrom = { x?: number; y?: number; rotate?: number; scale?: number }
 /* ------------------------------------------------------------------------ */
 
 const STATS = [
-  { icon: FileText, value: String(ARTICLES.length), label: "Articles", className: "bg-primary/10 text-primary" },
-  { icon: Layers, value: "6", label: "Catégories", className: "bg-accent-purple/15 text-accent-purple" },
-  { icon: Clock, value: "8 min", label: "Temps de lecture moyen", className: "bg-accent-green/15 text-accent-green" },
-  { icon: Compass, value: "À venir", label: "Guides", className: "bg-warning/15 text-warning" },
+  { icon: FileText, value: String(ARTICLES.length), label: "Articles", className: CHIP.ink },
+  { icon: Layers, value: "6", label: "Catégories", className: CHIP.terracotta },
+  { icon: Clock, value: "8 min", label: "Temps de lecture moyen", className: CHIP.mineral },
+  { icon: Compass, value: "À venir", label: "Guides", className: CHIP.ochre },
 ]
 
 const CATEGORIES = [
@@ -59,10 +60,10 @@ const CATEGORIES = [
 /* ------------------------------------------------------------------------ */
 
 const BUBBLES = [
-  { icon: Code2, className: "bg-primary/15 text-primary", pos: "-left-6 top-4", from: { x: -60, y: -30, rotate: -10 } },
-  { icon: Search, className: "bg-accent-green/15 text-accent-green", pos: "-right-6 top-16", from: { x: 60, y: -20, rotate: 10 } },
-  { icon: Palette, className: "bg-accent-purple/15 text-accent-purple", pos: "-left-8 bottom-14", from: { x: -60, y: 30, rotate: -8 } },
-  { icon: BarChart3, className: "bg-warning/15 text-warning", pos: "-right-4 -bottom-2", from: { x: 60, y: 30, rotate: 8 } },
+  { icon: Code2, className: CHIP.ink, pos: "-left-6 top-4", from: { x: -60, y: -30, rotate: -10 } },
+  { icon: Search, className: CHIP.mineral, pos: "-right-6 top-16", from: { x: 60, y: -20, rotate: 10 } },
+  { icon: Palette, className: CHIP.terracotta, pos: "-left-8 bottom-14", from: { x: -60, y: 30, rotate: -8 } },
+  { icon: BarChart3, className: CHIP.ochre, pos: "-right-4 -bottom-2", from: { x: 60, y: 30, rotate: 8 } },
 ]
 
 function BlogHeroIllustration() {
@@ -70,7 +71,7 @@ function BlogHeroIllustration() {
 
   return (
     <div className="relative mx-auto w-full max-w-sm">
-      <Card className="relative p-4">
+      <Card padding="sm" className="relative">
         <div className="flex items-center gap-1.5 border-b border-border pb-3">
           <span className="size-2.5 rounded-full bg-error/40" />
           <span className="size-2.5 rounded-full bg-warning/40" />
@@ -78,8 +79,8 @@ function BlogHeroIllustration() {
         </div>
         <div className="mt-4 space-y-3">
           <div
-            className="h-28 w-full rounded-xl"
-            style={{ backgroundImage: "linear-gradient(135deg, var(--color-primary), var(--color-accent-purple))" }}
+            className="h-28 w-full rounded-md"
+            style={{ backgroundImage: "var(--gradient-ink)" }}
           />
           <div className="h-2.5 w-3/4 rounded-full bg-border" />
           <div className="h-2.5 w-1/2 rounded-full bg-border" />
@@ -95,7 +96,7 @@ function BlogHeroIllustration() {
           viewport={{ once: true, amount: 0.6 }}
           variants={floatIn(0.3 + index * 0.1, bubble.from, { stiffness: 170, damping: 14, mass: 0.6 })}
         >
-          <span className={cn("flex size-12 items-center justify-center rounded-full shadow-sm", bubble.className)}>
+          <span className={cn("flex size-12 items-center justify-center rounded-full border border-border bg-surface shadow-sm", bubble.className)}>
             <Icon icon={bubble.icon} className="size-5" />
           </span>
         </motion.div>
@@ -118,8 +119,8 @@ function BlogHero() {
             viewport={{ once: true, amount: 0.4 }}
             variants={floatIn(0, { y: -40, scale: 0.85 })}
           >
-            <Badge variant="outline" className="gap-2 py-1.5">
-              <Icon icon={BookOpen} className="size-3.5" />
+            <Badge variant="outline">
+              <Icon icon={BookOpen} className="size-3.5 text-accent" />
               Conseils &amp; Ressources
             </Badge>
           </motion.div>
@@ -134,7 +135,7 @@ function BlogHero() {
           </motion.div>
 
           <motion.p
-            className="mt-6 max-w-xl text-body text-text-secondary"
+            className="measure mt-6 text-lead text-text-secondary"
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, amount: 0.4 }}
@@ -175,17 +176,21 @@ function StatsRow() {
           viewport={{ once: true, amount: 0.4 }}
           variants={floatIn(index * 0.1, { y: 40, scale: 0.9 }, { damping: 30, mass: 4 })}
         >
-          <Card className="group flex flex-col items-center gap-2 p-6 text-center">
+          <Card
+            tone="ivory"
+            padding="sm"
+            className="group flex h-full flex-col text-left transition-colors duration-500 ease-nova hover:border-border-strong"
+          >
             <span
               className={cn(
-                "flex size-10 items-center justify-center rounded-xl shadow-sm transition-transform duration-200 ease-nova group-hover:-rotate-6 group-hover:scale-110",
+                "flex size-9 items-center justify-center rounded-md group-hover:-translate-y-0.5",
                 stat.className
               )}
             >
-              <Icon icon={stat.icon} className="size-5" />
+              <Icon icon={stat.icon} className="size-4" />
             </span>
-            <p className="text-h3 font-heading font-bold text-text">{stat.value}</p>
-            <p className="text-small text-text-secondary">{stat.label}</p>
+            <p className="mt-5 font-heading text-h3 leading-none text-text">{stat.value}</p>
+            <p className="mt-2 text-eyebrow uppercase text-text-muted">{stat.label}</p>
           </Card>
         </motion.div>
       ))}
@@ -206,7 +211,7 @@ function SearchBar({ value, onChange }: { value: string; onChange: (value: strin
     >
       <Icon
         icon={Search}
-        className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-text-secondary"
+        className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-text-muted"
       />
       <Input
         type="search"
@@ -235,7 +240,7 @@ function CategoryFilters({ active, onSelect }: { active: string; onSelect: (cate
           key={category}
           type="button"
           variant={active === category ? "primary" : "outline"}
-          className="h-10 px-5 text-small"
+          className="h-10 px-5"
           onClick={() => onSelect(category)}
         >
           {category}
@@ -258,37 +263,59 @@ function ArticleCard({ article, index }: { article: Article; index: number }) {
       viewport={{ once: true, amount: 0.3 }}
       variants={floatIn(index * 0.1, from, { damping: 30, mass: 4 })}
     >
-      <Card className="group relative flex h-full flex-col gap-0 overflow-hidden p-0">
-        <div className="relative h-40 w-full overflow-hidden">
+      <Card
+        padding="none"
+        className="group relative flex h-full flex-col gap-0 overflow-hidden transition-colors duration-500 ease-nova hover:border-border-strong"
+      >
+        {/*
+          Une couverture de magazine : l'image dérive et respire dans son cadre
+          au survol, la carte elle-même ne bouge pas — elle n'est pas cliquable.
+        */}
+        <div className="relative h-48 w-full overflow-hidden border-b border-border">
           <Image
             src={article.image.url}
             alt={article.image.alt}
             fill
             sizes="(min-width: 1024px) 400px, 90vw"
-            className="object-cover transition-transform duration-300 ease-nova group-hover:scale-110"
+            className="scale-[1.02] object-cover transition-transform duration-[900ms] ease-editorial group-hover:-translate-y-1.5 group-hover:scale-[1.06]"
           />
+          <span
+            aria-hidden
+            className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-ink/55 to-transparent"
+          />
+          <div className="absolute bottom-3 left-4">
+            <Badge variant="ink" className="backdrop-blur-sm">
+              {article.category}
+            </Badge>
+          </div>
         </div>
 
-        <div className="flex flex-1 flex-col items-center gap-3 p-6 text-center">
-          <Badge variant="outline">{article.category}</Badge>
-          <h3 className="text-h3 font-heading font-semibold text-text">{article.title}</h3>
-          <p className="flex-1 text-small text-text-secondary">{article.excerpt}</p>
-          <div className="flex items-center justify-center gap-4 text-small text-text-secondary">
+        <div className="flex flex-1 flex-col p-6 text-left">
+          <CardIndex value={String(index + 1).padStart(2, "0")} />
+
+          <h3 className="mt-5 font-heading text-h3 text-text transition-colors duration-300 ease-nova group-hover:text-accent-strong">
+            {article.title}
+          </h3>
+
+          <p className="mt-3 flex-1 text-small text-text-secondary">{article.excerpt}</p>
+
+          <div className="mt-6 flex items-center gap-5 border-t border-border pt-4 text-eyebrow uppercase text-text-muted">
             <span className="flex items-center gap-1.5">
-              <Icon icon={Clock} className="size-3.5" />
+              <Icon icon={Clock} className="size-3" />
               {article.readingTime}
             </span>
             <span className="flex items-center gap-1.5">
-              <Icon icon={Calendar} className="size-3.5" />
+              <Icon icon={Calendar} className="size-3" />
               {article.date}
             </span>
           </div>
-          <Link href={`/blog/${article.slug}`} className="group mt-2 block">
-            <Button variant="outline" className="h-11 w-full text-small">
+
+          <Link href={`/blog/${article.slug}`} className="group/cta mt-5 block">
+            <Button variant="outline" className="h-11 w-full">
               Lire l&apos;article
               <Icon
                 icon={ArrowRight}
-                className="size-4 transition-transform duration-200 ease-nova group-hover:translate-x-0.5"
+                className="transition-transform duration-200 ease-nova group-hover/cta:translate-x-0.5"
               />
             </Button>
           </Link>
@@ -309,7 +336,7 @@ function EmptyState({
 }) {
   return (
     <div className="mx-auto flex max-w-md flex-col items-center gap-6 py-16 text-center">
-      <span className="flex size-20 items-center justify-center rounded-full bg-primary/10 text-primary">
+      <span className="flex size-20 items-center justify-center rounded-full border border-border bg-surface text-accent">
         <Icon icon={Sparkles} className="size-8" />
       </span>
       <div>
@@ -325,24 +352,30 @@ function FinalCta() {
   const floatIn = useFloatIn()
 
   return (
-    <Card className="relative mx-auto max-w-3xl overflow-hidden text-center">
+    <Card tone="ink" className="grain-ink relative mx-auto max-w-3xl overflow-hidden text-center">
       <div className="relative flex flex-col items-center">
         <motion.div
+          className="flex flex-col items-center"
           initial="hidden"
           animate="visible"
           variants={floatIn(0, { y: -60, scale: 0.94 })}
         >
-          <Heading variant="h2">🚀 Un projet en tête ?</Heading>
+          <span aria-hidden className="mb-4 flex items-center gap-2 text-accent">
+            <span className="h-px w-8 bg-accent/50" />
+            <NovaMark className="size-3" />
+            <span className="h-px w-8 bg-accent/50" />
+          </span>
+          <Heading variant="h2" className="text-on-ink">🚀 Un projet en tête ?</Heading>
         </motion.div>
 
         <motion.p
-          className="mt-6 max-w-xl text-body text-text-secondary"
+          className="measure mt-6 text-lead text-on-ink-soft"
           initial="hidden"
           animate="visible"
           variants={floatIn(0.12, { y: 40 })}
         >
           Construisons ensemble{" "}
-          <strong className="font-semibold text-text">un site internet moderne, performant et pensé pour développer votre activité</strong>.
+          <strong className="font-semibold text-on-ink">un site internet moderne, performant et pensé pour développer votre activité</strong>.
         </motion.p>
 
         <div className="mt-10 flex flex-col gap-4 sm:flex-row">
@@ -352,7 +385,7 @@ function FinalCta() {
             variants={floatIn(0.22, { x: -160, rotate: -6 })}
           >
             <Link href="/#contact">
-              <Button variant="primary">🚀 Construisons votre projet</Button>
+              <Button variant="primary" className="bg-paper text-ink hover:bg-accent hover:text-accent-foreground">🚀 Construisons votre projet</Button>
             </Link>
           </motion.div>
           <motion.div
@@ -361,7 +394,7 @@ function FinalCta() {
             variants={floatIn(0.3, { x: 160, rotate: 6 })}
           >
             <Link href="/#services">
-              <Button variant="outline">Découvrir mes services</Button>
+              <Button variant="outline" className="border-border-ink text-on-ink hover:border-accent hover:text-accent">Découvrir mes services</Button>
             </Link>
           </motion.div>
         </div>
@@ -404,7 +437,7 @@ function BlogContent() {
           </div>
 
           {filteredArticles.length > 0 ? (
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {filteredArticles.map((article, index) => (
                 <ArticleCard key={article.slug} article={article} index={index} />
               ))}
@@ -419,7 +452,7 @@ function BlogContent() {
                 <Button
                   type="button"
                   variant="outline"
-                  className="h-11 px-6 text-small"
+                  className="h-11 px-6"
                   onClick={() => {
                     setQuery("")
                     setCategory("Tous")

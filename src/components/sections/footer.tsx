@@ -41,6 +41,7 @@ const NAV_ITEMS = [
   { label: "À propos", href: "/#a-propos" },
   { label: "Ma méthode", href: "/#ma-methode" },
   { label: "Tarifs", href: "/#tarifs" },
+  { label: "Audit gratuit", href: "/audit-gratuit/" },
   { label: "Cas client", href: "/#cas-client" },
   { label: "Blog", href: "/blog" },
   { label: "FAQ", href: "/faq" },
@@ -65,7 +66,8 @@ function Footer() {
   const floatIn = useFloatIn()
 
   return (
-    <footer data-slot="footer" className="w-full border-t border-border bg-surface">
+    <footer data-slot="footer" className="relative w-full border-t border-border bg-surface">
+      <div aria-hidden className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-accent/45 to-transparent" />
       <Container className="py-20">
         <div className="grid grid-cols-1 gap-12 sm:grid-cols-2 lg:grid-cols-4">
           <motion.div
@@ -76,14 +78,14 @@ function Footer() {
             variants={floatIn(0, { x: -140, rotate: -4 })}
           >
             <div className="flex items-center gap-2.5">
-              <span className="flex size-10 items-center justify-center rounded-xl bg-[#0a0a0a] text-[11px] font-extrabold tracking-wider text-white">
+              <span className="flex size-10 items-center justify-center rounded-md bg-ink text-eyebrow text-paper">
                 SDN
               </span>
-              <span className="font-sans text-small font-semibold tracking-wide text-[#0a0a0a]">
+              <span className="font-heading text-[1.0625rem] text-ink">
                 Studio Digital Nova
               </span>
             </div>
-            <p className="max-w-sm text-body text-text-secondary">
+            <p className="measure max-w-sm text-body text-text-secondary">
               Je crée des sites vitrines modernes, rapides et optimisés pour{" "}
               <strong className="font-semibold text-text">convertir vos visiteurs en clients</strong>.
             </p>
@@ -95,13 +97,13 @@ function Footer() {
             viewport={{ once: true, amount: 0.4 }}
             variants={floatIn(0.1, { y: 90 })}
           >
-            <p className="text-small font-semibold text-text">Navigation</p>
+            <p className="text-eyebrow uppercase text-text-muted">Navigation</p>
             <ul className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3">
               {NAV_ITEMS.map((item) => (
                 <li key={item.label}>
                   <a
                     href={item.href}
-                    className="-my-1.5 inline-block py-1.5 text-body text-text-secondary transition-colors duration-150 ease-nova hover:text-primary"
+                    className="-my-1.5 inline-block py-1.5 text-small text-text-secondary transition-colors duration-200 ease-nova hover:text-accent-strong"
                   >
                     {item.label}
                   </a>
@@ -116,16 +118,16 @@ function Footer() {
             viewport={{ once: true, amount: 0.4 }}
             variants={floatIn(0.2, { x: 140, rotate: 4 })}
           >
-            <p className="text-small font-semibold text-text">Contact</p>
+            <p className="text-eyebrow uppercase text-text-muted">Contact</p>
             <ul className="mt-4 flex flex-col gap-3">
               {CONTACT_ITEMS.map((item) => (
                 <li key={item.label}>
                   <a
                     href={item.href}
                     {...(item.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-                    className="-my-1.5 flex items-center gap-2.5 py-1.5 text-body text-text-secondary transition-colors duration-150 ease-nova hover:text-primary"
+                    className="group -my-1.5 flex items-center gap-2.5 py-1.5 text-small text-text-secondary transition-colors duration-200 ease-nova hover:text-accent-strong"
                   >
-                    <Icon icon={item.icon} className="size-4 shrink-0" />
+                    <Icon icon={item.icon} className="size-4 shrink-0 text-text-muted transition-colors duration-200 ease-nova group-hover:text-accent" />
                     {item.label}
                   </a>
                 </li>
@@ -141,7 +143,7 @@ function Footer() {
           viewport={{ once: true, amount: 0.4 }}
           variants={floatIn(0.3, { y: 40 })}
         >
-          <p className="text-small text-text-secondary">
+          <p className="text-small text-text-muted">
             © {new Date().getFullYear()} Studio Digital Nova. Tous droits réservés.
           </p>
           <ul className="flex items-center gap-6">
@@ -149,7 +151,7 @@ function Footer() {
               <li key={link.href}>
                 <Link
                   href={link.href}
-                  className="-my-2 inline-block py-2 text-small text-text-secondary transition-colors duration-150 ease-nova hover:text-primary"
+                  className="-my-2 inline-block py-2 text-small text-text-secondary transition-colors duration-200 ease-nova hover:text-accent-strong"
                 >
                   {link.label}
                 </Link>

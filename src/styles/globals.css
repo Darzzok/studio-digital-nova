@@ -5,150 +5,368 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
-  Studio Digital Nova — Design System tokens.
-  Single source of truth for color, type, radius and shadow.
-  Every future section must consume these tokens — never hard-coded values.
+  ============================================================================
+  STUDIO DIGITAL NOVA — SYSTÈME DE DESIGN
+  ============================================================================
+  Source de vérité unique : couleur, typographie, formes, ombres, rythme,
+  mouvement. Aucun composant ne doit écrire une valeur brute — tout passe
+  par un token défini ici.
+
+  Direction artistique : studio digital premium, éditorial, humain, français.
+  Encre bleu nuit sur papier ivoire, terracotta en accent rare.
+  ============================================================================
 */
 
+/* ---------------------------------------------------------------------- */
+/* 1. PALETTE BRUTE — les seules couleurs de la marque                     */
+/* ---------------------------------------------------------------------- */
+
+:root {
+  /* Bleu nuit — l'encre. Texte, boutons pleins, sections sombres. */
+  --nova-ink: #0b1726;
+  --nova-ink-700: #142438;
+  --nova-ink-600: #1e3349;
+
+  /* Ivoire & blanc cassé — le papier. */
+  --nova-ivory: #f7f4ee;
+  --nova-ivory-deep: #f0eae0;
+  --nova-paper: #fcfbf8;
+
+  /* Terracotta — l'accent. Rare, jamais un fond dominant. */
+  --nova-terracotta: #d96c4f;
+  --nova-terracotta-deep: #a94a32;
+
+  /* Bleu minéral — la voix secondaire. Texte courant, traits calmes.
+     `soft` est le ton le plus discret encore lisible en petit corps sur les
+     TROIS fonds du système — papier, ivoire et ivoire profond (≥ 4,7:1). */
+  --nova-mineral: #49657a;
+  --nova-mineral-soft: #556979;
+
+  /* Neutres chauds dérivés de l'ivoire — filets et séparateurs. */
+  --nova-sand: #e6dfd2;
+  --nova-sand-deep: #d6ccba;
+
+  /* Statuts — désaturés pour rester dans la famille éditoriale. */
+  /* Sauge assombrie d'un cran : le libellé « En ligne » de la maquette de
+     service passait à 4,49:1, juste sous le seuil. */
+  --nova-sage: #446250;
+  /* Ocre assombri : l'ancien #a9772f tombait sous 3:1 pour une icône posée
+     sur sa propre teinte, au-dessus de l'ivoire profond. */
+  --nova-ochre: #916324;
+  --nova-brick: #a03a28;
+}
+
+/* ---------------------------------------------------------------------- */
+/* 2. RÔLES SÉMANTIQUES — ce que les composants consomment                 */
+/* ---------------------------------------------------------------------- */
+
+:root {
+  /* Fonds */
+  --background: var(--nova-ivory);
+  --surface: var(--nova-paper);
+  --surface-sunken: var(--nova-ivory-deep);
+  --surface-ink: var(--nova-ink);
+  --foreground: var(--nova-ink);
+
+  /* Texte */
+  --text: var(--nova-ink);
+  --text-secondary: var(--nova-mineral);
+  --text-muted: var(--nova-mineral-soft);
+  --text-on-ink: var(--nova-paper);
+  --text-on-ink-soft: color-mix(in oklab, var(--nova-paper) 68%, transparent);
+
+  /* Action principale — l'encre, pas l'accent. */
+  --primary: var(--nova-ink);
+  --primary-hover: var(--nova-ink-700);
+  --primary-foreground: var(--nova-paper);
+
+  /* Action secondaire — papier teinté. */
+  --secondary: var(--nova-ivory-deep);
+  --secondary-foreground: var(--nova-ink);
+
+  /* Accent terracotta — décoratif (filets, icônes, chiffres, états actifs). */
+  --accent: var(--nova-terracotta);
+  --accent-hover: var(--nova-terracotta-deep);
+  --accent-foreground: var(--nova-paper);
+  /* Version lisible en petit corps : ratio AA sur ivoire et sur papier. */
+  --accent-strong: var(--nova-terracotta-deep);
+
+  /* Bleu minéral exposé comme rôle à part entière. */
+  --mineral: var(--nova-mineral);
+  --mineral-soft: var(--nova-mineral-soft);
+
+  /* Filets — la définition passe par les traits, pas par les ombres. */
+  --border: var(--nova-sand);
+  --border-strong: var(--nova-sand-deep);
+  --border-ink: color-mix(in oklab, var(--nova-paper) 14%, transparent);
+  --input: var(--border-strong);
+  --ring: var(--nova-terracotta);
+
+  /* Statuts */
+  --success: var(--nova-sage);
+  --warning: var(--nova-ochre);
+  --error: var(--nova-brick);
+  --destructive: var(--error);
+
+  /* Compatibilité shadcn */
+  --card: var(--surface);
+  --card-foreground: var(--foreground);
+  --popover: var(--surface);
+  --popover-foreground: var(--foreground);
+  --muted: var(--surface-sunken);
+  --muted-foreground: var(--text-secondary);
+
+  /*
+    ---- Dégradés ----
+    Tonaux et sourds : encre vers minéral, ou encre vers terracotta. Jamais de
+    bleu/violet, jamais deux teintes vives face à face.
+  */
+  --gradient-ink: linear-gradient(135deg, var(--nova-ink) 0%, var(--nova-mineral) 100%);
+  --gradient-mineral: linear-gradient(135deg, var(--nova-mineral) 0%, var(--nova-sage) 100%);
+  --gradient-accent: linear-gradient(135deg, var(--nova-ink) 0%, var(--nova-terracotta) 100%);
+  --gradient-ember: linear-gradient(135deg, var(--nova-terracotta) 0%, var(--nova-ochre) 100%);
+
+  /*
+    Ombre portée d'une carte soulevée, au survol uniquement.
+    Déclarée ici et non dans `@theme inline` : une clé inédite du namespace
+    `--shadow-*` n'y produit aucun utilitaire (seules les surcharges des clés
+    existantes fonctionnent). On la consomme en `shadow-[var(--shadow-lift)]`.
+  */
+  --shadow-lift:
+    0 14px 30px -18px rgba(11, 23, 38, 0.22), 0 3px 8px -5px rgba(11, 23, 38, 0.1);
+
+  /* ---- Rythme vertical fluide des sections ---- */
+  --section-y-sm: clamp(3rem, 1.75rem + 5vw, 4.5rem);
+  --section-y: clamp(4rem, 2rem + 7.5vw, 7rem);
+  --section-y-lg: clamp(5rem, 2.25rem + 10vw, 9rem);
+  /* Écart entre l'en-tête d'une section et son contenu. */
+  --section-gap: clamp(2.5rem, 1.25rem + 5vw, 4.5rem);
+}
+
+/* ---------------------------------------------------------------------- */
+/* 3. THÈME TAILWIND — exposition des tokens en utilitaires                */
+/* ---------------------------------------------------------------------- */
+
 @theme inline {
-  /* ---- Base / shadcn-compatible semantic colors ---- */
+  /* ---- Couleurs sémantiques ---- */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface-sunken: var(--surface-sunken);
+  --color-surface-ink: var(--surface-ink);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
   --color-popover: var(--popover);
   --color-popover-foreground: var(--popover-foreground);
+
   --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
   --color-primary-foreground: var(--primary-foreground);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
+
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-strong: var(--accent-strong);
+  --color-accent-foreground: var(--accent-foreground);
+
+  --color-mineral: var(--mineral);
+  --color-mineral-soft: var(--mineral-soft);
+
+  --color-text: var(--text);
+  --color-text-secondary: var(--text-secondary);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
+  --color-text-muted: var(--text-muted);
+  --color-on-ink: var(--text-on-ink);
+  --color-on-ink-soft: var(--text-on-ink-soft);
+
   --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-border-ink: var(--border-ink);
   --color-input: var(--input);
   --color-ring: var(--ring);
 
-  /* ---- Direct design-token colors (ticket naming) ---- */
-  --color-surface: var(--surface);
-  --color-surface-sunken: var(--surface-sunken);
-  --color-primary-hover: var(--primary-hover);
-  --color-accent-green: var(--accent-green);
-  --color-accent-purple: var(--accent-purple);
-  --color-text: var(--text);
-  --color-text-secondary: var(--text-secondary);
   --color-success: var(--success);
   --color-warning: var(--warning);
   --color-error: var(--error);
+  --color-destructive: var(--destructive);
+
+  /* Palette brute — pour les rares cas où le rôle ne suffit pas. */
+  --color-ink: var(--nova-ink);
+  --color-ink-700: var(--nova-ink-700);
+  --color-ink-600: var(--nova-ink-600);
+  --color-ivory: var(--nova-ivory);
+  --color-paper: var(--nova-paper);
+  --color-terracotta: var(--nova-terracotta);
 
   /* ---- Fonts ---- */
   --font-sans: var(--font-sans-body);
   --font-heading: var(--font-serif-heading);
 
-  /* ---- Typography scale (Display / H1 / H2 / H3 / Body / Small) ---- */
-  --text-display: 4rem;
-  --text-display--line-height: 1.05;
-  --text-display--letter-spacing: -0.02em;
-  --text-display--font-weight: 700;
+  /*
+    ---- Échelle typographique fluide ----
+    DM Serif Display n'existe qu'en graisse 400 : la hiérarchie se construit
+    par la taille, l'interlignage et l'approche, jamais par le gras.
+    Manrope porte tout le corps de texte et les graisses.
+  */
+  --text-display: clamp(2.5rem, 1.2rem + 5.2vw, 4.75rem);
+  --text-display--line-height: 1.04;
+  --text-display--letter-spacing: -0.022em;
+  --text-display--font-weight: 400;
 
-  --text-h1: 3rem;
-  --text-h1--line-height: 1.1;
+  --text-h1: clamp(2.125rem, 1.1rem + 3.9vw, 3.5rem);
+  --text-h1--line-height: 1.08;
   --text-h1--letter-spacing: -0.02em;
-  --text-h1--font-weight: 700;
+  --text-h1--font-weight: 400;
 
-  --text-h2: 2.25rem;
-  --text-h2--line-height: 1.15;
-  --text-h2--letter-spacing: -0.01em;
-  --text-h2--font-weight: 700;
+  --text-h2: clamp(1.75rem, 1rem + 2.7vw, 2.75rem);
+  --text-h2--line-height: 1.14;
+  --text-h2--letter-spacing: -0.016em;
+  --text-h2--font-weight: 400;
 
-  --text-h3: 1.5rem;
-  --text-h3--line-height: 1.3;
+  --text-h3: clamp(1.25rem, 0.95rem + 1.05vw, 1.625rem);
+  --text-h3--line-height: 1.28;
   --text-h3--letter-spacing: -0.01em;
-  --text-h3--font-weight: 600;
+  --text-h3--font-weight: 400;
+
+  /* Chapeau éditorial — les paragraphes d'introduction de section. */
+  --text-lead: clamp(1.0625rem, 1rem + 0.4vw, 1.1875rem);
+  --text-lead--line-height: 1.62;
+  --text-lead--font-weight: 400;
 
   --text-body: 1rem;
-  --text-body--line-height: 1.6;
+  --text-body--line-height: 1.68;
   --text-body--font-weight: 400;
 
   --text-small: 0.875rem;
-  --text-small--line-height: 1.5;
+  --text-small--line-height: 1.55;
   --text-small--font-weight: 400;
 
-  /* ---- Soft shadow scale (Small / Medium / Large) — kept very light, borders carry most of the definition */
-  --shadow-sm: 0 1px 2px 0 rgba(20, 22, 26, 0.04), 0 1px 1px 0 rgba(20, 22, 26, 0.03);
-  --shadow-md: 0 8px 16px -8px rgba(20, 22, 26, 0.08), 0 2px 6px -2px rgba(20, 22, 26, 0.04);
-  --shadow-lg: 0 16px 32px -12px rgba(20, 22, 26, 0.10), 0 4px 10px -4px rgba(20, 22, 26, 0.05);
+  /* Surtitre en capitales espacées — la signature éditoriale du site. */
+  --text-eyebrow: 0.6875rem;
+  --text-eyebrow--line-height: 1.2;
+  --text-eyebrow--letter-spacing: 0.16em;
+  --text-eyebrow--font-weight: 600;
 
-  /* ---- Motion easing shared by every animation ---- */
+  /* ---- Formes — angles nets, jamais de bulle ---- */
+  --radius-sm: 3px;
+  --radius-md: 5px;
+  --radius-lg: 7px;
+  --radius-xl: 10px;
+  --radius-2xl: 14px;
+  --radius-3xl: 18px;
+
+  /*
+    ---- Ombres ----
+    Teintées à l'encre et volontairement discrètes : la profondeur vient
+    des filets et du contraste papier/ivoire, pas d'un halo gris.
+  */
+  --shadow-sm: 0 1px 2px 0 rgba(11, 23, 38, 0.04);
+  --shadow-md:
+    0 6px 16px -10px rgba(11, 23, 38, 0.14), 0 2px 5px -3px rgba(11, 23, 38, 0.07);
+  --shadow-lg:
+    0 20px 44px -24px rgba(11, 23, 38, 0.2), 0 5px 12px -8px rgba(11, 23, 38, 0.1);
+  /* ---- Mouvement ---- */
   --ease-nova: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-editorial: cubic-bezier(0.32, 0.72, 0, 1);
 }
 
-:root {
-  /* Base — Signal: light gray ground (visibly distinct from the white cards/surfaces sitting on it), near-black text, hairline borders instead of shadows */
-  --background: #eef0f2;
-  --foreground: #14161a;
-  --surface: #ffffff;
-  /* A step between --surface and --background — for cards that need to stand out even when their section is already white */
-  --surface-sunken: #f5f6f7;
-  --card: var(--surface);
-  --card-foreground: var(--foreground);
-  --popover: var(--surface);
-  --popover-foreground: var(--foreground);
-
-  /* Brand — one saturated blue is the primary accent; violet and teal are real, vivid supporting hues (not diluted grays) for icon chips and variety */
-  --primary: #3b5bff;
-  --primary-hover: #2843d1;
-  --primary-foreground: #ffffff;
-  --accent-purple: #7c3aed;
-  --accent-green: #0d9488;
-
-  /* Secondary = soft brand tint, reused from primary */
-  --secondary: color-mix(in oklab, var(--primary) 12%, var(--surface));
-  --secondary-foreground: var(--primary-hover);
-
-  /* Text — near-black instead of a warm or cool slate, neutral gray for secondary copy */
-  --text: #14161a;
-  --text-secondary: #6b7078;
-
-  /* Neutral surfaces reuse background/text tokens */
-  --muted: var(--background);
-  --muted-foreground: var(--text-secondary);
-  --accent: var(--accent-purple);
-  --accent-foreground: #ffffff;
-
-  /* Borders / focus — neutral hairline that matches the gray ground */
-  --border: #e2e4e7;
-  --input: var(--border);
-  --ring: var(--primary);
-
-  /* Status — kept legible and restrained on a near-white surface */
-  --success: #22764f;
-  --warning: #b07a1e;
-  --error: #b3413a;
-  --destructive: var(--error);
-}
+/* ---------------------------------------------------------------------- */
+/* 4. BASE                                                                 */
+/* ---------------------------------------------------------------------- */
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
-  body {
-    @apply bg-background text-text;
-  }
+
   html {
     @apply font-sans;
+    -webkit-tap-highlight-color: transparent;
   }
 
-  /* Empêche le drag horizontal sur mobile (zone créée par les transforms x des
-     animations d'entrée) sans toucher au scroll vertical, ni au layout, ni au
-     comportement desktop. */
-  @media (max-width: 640px) {
-    html,
-    body {
-      overflow-x: hidden;
-      max-width: 100vw;
+  body {
+    @apply bg-background text-text;
+    font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* DM Serif Display : chiffres alignés dans les titres et les prix. */
+  .font-heading {
+    font-feature-settings: "kern" 1, "liga" 1, "lnum" 1;
+  }
+
+  ::selection {
+    background-color: color-mix(in oklab, var(--accent) 24%, transparent);
+    color: var(--text);
+  }
+
+  /*
+    Les animations d'entrée décalent brièvement certains blocs hors cadre.
+    `clip` supprime la barre de défilement horizontale qui en résulte — à
+    tous les formats, pas seulement sur mobile — sans établir de conteneur
+    de défilement, donc sans casser les `position: sticky` de la frise
+    épinglée et du sommaire des articles.
+  */
+  html,
+  body {
+    overflow-x: clip;
+    max-width: 100vw;
+  }
+
+  /* Repli pour les navigateurs sans `overflow: clip`. */
+  @supports not (overflow: clip) {
+    @media (max-width: 640px) {
+      html,
+      body {
+        overflow-x: hidden;
+      }
     }
   }
+}
+
+/* ---------------------------------------------------------------------- */
+/* 5. UTILITAIRES DE MARQUE                                                */
+/* ---------------------------------------------------------------------- */
+
+/* Rythme vertical des sections — piloté par les tokens --section-y*. */
+@utility section-y-sm {
+  padding-block: var(--section-y-sm);
+}
+@utility section-y {
+  padding-block: var(--section-y);
+}
+@utility section-y-lg {
+  padding-block: var(--section-y-lg);
+}
+
+/* Grain de papier — texture très légère réservée aux aplats d'encre.
+   Donne la matière « imprimé » sans jamais lire comme un effet. */
+@utility grain-ink {
+  position: relative;
+  isolation: isolate;
+
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    opacity: 0.05;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+}
+
+/* Filet éditorial — trait court terracotta qui ponctue les surtitres. */
+@utility rule-accent {
+  display: inline-block;
+  width: 1.75rem;
+  height: 1px;
+  background-color: var(--accent);
+}
+
+/* Mesure de lecture confortable pour les paragraphes longs. */
+@utility measure {
+  max-width: 62ch;
 }
