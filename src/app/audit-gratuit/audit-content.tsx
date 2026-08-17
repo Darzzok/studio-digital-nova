@@ -2,18 +2,26 @@
 
 import { useCallback, useEffect, useRef, useState } from "react"
 import Link from "next/link"
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion"
 import {
+  AnimatePresence,
+  motion,
+  useMotionValue,
+  useReducedMotion,
+  useSpring,
+} from "framer-motion"
+import {
+  Accessibility,
   ArrowRight,
   Check,
   CircleAlert,
+  Eye,
   Gauge,
   Mail,
+  Monitor,
   RotateCcw,
   Search,
   ShieldCheck,
   Smartphone,
-  Monitor,
 } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
@@ -22,10 +30,11 @@ import { Card } from "@/components/ui/card"
 import { Heading } from "@/components/ui/heading"
 import { Icon } from "@/components/ui/icon"
 import { Input } from "@/components/ui/input"
-import { CHIP, DrawRule, NovaMark } from "@/components/ui/nova"
+import { CardIndex, CHIP, DrawRule, NovaMark } from "@/components/ui/nova"
 import { Section } from "@/components/ui/section"
 import {
   AuditError,
+  CATEGORY_MEANING,
   PAGESPEED_KEY,
   normalizeUrl,
   runAudit,
@@ -37,6 +46,37 @@ import { cn } from "@/lib/utils"
 
 const WEB3FORMS_ACCESS_KEY = "37757408-4a45-44eb-afc1-20d7ae50d224"
 const WEB3FORMS_ENDPOINT = "https://api.web3forms.com/submit"
+
+/*
+  Les cinq dimensions annoncées avant l'audit. Quatre viennent directement du
+  moteur (CATEGORY_MEANING) ; la cinquième est le confort visuel, que le moteur
+  calcule aussi. Rien n'est inventé ici — c'est exactement ce qui sera mesuré.
+*/
+const DIMENSIONS = [
+  { id: "performance", ...CATEGORY_MEANING.performance, chip: CHIP.terracotta, icon: Gauge },
+  {
+    id: "visual",
+    label: "Confort visuel",
+    meaning: "Lisibilité, stabilité de la mise en page, netteté des images, confort au doigt.",
+    chip: CHIP.ink,
+    icon: Eye,
+  },
+  { id: "seo", ...CATEGORY_MEANING.seo, chip: CHIP.mineral, icon: Search },
+  { id: "accessibility", ...CATEGORY_MEANING.accessibility, chip: CHIP.sage, icon: Accessibility },
+  {
+    id: "best-practices",
+    ...CATEGORY_MEANING["best-practices"],
+    chip: CHIP.ochre,
+    icon: ShieldCheck,
+  },
+] as const
+
+type TrackState = "pending" | "running" | "done" | "failed"
+
+const TRACKS: { id: Strategy; label: string; icon: typeof Smartphone }[] = [
+  { id: "mobile", label: "Mobile", icon: Smartphone },
+  { id: "desktop", label: "Ordinateur", icon: Monitor },
+]
 
 /* L'analyse dure 20 à 40 s. On raconte ce qui se passe plutôt que de faire attendre. */
 const PROGRESS_STEPS = [
@@ -73,7 +113,7 @@ function ScoreRing({
   const large = size === "lg"
 
   return (
-    <div className={cn("relative flex shrink-0 items-center justify-center", large ? "size-28" : "size-16")}>
+    <div className={cn("relative flex shrink-0 items-center justify-center", large ? "size-40" : "size-16")}>
       <svg viewBox="0 0 36 36" className="size-full -rotate-90">
         <circle cx="18" cy="18" r="15.5" fill="none" stroke="var(--color-border)" strokeWidth={large ? 2 : 2.5} />
         <motion.circle
@@ -89,14 +129,13 @@ function ScoreRing({
           transition={reduce ? { duration: 0 } : { duration: 1.1, ease: EASE_NOVA }}
         />
       </svg>
-      <span
-        className={cn(
-          "absolute font-heading tabular-nums",
-          large ? "text-h2" : "text-h3",
-          tone.text
+      <span className="absolute flex flex-col items-center leading-none">
+        <span className={cn("font-heading tabular-nums", large ? "text-display" : "text-h3", tone.text)}>
+          {score ?? "—"}
+        </span>
+        {large && (
+          <span className="mt-1 text-eyebrow uppercase text-on-ink-soft">/ 100</span>
         )}
-      >
-        {score ?? "—"}
       </span>
     </div>
   )
@@ -169,7 +208,10 @@ function ReportView({
           )}
 
           <div className="flex min-w-0 flex-1 flex-col items-start gap-7 sm:flex-row sm:items-center sm:gap-9">
-            <ScoreRing score={report.overall} size="lg" reduce={reduce} />
+            <div className="flex flex-col items-center gap-3">
+              <ScoreRing score={report.overall} size="lg" reduce={reduce} />
+              <span className="text-eyebrow uppercase text-on-ink-soft">Diagnostic</span>
+            </div>
             <div className="min-w-0">
               <p className="text-eyebrow uppercase text-on-ink-soft">Page analysée</p>
               <p className="mt-2 break-all font-heading text-h3 text-on-ink">{report.finalUrl}</p>
@@ -313,43 +355,95 @@ function ReportView({
         </Card>
       )}
 
-      {/* Points à corriger */}
+      {/*
+        Les mêmes problèmes que renvoie le moteur, mais rangés par gravité :
+        ce qui coûte cher d'abord. Rien n'est ajouté ni reformulé — seul
+        l'ordre et la hiérarchie visuelle changent. Les « bons points » sont
+        déduits des catégories déjà notées 90 ou plus.
+      */}
       {report.issues.length > 0 ? (
-        <Card padding="md" className="text-left">
-          <div className="flex items-center justify-between gap-4">
-            <p className="text-eyebrow uppercase text-text-muted">
-              {report.issues.length} point{report.issues.length > 1 ? "s" : ""} à corriger
-            </p>
-            <Icon icon={CircleAlert} className="size-4 text-accent" />
-          </div>
-          <DrawRule className="mt-4" />
-          <ul className="mt-6 flex flex-col divide-y divide-border">
-            {report.issues.map((issue, index) => (
-              <li key={issue.id} className={cn("flex gap-4 py-5", index === 0 && "pt-0")}>
-                <span
-                  aria-hidden
-                  className="mt-0.5 font-heading text-small tabular-nums text-text-muted"
-                >
-                  {String(index + 1).padStart(2, "0")}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-3">
-                    <h3 className="font-heading text-h3 text-text">{issue.title}</h3>
-                    <span
-                      className={cn(
-                        "rounded-sm px-2 py-0.5 text-eyebrow uppercase",
-                        SEVERITY_CHIP[issue.severity]
-                      )}
-                    >
-                      {issue.severity}
+        <div className="flex flex-col gap-5">
+          {(
+            [
+              { key: "critique", titre: "Priorité élevée", accent: true },
+              { key: "important", titre: "À améliorer", accent: false },
+              { key: "mineur", titre: "Détails", accent: false },
+            ] as const
+          ).map((groupe) => {
+            const lot = report.issues.filter((issue) => issue.severity === groupe.key)
+            if (lot.length === 0) return null
+            return (
+              <Card
+                key={groupe.key}
+                padding="md"
+                className={cn("text-left", groupe.accent && "border-l border-l-accent")}
+              >
+                <div className="flex items-center justify-between gap-4">
+                  <p className="text-eyebrow uppercase text-text">
+                    {groupe.titre}
+                    <span className="ml-2 font-heading tabular-nums text-text-muted">
+                      {lot.length}
                     </span>
-                  </div>
-                  <p className="mt-2 text-small text-text-secondary">{issue.impact}</p>
+                  </p>
+                  {groupe.accent && <Icon icon={CircleAlert} className="size-4 text-accent" />}
                 </div>
-              </li>
-            ))}
-          </ul>
-        </Card>
+                <DrawRule className="mt-4" />
+                <ul className="mt-6 flex flex-col divide-y divide-border">
+                  {lot.map((issue, index) => (
+                    <li key={issue.id} className={cn("flex gap-4 py-5", index === 0 && "pt-0")}>
+                      <span
+                        aria-hidden
+                        className="mt-1 font-heading text-small tabular-nums text-text-muted"
+                      >
+                        {String(index + 1).padStart(2, "0")}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-3">
+                          <h3 className="font-heading text-h3 text-text">{issue.title}</h3>
+                          <span
+                            className={cn(
+                              "rounded-sm px-2 py-0.5 text-eyebrow uppercase",
+                              SEVERITY_CHIP[issue.severity]
+                            )}
+                          >
+                            {issue.severity}
+                          </span>
+                        </div>
+                        <p className="mt-2 text-small text-text-secondary">{issue.impact}</p>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </Card>
+            )
+          })}
+
+          {/* Bons points — déduits des catégories déjà notées par le moteur. */}
+          {report.categories.filter((c) => (c.score ?? 0) >= 90).length > 0 && (
+            <Card tone="ivory" padding="md" className="text-left">
+              <p className="text-eyebrow uppercase text-text">Ce qui va bien</p>
+              <DrawRule className="mt-4" />
+              <ul className="mt-6 flex flex-wrap gap-x-6 gap-y-3">
+                {report.categories
+                  .filter((c) => (c.score ?? 0) >= 90)
+                  .map((c) => (
+                    <li key={c.id} className="flex items-center gap-2.5 text-small text-text">
+                      <span
+                        className={cn(
+                          "flex size-5 shrink-0 items-center justify-center rounded-full",
+                          CHIP.sage
+                        )}
+                      >
+                        <Icon icon={Check} className="size-3" />
+                      </span>
+                      {c.label}
+                      <span className="font-heading tabular-nums text-text-muted">{c.score}</span>
+                    </li>
+                  ))}
+              </ul>
+            </Card>
+          )}
+        </div>
       ) : (
         <Card padding="md" className="flex items-center gap-4 text-left">
           <span className={cn("flex size-10 shrink-0 items-center justify-center rounded-md", CHIP.sage)}>
@@ -525,20 +619,45 @@ function AuditContent() {
   const [stepIndex, setStepIndex] = useState(0)
   const [reports, setReports] = useState<Partial<Record<Strategy, AuditReport>>>({})
   const [strategy, setStrategy] = useState<Strategy>("mobile")
+  const [focused, setFocused] = useState(false)
+  /*
+    État RÉEL de chaque analyse. PageSpeed n'émet aucun signal d'avancement
+    pendant qu'il travaille : les deux seuls événements observables sont la
+    fin de la requête mobile et celle de la requête ordinateur. Ce sont donc
+    les seuls états que l'on affiche comme certains — la barre de progression,
+    elle, est annoncée comme une estimation.
+  */
+  const [tracks, setTracks] = useState<Record<Strategy, TrackState>>({
+    mobile: "pending",
+    desktop: "pending",
+  })
   const [error, setError] = useState<string | null>(null)
   const abortRef = useRef<AbortController | null>(null)
 
   const available = Boolean(PAGESPEED_KEY)
 
+  /*
+    Le cadran suit la progression via une MotionValue ressortée : le tracé
+    avance en continu au lieu de sauter à chaque tick de l'estimation.
+  */
+  const progressMV = useMotionValue(0)
+  const smoothProgress = useSpring(progressMV, { stiffness: 55, damping: 20, mass: 0.6 })
+  useEffect(() => {
+    progressMV.set(progress / 100)
+  }, [progress, progressMV])
+
   /* Progression estimée : l'API ne renvoie rien pendant qu'elle travaille. */
   useEffect(() => {
     if (phase !== "running") return
     const id = setInterval(() => {
-      setProgress((p) => (p >= 92 ? p : p + (92 - p) * 0.045))
+      // Plancher réel : chaque analyse terminée vaut 45 points acquis.
+      const settled = Object.values(tracks).filter((t) => t === "done" || t === "failed").length
+      const floor = settled * 45
+      setProgress((p) => Math.max(floor, p >= 92 ? p : p + (92 - p) * 0.045))
       setStepIndex((i) => Math.min(PROGRESS_STEPS.length - 1, i + (Math.random() > 0.7 ? 1 : 0)))
     }, 400)
     return () => clearInterval(id)
-  }, [phase])
+  }, [phase, tracks])
 
   useEffect(() => () => abortRef.current?.abort(), [])
 
@@ -561,13 +680,27 @@ function AuditContent() {
       setProgress(4)
       setStepIndex(0)
       setError(null)
+      setTracks({ mobile: "running", desktop: "running" })
       setPhase("running")
 
-      // Les deux appareils en parallèle : une seule attente au lieu de deux.
-      const [mobile, desktop] = await Promise.allSettled([
-        runAudit(url, "mobile", controller.signal),
-        runAudit(url, "desktop", controller.signal),
-      ])
+      /*
+        Les deux appareils en parallèle. Chaque requête bascule sa propre
+        piste dès qu'elle aboutit — c'est la seule progression réellement
+        mesurable, et elle n'est pas simulée.
+      */
+      const track = (device: Strategy) =>
+        runAudit(url, device, controller.signal).then(
+          (report) => {
+            setTracks((current) => ({ ...current, [device]: "done" }))
+            return report
+          },
+          (cause) => {
+            setTracks((current) => ({ ...current, [device]: "failed" }))
+            throw cause
+          }
+        )
+
+      const [mobile, desktop] = await Promise.allSettled([track("mobile"), track("desktop")])
 
       if (controller.signal.aborted) return
 
@@ -596,6 +729,7 @@ function AuditContent() {
 
   function reset() {
     abortRef.current?.abort()
+    setTracks({ mobile: "pending", desktop: "pending" })
     setPhase("idle")
     setReports({})
     setError(null)
@@ -649,35 +783,83 @@ function AuditContent() {
             sécurité. <strong className="font-semibold text-text">Gratuit, sans inscription.</strong>
           </motion.p>
 
-          {/* Saisie */}
+          {/*
+            Saisie — le point focal de l'écran. Le champ et le bouton vivent
+            dans un même cadre posé sur le papier ; au focus, un filet
+            terracotta se dessine sous toute la largeur (pathLength SVG) et
+            le cadre gagne un halo très léger. Aucun contenu ajouté.
+          */}
           <motion.form
             onSubmit={start}
-            className="mt-10 flex w-full max-w-xl flex-col gap-3 sm:flex-row"
+            className="mt-12 w-full max-w-2xl"
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, amount: 0.4 }}
             variants={floatIn(0.32, { y: 30 })}
           >
-            <div className="relative flex-1">
-              <Icon
-                icon={Search}
-                className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-text-muted"
-              />
-              <Input
-                type="text"
-                inputMode="url"
-                aria-label="Adresse de votre site"
-                placeholder="monentreprise.fr"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                disabled={phase === "running"}
-                className="h-13 pl-11"
-              />
+            <div
+              className={cn(
+                "relative rounded-xl border bg-surface p-2 shadow-sm",
+                "transition-[border-color,box-shadow] duration-500 ease-nova",
+                // Halo au focus : indicateur clavier explicite, pas seulement
+                // un changement de teinte de bordure.
+                focused ? "border-accent/60 shadow-md ring-3 ring-ring/25" : "border-border"
+              )}
+            >
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                <div className="relative flex-1">
+                  <Icon
+                    icon={Search}
+                    className={cn(
+                      "pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 transition-colors duration-300 ease-nova",
+                      focused ? "text-accent" : "text-text-muted"
+                    )}
+                  />
+                  <Input
+                    type="text"
+                    inputMode="url"
+                    aria-label="Adresse de votre site"
+                    placeholder="monentreprise.fr"
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onFocus={() => setFocused(true)}
+                    onBlur={() => setFocused(false)}
+                    disabled={phase === "running"}
+                    className="h-13 border-transparent bg-transparent pl-11 text-lead shadow-none focus-visible:border-transparent focus-visible:ring-0"
+                  />
+                </div>
+                <Button
+                  type="submit"
+                  variant="primary"
+                  disabled={phase === "running" || !available}
+                  className="h-13 shrink-0"
+                >
+                  {phase === "running" ? "Analyse en cours…" : "Analyser mon site"}
+                  {phase !== "running" && <Icon icon={ArrowRight} />}
+                </Button>
+              </div>
+
+              {/* Filet qui se trace au focus — le seul mouvement de l'écran. */}
+              <svg
+                aria-hidden
+                className="pointer-events-none absolute inset-x-3 -bottom-px h-px overflow-visible"
+                viewBox="0 0 100 1"
+                preserveAspectRatio="none"
+              >
+                <motion.line
+                  x1="0"
+                  y1="0.5"
+                  x2="100"
+                  y2="0.5"
+                  stroke="var(--color-accent)"
+                  strokeWidth={1}
+                  vectorEffect="non-scaling-stroke"
+                  initial={false}
+                  animate={{ pathLength: focused ? 1 : 0 }}
+                  transition={reduce ? { duration: 0 } : { duration: 0.6, ease: EASE_NOVA }}
+                />
+              </svg>
             </div>
-            <Button type="submit" variant="primary" disabled={phase === "running" || !available}>
-              {phase === "running" ? "Analyse en cours…" : "Analyser mon site"}
-              {phase !== "running" && <Icon icon={ArrowRight} />}
-            </Button>
           </motion.form>
 
           {!available && (
@@ -688,6 +870,63 @@ function AuditContent() {
           )}
         </div>
       </Section>
+
+      {/*
+        Ce que l'audit examine — annoncé avant de lancer, pour que le visiteur
+        sache ce qu'il va obtenir. Les cinq dimensions sont celles du moteur.
+        Le bloc s'efface dès qu'une analyse démarre : il a fait son travail.
+      */}
+      <AnimatePresence>
+        {phase === "idle" && (
+          <motion.div
+            key="dimensions"
+            initial={reduce ? false : { opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={reduce ? undefined : { opacity: 0, y: -12 }}
+            transition={{ duration: 0.4, ease: EASE_NOVA }}
+          >
+            <Section className="bg-surface" spacing="default">
+              <div className="mx-auto max-w-5xl">
+                <p className="text-center text-eyebrow uppercase text-text-muted">
+                  Ce que j&apos;examine
+                </p>
+
+                <div className="mt-[var(--section-gap)] grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                  {DIMENSIONS.map((dimension, index) => (
+                    <motion.div
+                      key={dimension.id}
+                      initial="hidden"
+                      whileInView="visible"
+                      viewport={{ once: true, amount: 0.3 }}
+                      variants={floatIn(index * 0.08, { y: 40 }, { damping: 26, mass: 2 })}
+                    >
+                      <Card
+                        tone="ivory"
+                        padding="md"
+                        className="group flex h-full flex-col text-left transition-colors duration-500 ease-nova hover:border-border-strong"
+                      >
+                        <div className="flex items-center gap-4">
+                          <CardIndex value={String(index + 1).padStart(2, "0")} className="flex-1" />
+                          <span
+                            className={cn(
+                              "flex size-9 shrink-0 items-center justify-center rounded-md group-hover:-translate-y-0.5",
+                              dimension.chip
+                            )}
+                          >
+                            <Icon icon={dimension.icon} className="size-4" />
+                          </span>
+                        </div>
+                        <h2 className="mt-5 font-heading text-h3 text-text">{dimension.label}</h2>
+                        <p className="mt-2 text-small text-text-secondary">{dimension.meaning}</p>
+                      </Card>
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            </Section>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Déroulé de l'analyse, résultat ou erreur */}
       <Section className="bg-surface" spacing="default">
@@ -709,32 +948,106 @@ function AuditContent() {
                 exit={reduce ? undefined : { opacity: 0 }}
                 transition={{ duration: 0.3, ease: EASE_NOVA }}
               >
-                <Card tone="ivory" padding="md" className="text-left lg:p-9">
-                  <p className="text-eyebrow uppercase text-text-muted">Analyse de {auditedUrl}</p>
-
-                  <div className="mt-6 h-px w-full overflow-hidden bg-border">
-                    <motion.div
-                      className="h-full origin-left bg-accent"
-                      animate={{ scaleX: progress / 100 }}
-                      transition={{ duration: 0.4, ease: EASE_NOVA }}
-                      style={{ transformOrigin: "left" }}
-                    />
+                <Card tone="ink" padding="md" className="grain-ink relative overflow-hidden text-left lg:p-9">
+                  <div className="relative flex items-center justify-between gap-4">
+                    <Badge variant="ink">Analyse en cours</Badge>
+                    <NovaMark aria-hidden className="size-2.5 text-accent" />
                   </div>
 
-                  <AnimatePresence mode="wait">
-                    <motion.p
-                      key={stepIndex}
-                      className="mt-6 font-heading text-h3 text-text"
-                      initial={reduce ? false : { opacity: 0, y: 6 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={reduce ? undefined : { opacity: 0, y: -6 }}
-                      transition={{ duration: 0.25, ease: EASE_NOVA }}
-                    >
-                      {PROGRESS_STEPS[stepIndex]}
-                    </motion.p>
-                  </AnimatePresence>
+                  <div className="relative mt-8 flex flex-col gap-9 sm:flex-row sm:items-center sm:gap-10">
+                    {/* Cadran de progression — estimation, annoncée comme telle. */}
+                    <div className="relative flex size-32 shrink-0 items-center justify-center">
+                      <svg viewBox="0 0 36 36" className="size-full -rotate-90">
+                        <circle
+                          cx="18"
+                          cy="18"
+                          r="15.5"
+                          fill="none"
+                          stroke="var(--color-border-ink)"
+                          strokeWidth={1.5}
+                        />
+                        <motion.circle
+                          cx="18"
+                          cy="18"
+                          r="15.5"
+                          fill="none"
+                          stroke="var(--color-accent)"
+                          strokeWidth={1.5}
+                          strokeLinecap="round"
+                          style={{ pathLength: smoothProgress }}
+                        />
+                      </svg>
+                      <span className="absolute font-heading text-h2 tabular-nums text-on-ink">
+                        {Math.round(progress)}
+                        <span className="text-h3 text-on-ink-soft">%</span>
+                      </span>
+                    </div>
 
-                  <p className="mt-3 text-small text-text-secondary">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-eyebrow uppercase text-on-ink-soft">Analyse de {auditedUrl}</p>
+
+                      <AnimatePresence mode="popLayout">
+                        <motion.p
+                          key={stepIndex}
+                          className="mt-3 font-heading text-h3 text-on-ink"
+                          initial={reduce ? false : { opacity: 0, y: 6 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={reduce ? undefined : { opacity: 0, y: -6 }}
+                          transition={{ duration: 0.25, ease: EASE_NOVA }}
+                        >
+                          {PROGRESS_STEPS[stepIndex]}
+                        </motion.p>
+                      </AnimatePresence>
+
+                      {/*
+                        Les deux seuls états certains : chaque appareil bascule
+                        quand sa requête aboutit réellement.
+                      */}
+                      <ul className="mt-7 flex flex-col gap-3">
+                        {TRACKS.map((item) => {
+                          const state = tracks[item.id]
+                          return (
+                            <li key={item.id} className="flex items-center gap-3">
+                              <span
+                                className={cn(
+                                  "flex size-6 shrink-0 items-center justify-center rounded-full border transition-colors duration-500 ease-nova",
+                                  state === "done" && "border-accent bg-accent text-ink",
+                                  state === "failed" && "border-error text-error",
+                                  state === "running" && "border-accent/50 text-accent",
+                                  state === "pending" && "border-border-ink text-on-ink-soft"
+                                )}
+                              >
+                                {state === "done" ? (
+                                  <Icon icon={Check} className="size-3" />
+                                ) : state === "failed" ? (
+                                  <Icon icon={CircleAlert} className="size-3" />
+                                ) : state === "running" && !reduce ? (
+                                  <motion.span
+                                    className="size-1.5 rounded-full bg-accent"
+                                    animate={{ opacity: [1, 0.25, 1] }}
+                                    transition={{ duration: 1.4, repeat: Infinity, ease: EASE_NOVA }}
+                                  />
+                                ) : (
+                                  <span className="size-1.5 rounded-full bg-current opacity-40" />
+                                )}
+                              </span>
+                              <span
+                                className={cn(
+                                  "flex items-center gap-2 text-small transition-colors duration-500 ease-nova",
+                                  state === "pending" ? "text-on-ink-soft" : "text-on-ink"
+                                )}
+                              >
+                                <Icon icon={item.icon} className="size-3.5" />
+                                {item.label}
+                              </span>
+                            </li>
+                          )
+                        })}
+                      </ul>
+                    </div>
+                  </div>
+
+                  <p className="relative mt-8 border-t border-border-ink pt-5 text-small text-on-ink-soft">
                     Google charge réellement votre page sur un appareil de test. Comptez une
                     trentaine de secondes — c&apos;est le prix d&apos;une mesure honnête.
                   </p>

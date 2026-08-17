@@ -90,7 +90,9 @@
       "Bash(grep -v \"set-state-in-effect\\\\|cascading renders\\\\|Avoid calling\\\\|opengraph-image\\\\|^\\\\s*$\")",
       "Bash(shasum -a 256 src/lib/audit.ts)",
       "Bash(git add *)",
-      "Bash(git commit -q -m ' *)"
+      "Bash(git commit -q -m ' *)",
+      "Bash(cd /Users/geoffreymarechal/Desktop/site/studio-digital-nova *)",
+      "Bash(curl -s -o public/__psi.json --max-time 150 -H 'Referer: https://studiodigitalnova.fr/audit-gratuit/' 'https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=https%3A%2F%2Fwww.cestpasunelumiere.com%2F&strategy=mobile&category=performance&category=seo&category=accessibility&category=best-practices&key=__TRACKED_VAR__')"
     ]
   }
 }

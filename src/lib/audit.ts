@@ -241,7 +241,9 @@ const ISSUE_LIBRARY: Record<string, { title: string; impact: string; severity: A
   },
 }
 
-const CATEGORY_MEANING: Record<CategoryScore["id"], { label: string; meaning: string }> = {
+/** Exposé pour que la page puisse annoncer ce qui sera analysé, avant de
+    lancer l'audit. Aucune autre modification du moteur. */
+export const CATEGORY_MEANING: Record<CategoryScore["id"], { label: string; meaning: string }> = {
   performance: {
     label: "Performance",
     meaning: "La vitesse d'affichage. C'est le premier facteur d'abandon avant même la lecture.",
