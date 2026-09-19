@@ -119,6 +119,9 @@ export class DocumentPdf {
   /* Liens cliquables, par page. */
   private liens: { page: number; rect: [number, number, number, number]; url: string }[] = []
   readonly largeurUtile = A4.largeur - MARGE * 2
+  /* Colonne courante : décalée quand on écrit dans un panneau. */
+  private margeGauche = MARGE
+  private largeurBloc = A4.largeur - MARGE * 2
 
   constructor() {
     this.nouvellePage()
@@ -181,8 +184,8 @@ export class DocumentPdf {
     const police = options.police ?? "normale"
     const [r, v, b] = options.couleur ?? [0.15, 0.19, 0.24]
     const interligne = options.interligne ?? taille * 1.45
-    const largeur = options.largeur ?? this.largeurUtile
-    const x = options.x ?? MARGE
+    const largeur = options.largeur ?? this.largeurBloc
+    const x = options.x ?? this.margeGauche
 
     for (const ligne of decouper(contenu, largeur, taille, police)) {
       this.reserver(interligne)
@@ -207,7 +210,7 @@ export class DocumentPdf {
     const police = options.police ?? "normale"
     const [r, v, b] = options.couleur ?? [0.15, 0.19, 0.24]
     const largeur = mesurer(contenu, taille, police)
-    const x = A4.largeur - MARGE - largeur
+    const x = this.margeGauche + this.largeurBloc - largeur
     const octets = versWinAnsi(contenu)
     const chaine = octets.map((o) => String.fromCharCode(o)).join("")
     this.ecrire(
@@ -227,7 +230,40 @@ export class DocumentPdf {
   filet(couleur: Couleur = [0.85, 0.83, 0.79], epaisseur = 0.7) {
     this.reserver(10)
     this.y -= 8
-    this.rectangle(MARGE, this.y, this.largeurUtile, epaisseur, couleur)
+    this.rectangle(this.margeGauche, this.y, this.largeurBloc, epaisseur, couleur)
+  }
+
+  /**
+   * Pose un panneau coloré et place le curseur à l'intérieur, sous son bord
+   * haut. Le fond est peint AVANT le texte : dans un PDF le contenu s'empile
+   * dans l'ordre d'écriture, il n'y a pas de plans à gérer.
+   *
+   * Retourne une fonction à appeler une fois le contenu écrit : elle ramène le
+   * curseur sous le panneau, quelle que soit la hauteur réellement occupée.
+   */
+  panneau(
+    hauteur: number,
+    fond: Couleur,
+    options: { filetGauche?: Couleur; marge?: number } = {}
+  ): () => void {
+    const marge = options.marge ?? 14
+    const total = hauteur + marge * 2
+    this.reserverBloc(total)
+    const haut = this.y
+    const bas = haut - total
+    this.rectangle(MARGE, bas, this.largeurUtile, total, fond)
+    if (options.filetGauche) {
+      this.rectangle(MARGE, bas, 2.5, total, options.filetGauche)
+    }
+    this.y = haut - marge
+    const decalage = options.filetGauche ? 12 : 0
+    this.margeGauche = MARGE + marge + decalage
+    this.largeurBloc = this.largeurUtile - marge * 2 - decalage
+    return () => {
+      this.margeGauche = MARGE
+      this.largeurBloc = this.largeurUtile
+      this.y = Math.min(this.y, bas) - 6
+    }
   }
 
   /** Barre de score : le remplissage est proportionnel à la note. */
@@ -235,8 +271,14 @@ export class DocumentPdf {
     this.reserver(18)
     // 14 points : assez pour dégager les jambages du libellé au-dessus.
     this.y -= 14
-    this.rectangle(MARGE, this.y, this.largeurUtile, 5, [0.89, 0.87, 0.84])
-    this.rectangle(MARGE, this.y, (this.largeurUtile * Math.max(0, Math.min(100, note))) / 100, 5, couleur)
+    this.rectangle(this.margeGauche, this.y, this.largeurBloc, 4, [0.89, 0.87, 0.84])
+    this.rectangle(
+      this.margeGauche,
+      this.y,
+      (this.largeurBloc * Math.max(0, Math.min(100, note))) / 100,
+      4,
+      couleur
+    )
   }
 
   /**
@@ -249,7 +291,7 @@ export class DocumentPdf {
     const octets = new Uint8Array(bin.length)
     for (let i = 0; i < bin.length; i++) octets[i] = bin.charCodeAt(i)
 
-    const largeur = Math.min(largeurVoulue, this.largeurUtile)
+    const largeur = Math.min(largeurVoulue, this.largeurBloc)
     const hauteur = largeur / ratio
     this.reserver(hauteur + 10)
     this.y -= hauteur + 6
@@ -267,7 +309,7 @@ export class DocumentPdf {
       hauteurPx: taille.hauteur,
     })
     this.ecrire(
-      `q ${largeur.toFixed(2)} 0 0 ${hauteur.toFixed(2)} ${MARGE.toFixed(2)} ${this.y.toFixed(2)} cm /${nom} Do Q`
+      `q ${largeur.toFixed(2)} 0 0 ${hauteur.toFixed(2)} ${this.margeGauche.toFixed(2)} ${this.y.toFixed(2)} cm /${nom} Do Q`
     )
   }
 

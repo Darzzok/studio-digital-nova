@@ -45,7 +45,6 @@ import {
 import { EASE_NOVA, useFloatIn } from "@/lib/motion"
 import { cn } from "@/lib/utils"
 
-import { QUESTIONS_AUDIT } from "./questions"
 
 const WEB3FORMS_ACCESS_KEY = "37757408-4a45-44eb-afc1-20d7ae50d224"
 const WEB3FORMS_ENDPOINT = "https://api.web3forms.com/submit"
@@ -359,8 +358,19 @@ function EcranProgression({
             transition={reduce ? { duration: 0 } : { duration: 0.5, ease: EASE_NOVA }}
           />
         </div>
-        <p className="mt-3 text-center font-heading text-small tabular-nums text-on-ink">
-          {pourcent} %
+        <p className="mt-3 flex items-baseline justify-center gap-2 text-center">
+          <motion.span
+            key={pourcent}
+            className="font-heading text-h3 tabular-nums text-on-ink"
+            initial={reduce ? false : { opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, ease: EASE_NOVA }}
+          >
+            {pourcent} %
+          </motion.span>
+          <span className="text-small text-on-ink-soft">
+            {faites.length} / {ETAPES.length} étapes
+          </span>
         </p>
       </div>
 
@@ -404,22 +414,69 @@ function EcranProgression({
         })}
       </ul>
 
-      {/* La capture s'affiche dès qu'elle arrive, sans attendre la fin. */}
+      {/*
+        La capture s'affiche dès qu'elle arrive, sans attendre la fin, avec un
+        balayage qui la parcourt tant que l'analyse continue. L'animation
+        accompagne un fait réel — l'image est bien là — au lieu de meubler.
+      */}
       <AnimatePresence>
-        {apercu && (
+        {apercu ? (
           <motion.div
-            className="relative mt-8"
+            className="relative mt-8 flex flex-col items-center"
             initial={reduce ? false : { opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, ease: EASE_NOVA }}
           >
             <p className="text-eyebrow uppercase text-on-ink-soft">Première image reçue</p>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={apercu}
-              alt=""
-              className="mx-auto mt-3 w-32 rounded-md border border-border-ink bg-white"
-            />
+            <div className="relative mt-3 w-36 overflow-hidden rounded-md border border-border-ink bg-white">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={apercu} alt="" className="block w-full" />
+              {!reduce && (
+                <>
+                  <motion.span
+                    aria-hidden
+                    className="absolute inset-x-0 h-16"
+                    style={{
+                      backgroundImage:
+                        "linear-gradient(180deg, transparent, rgba(217,108,79,0.35), transparent)",
+                    }}
+                    animate={{ top: ["-20%", "110%"] }}
+                    transition={{ duration: 2.4, repeat: Infinity, ease: "linear" }}
+                  />
+                  <motion.span
+                    aria-hidden
+                    className="absolute inset-x-0 h-px bg-accent"
+                    animate={{ top: ["-2%", "102%"] }}
+                    transition={{ duration: 2.4, repeat: Infinity, ease: "linear" }}
+                  />
+                </>
+              )}
+            </div>
+          </motion.div>
+        ) : (
+          /* Avant la première image : un cadre qui respire, pas un vide. */
+          <motion.div
+            key="attente"
+            className="relative mt-8 flex flex-col items-center"
+            initial={false}
+          >
+            <p className="text-eyebrow uppercase text-on-ink-soft">Capture en attente</p>
+            <div className="relative mt-3 flex h-40 w-36 flex-col gap-2 overflow-hidden rounded-md border border-border-ink p-3">
+              {[70, 100, 45].map((l, i) => (
+                <motion.span
+                  key={i}
+                  className="h-2 rounded-full bg-on-ink-soft/20"
+                  style={{ width: `${l}%` }}
+                  animate={reduce ? { opacity: 0.35 } : { opacity: [0.18, 0.4, 0.18] }}
+                  transition={reduce ? undefined : { duration: 1.8, repeat: Infinity, delay: i * 0.22, ease: EASE_NOVA }}
+                />
+              ))}
+              <motion.span
+                className="mt-1 flex-1 rounded-md bg-on-ink-soft/10"
+                animate={reduce ? { opacity: 0.3 } : { opacity: [0.12, 0.28, 0.12] }}
+                transition={reduce ? undefined : { duration: 2.2, repeat: Infinity, ease: EASE_NOVA }}
+              />
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -434,6 +491,67 @@ function EcranProgression({
           Annuler l&apos;analyse
         </Button>
       </div>
+    </Card>
+  )
+}
+
+/* -------------------------------------------------------------------------- */
+/* Téléchargement du rapport                                                   */
+/* -------------------------------------------------------------------------- */
+/*
+  Le PDF n'est jamais envoyé par mail : il se fabrique dans le navigateur et se
+  télécharge d'un clic, autant de fois que voulu. Rien ne transite par un
+  service tiers.
+*/
+function BlocTelechargement({
+  rapports,
+  url,
+}: {
+  rapports: Partial<Record<Strategy, RapportPage>>
+  url: string
+}) {
+  const [etat, setEtat] = useState<"pret" | "encours" | "echec">("pret")
+
+  async function telecharger() {
+    setEtat("encours")
+    try {
+      const { construireRapport, telechargerRapport } = await import("@/lib/audit-pdf")
+      telechargerRapport(
+        construireRapport({
+          url,
+          prenom: "",
+          mobile: rapports.mobile ?? null,
+          desktop: rapports.desktop ?? null,
+        }),
+        url
+      )
+      setEtat("pret")
+    } catch {
+      setEtat("echec")
+    }
+  }
+
+  return (
+    <Card tone="ivory" padding="md" accent="left">
+      <span className="mx-auto flex size-11 items-center justify-center rounded-md border border-border-strong text-accent-strong">
+        <Icon icon={Download} className="size-5" />
+      </span>
+      <h3 className="mt-5 font-heading text-h3 text-text">Votre rapport complet en PDF</h3>
+      <p className="measure mx-auto mt-3 text-small text-text-secondary">
+        Toutes les notes, tous les constats, les captures et le plan d&apos;action. Il se génère
+        sur votre appareil : rien n&apos;est envoyé, rien n&apos;est stocké.
+      </p>
+      <div className="mt-7">
+        <Button type="button" variant="primary" onClick={telecharger} disabled={etat === "encours"}>
+          <Icon icon={Download} />
+          {etat === "encours" ? "Génération…" : "Télécharger le PDF"}
+        </Button>
+      </div>
+      {etat === "echec" && (
+        <p role="alert" className="mt-4 text-small text-accent-strong">
+          La génération a échoué sur cet appareil. Le rapport reste consultable ci-dessous.
+        </p>
+      )}
     </Card>
   )
 }
@@ -584,6 +702,8 @@ function Resultats({
       {/* 4 à 6 — le reste, une fois déverrouillé */}
       {deverrouille && (
         <>
+          <BlocTelechargement rapports={rapports} url={rapport.url} />
+
           {bons.length > 0 && (
             <Card tone="ivory" padding="md">
               <p className="text-eyebrow uppercase text-text">Ce qui va bien</p>
@@ -708,20 +828,59 @@ function Resultats({
 /* Relevé envoyé à Studio Digital Nova                                         */
 /* -------------------------------------------------------------------------- */
 
+/*
+  Relevé complet, en texte brut : c'est ce que reçoit Studio Digital Nova.
+  Tout y est — notes par dimension, chaque constat avec sa preuve, sa
+  conséquence et la correction, les temps mesurés — pour pouvoir répondre sans
+  avoir à relancer l'analyse.
+*/
 function resumerRapport(r: RapportPage | null, appareil: string): string {
-  if (!r) return `${appareil} — analyse non aboutie.`
-  const notes = r.dimensions
-    .map((d) => `${d.libelle} ${d.note === null ? "non mesuré" : d.note}`)
-    .join(" ; ")
-  const constats = r.constats.length
-    ? r.constats.map((c) => `[${c.priorite}] ${c.constat} (${c.preuve})`).join("\n    ")
-    : "aucun constat au-dessus du seuil"
-  return (
-    `${appareil} — ${r.url}\n` +
-    `  Note : ${r.note === null ? "partielle, non calculée" : `${r.note}/100`}\n` +
-    `  ${notes}\n` +
-    `  Constats (${r.constats.length}) :\n    ${constats}`
+  if (!r) return `${appareil} : analyse non aboutie.`
+
+  const lignes: string[] = []
+  lignes.push(`${appareil} — ${r.url}`)
+  lignes.push(
+    `Note globale : ${r.note === null ? "bilan partiel, non calculée" : `${r.note}/100`}`
   )
+  lignes.push("")
+  lignes.push("Notes par dimension")
+  for (const d of r.dimensions) {
+    lignes.push(
+      `  ${d.libelle} (${Math.round(d.poids * 100)} %) : ${d.note === null ? "non mesuré" : `${d.note}/100`}`
+    )
+  }
+
+  lignes.push("")
+  if (r.constats.length === 0) {
+    lignes.push("Constats : aucun au-dessus du seuil.")
+  } else {
+    lignes.push(`Constats (${r.constats.length}), du plus grave au moins grave`)
+    r.constats.forEach((c, i) => {
+      lignes.push("")
+      lignes.push(`  ${i + 1}. [${c.priorite}] ${c.constat}`)
+      lignes.push(`     Relevé      : ${c.preuve}`)
+      lignes.push(`     Conséquence : ${c.consequence}`)
+      lignes.push(`     Correction  : ${c.recommandation}`)
+      lignes.push(`     Nature      : ${c.nature} · confiance ${c.confiance}${c.zone ? " · situé sur la capture" : ""}`)
+    })
+  }
+
+  if (r.vitals.length) {
+    lignes.push("")
+    lignes.push("Temps mesurés")
+    for (const v of r.vitals) lignes.push(`  ${v.libelle} : ${v.valeur} (${v.verdict})`)
+  }
+
+  return lignes.join("\n")
+}
+
+/** Domaine seul : un sujet court et lisible passe mieux les filtres. */
+function domaineCourt(url: string): string {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "")
+  } catch {
+    return url
+  }
 }
 
 async function transmettre(champs: Record<string, string>): Promise<boolean> {
@@ -774,21 +933,33 @@ function Barriere({
     dejaEnvoye.current = true
 
     const fiche = [
-      `Site analysé : ${url}`,
-      `Prénom : ${prenom || "non renseigné"}`,
-      `Email : ${email}`,
-      `Téléphone : ${telephone}`,
+      "COORDONNÉES",
+      `  Prénom    : ${prenom || "non renseigné"}`,
+      `  Email     : ${email}`,
+      `  Téléphone : ${telephone}`,
+      `  Site      : ${url}`,
+      `  Reçu le   : ${new Date().toLocaleString("fr-FR")}`,
       "",
-      resumerRapport(rapports.mobile ?? null, "MOBILE"),
+      "────────────────────────────────────────",
       "",
-      resumerRapport(rapports.desktop ?? null, "ORDINATEUR"),
+      resumerRapport(rapports.mobile ?? null, "VERSION MOBILE"),
+      "",
+      "────────────────────────────────────────",
+      "",
+      resumerRapport(rapports.desktop ?? null, "VERSION ORDINATEUR"),
+      "",
+      "────────────────────────────────────────",
+      "",
+      "Le visiteur a téléchargé le PDF depuis la page. Aucun mail ne lui a été envoyé.",
     ].join("\n")
 
     const transmis = await transmettre({
-      subject: `FICHE CLIENT — ${url}`,
+      subject: `Demande d\u0027audit — ${domaineCourt(url)}`,
       from_name: prenom || email,
       name: prenom || "Non renseigné",
       email,
+      /* Répondre au mail répond directement au visiteur. */
+      replyto: email,
       telephone,
       site: url,
       message: fiche,
@@ -828,8 +999,9 @@ function Barriere({
         Débloquez le rapport et son PDF
       </h3>
       <p className="relative mx-auto mt-4 max-w-xl text-lead text-on-ink-soft">
-        Le reste de l&apos;analyse s&apos;affiche immédiatement et le PDF se télécharge dans la
-        foulée. Je le lis de mon côté et je reviens vers vous sous 24 heures, sans engagement.
+        Le reste de l&apos;analyse s&apos;affiche tout de suite, et le PDF se télécharge depuis
+        cette page — je ne vous envoie rien. Je lis le rapport de mon côté et je reviens vers
+        vous sous 24 heures, sans engagement.
       </p>
 
       <form onSubmit={soumettre} className="relative mt-8 flex flex-col gap-4 text-left">
@@ -999,7 +1171,7 @@ function AuditContent() {
       setPhase("resultat")
 
       void transmettre({
-        subject: `Audit lancé — ${url}`,
+        subject: `Audit lancé sur ${domaineCourt(url)}`,
         from_name: "Audit automatique",
         name: "Visiteur anonyme",
         email: "contact@studiodigitalnova.fr",
@@ -1058,8 +1230,9 @@ function AuditContent() {
         }
         lead={
           <>
-            Entrez votre adresse. J&apos;analyse ce qu&apos;un visiteur voit et ressent :
-            lisibilité, stabilité de la page, netteté des images, facilité à vous joindre.{" "}
+            Collez l&apos;adresse de votre site. En une minute, vous voyez ce qu&apos;un
+            visiteur voit vraiment : les textes se lisent-ils, la page tient-elle en place, les
+            images sont-elles nettes, sait-on comment vous joindre.{" "}
             <strong className="font-semibold text-text">Gratuit, sans inscription.</strong>
           </>
         }
@@ -1096,13 +1269,19 @@ function AuditContent() {
       >
         <div className="w-full">
           <form onSubmit={lancer} className="w-full">
+            {/*
+              Sous 640 px, le bouton sort du cadre de saisie et passe en pleine
+              largeur dessous : deux éléments empilés dans une même bordure
+              donnaient une boîte lourde et mal équilibrée.
+            */}
             <div
               className={cn(
-                "relative rounded-xl border bg-surface p-2 shadow-sm transition-[border-color,box-shadow] duration-500 ease-nova",
+                "relative rounded-xl border bg-surface shadow-sm transition-[border-color,box-shadow] duration-500 ease-nova",
+                "p-0 sm:p-2",
                 focus ? "border-accent shadow-[0_0_0_4px_rgba(217,108,79,0.10)]" : "border-border-strong"
               )}
             >
-              <div className="flex flex-col gap-2 sm:flex-row">
+              <div className="flex flex-col sm:flex-row sm:gap-2">
                 <div className="relative flex-1">
                   <Icon
                     icon={Search}
@@ -1118,20 +1297,30 @@ function AuditContent() {
                     onFocus={() => setFocus(true)}
                     onBlur={() => setFocus(false)}
                     disabled={phase === "analyse"}
-                    className="h-13 border-transparent bg-transparent pl-11 text-lead shadow-none focus-visible:border-transparent focus-visible:ring-0"
+                    className="h-14 border-transparent bg-transparent pl-11 text-lead shadow-none focus-visible:border-transparent focus-visible:ring-0 sm:h-13"
                   />
                 </div>
                 <Button
                   type="submit"
                   variant="primary"
                   disabled={phase === "analyse" || !disponible}
-                  className="h-13 shrink-0"
+                  className="hidden h-13 shrink-0 sm:inline-flex"
                 >
                   {phase === "analyse" ? "Analyse en cours…" : "Analyser mon site"}
                   {phase !== "analyse" && <Icon icon={ArrowRight} />}
                 </Button>
               </div>
             </div>
+
+            <Button
+              type="submit"
+              variant="primary"
+              disabled={phase === "analyse" || !disponible}
+              className="mt-3 h-13 w-full sm:hidden"
+            >
+              {phase === "analyse" ? "Analyse en cours…" : "Analyser mon site"}
+              {phase !== "analyse" && <Icon icon={ArrowRight} />}
+            </Button>
             <p className="mt-4 text-small text-text-muted">
               L&apos;adresse analysée m&apos;est transmise pour que je puisse suivre les demandes.
               Aucune autre donnée n&apos;est collectée tant que vous ne remplissez pas le formulaire.
@@ -1233,7 +1422,7 @@ function AuditContent() {
         <div className="mx-auto max-w-4xl">
           <p className="text-center text-eyebrow uppercase text-text-muted">Ce que j&apos;examine</p>
           <Heading variant="h2" className="mt-4 text-center">
-            Trois questions, dans cet ordre
+            Ce que je regarde, et dans quel ordre
           </Heading>
 
           <div className="mt-[var(--section-gap)] grid grid-cols-1 gap-5 md:grid-cols-3">
@@ -1244,7 +1433,7 @@ function AuditContent() {
                 titre: "Apparence et lisibilité",
                 poids: "50 % de la note",
                 texte:
-                  "Les textes se lisent-ils ? La page reste-t-elle stable pendant qu'elle charge ? Les images sont-elles nettes ? Les boutons se visent-ils au doigt ?",
+                  "C'est ce qu'un visiteur juge en trois secondes, avant d'avoir lu une ligne. Contraste des textes, stabilité de la page pendant le chargement, netteté des images, taille des boutons sous le doigt.",
               },
               {
                 icone: Send,
@@ -1252,7 +1441,7 @@ function AuditContent() {
                 titre: "Parcours et contact",
                 poids: "20 %",
                 texte:
-                  "Les liens disent-ils où ils mènent ? Les boutons ont-ils un nom ? Google peut-il suivre la navigation jusqu'à votre page de contact ?",
+                  "Un visiteur convaincu doit pouvoir vous joindre sans chercher. Liens dont on comprend la destination, boutons nommés, navigation que Google sait suivre jusqu'à vous.",
               },
               {
                 icone: ShieldCheck,
@@ -1260,7 +1449,7 @@ function AuditContent() {
                 titre: "Qualité technique",
                 poids: "30 % au total",
                 texte:
-                  "Vitesse d'affichage, bases du référencement, HTTPS et erreurs en arrière-plan. Le socle sur lequel tout le reste repose.",
+                  "Le socle : vitesse d'affichage, bases du référencement, HTTPS, erreurs en arrière-plan. Invisible quand tout va bien, coûteux quand ça ne va pas.",
               },
             ].map((d, i) => (
               <motion.div
@@ -1294,13 +1483,13 @@ function AuditContent() {
         <div className="mx-auto max-w-4xl">
           <p className="text-center text-eyebrow uppercase text-text-muted">Comment ça marche</p>
           <Heading variant="h2" className="mt-4 text-center">
-            Trois étapes, une minute
+            Trois étapes, et c&apos;est tout
           </Heading>
           <div className="mt-[var(--section-gap)] grid grid-cols-1 gap-5 md:grid-cols-3">
             {[
               { icone: Link2, titre: "Vous collez votre adresse", texte: "Pas de compte, rien à installer." },
               { icone: Gauge, titre: "J'analyse les deux versions", texte: "Mobile et ordinateur, via l'API Google PageSpeed Insights." },
-              { icone: Download, titre: "Vous lisez le bilan", texte: "La note et la priorité principale tout de suite. Le rapport complet et son PDF avec vos coordonnées." },
+              { icone: Download, titre: "Vous lisez le bilan", texte: "La note et le point le plus grave s'affichent tout de suite. Le rapport complet et son PDF se débloquent avec vos coordonnées — le PDF se télécharge sur la page, rien n'est envoyé." },
             ].map((e, i) => (
               <motion.div
                 key={e.titre}
@@ -1366,32 +1555,6 @@ function AuditContent() {
         </div>
       </Section>
 
-      {/* ---- E. FAQ ------------------------------------------------------ */}
-      <Section className="bg-surface" spacing="default">
-        <div className="mx-auto max-w-3xl">
-          <p className="text-center text-eyebrow uppercase text-text-muted">Questions fréquentes</p>
-          <Heading variant="h2" className="mt-4 text-center">
-            Ce qu&apos;on me demande avant de lancer
-          </Heading>
-          <div className="mt-[var(--section-gap)] flex flex-col gap-3">
-            {QUESTIONS_AUDIT.map((item, i) => (
-              <motion.div
-                key={item.question}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true, amount: 0.3 }}
-                variants={floatIn(i * 0.05, { y: 30 }, { damping: 26, mass: 2 })}
-              >
-                <Card padding="md">
-                  <h3 className="font-heading text-h3 text-text">{item.question}</h3>
-                  <p className="measure mx-auto mt-3 text-body text-text-secondary">{item.reponse}</p>
-                </Card>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </Section>
-
       {/* ---- F. Contact -------------------------------------------------- */}
       <Section spacing="default">
         <div className="mx-auto max-w-3xl">
@@ -1402,11 +1565,12 @@ function AuditContent() {
               <span className="h-px w-8 bg-accent/50" />
             </span>
             <Heading variant="h2" className="text-on-ink">
-              On corrige tout ça ensemble ?
+              Et si on corrigeait tout ça ?
             </Heading>
             <p className="measure relative mx-auto mt-6 text-lead text-on-ink-soft">
-              L&apos;analyse vous dit quoi corriger. Si vous préférez que je m&apos;en charge,
-              parlons-en à partir de vos résultats — devis clair sous 24 heures, sans engagement.
+              Vous avez la liste. Reste à l&apos;appliquer — et c&apos;est mon métier. On part de
+              vos résultats, je vous dis ce que ça représente, et vous décidez. Devis clair sous
+              24 heures, sans engagement.
             </p>
             <div className="relative mt-9 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
               <Link href="/#contact" className="group">
