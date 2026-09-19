@@ -261,13 +261,6 @@ function ProgressFrieze({
   onJump: (index: number) => void
   reduce: boolean
 }) {
-  /*
-    « Étape 1 sur 4 » vaut un quart, pas zéro : mesurée sur les intervalles,
-    la barre restait vide à la première étape et donnait l'impression que rien
-    n'avait commencé.
-  */
-  const avancement = Math.round(((step + 1) / STEP_LABELS.length) * 100)
-
   return (
     <div>
       {/*
@@ -286,15 +279,11 @@ function ProgressFrieze({
           labelPrefix="Étape"
         />
 
-        <div className="mt-4 h-1 w-full overflow-hidden rounded-full bg-border">
-          <motion.div
-            className="h-full rounded-full bg-ink"
-            initial={false}
-            animate={{ width: `${avancement}%` }}
-            transition={reduce ? { duration: 0 } : { duration: 0.45, ease: EASE_NOVA }}
-          />
-        </div>
-
+        {/*
+          Pas de seconde barre sous les pastilles : le trait de la frise, une
+          fois rendu proprement, dit déjà où l'on en est. Deux jauges pour la
+          même information se contredisent à l'œil.
+        */}
         {/* Sous 640 px, seule l'étape en cours est nommée : quatre intitulés n'y tiennent pas. */}
         <p className="mt-3 text-center text-eyebrow uppercase text-text sm:hidden">
           {STEP_LABELS[step]}

@@ -25,10 +25,10 @@ import { cn } from "@/lib/utils"
   … et deux orientations : horizontale (desktop) et verticale (mobile), avec
   exactement le même balisage — seul l'axe change.
 
-  Le rail est un SVG : un trait de fond, un trait d'accent dont le
-  `pathLength` est lié à la progression, et des repères qui s'allument au
-  passage. `vector-effect: non-scaling-stroke` garantit un filet d'un pixel
-  quelle que soit la déformation du viewBox.
+  Le rail est fait de deux blocs : un trait de fond et un trait d'encre mis à
+  l'échelle en `scaleX`. Il a d'abord été un SVG dont le `pathLength` suivait
+  la progression — mais avec un viewBox déformé, le tiret calculé en unités
+  utilisateur sortait en pointillés entre les repères.
 
   Tout ce qui bouge est `transform` ou `opacity`. Le marqueur se déplace en
   pixels mesurés (ResizeObserver) plutôt qu'en pourcentage de `left`, pour
@@ -89,33 +89,6 @@ function useRailSize(ref: React.RefObject<HTMLElement | null>) {
   return size
 }
 
-/** Repère perpendiculaire au rail : s'allume quand la progression le dépasse. */
-function RailTick({
-  progress,
-  at,
-  vertical,
-}: {
-  progress: MotionValue<number>
-  at: number
-  vertical: boolean
-}) {
-  const opacity = useTransform(progress, [at - 0.04, at], [0, 1])
-
-  return (
-    <motion.span
-      aria-hidden
-      className={cn(
-        "pointer-events-none absolute bg-ink",
-        vertical ? "left-1/2 h-px w-1.5 -translate-x-1/2" : "top-1/2 h-1.5 w-px -translate-y-1/2"
-      )}
-      style={{
-        opacity,
-        ...(vertical ? { top: `${at * 100}%` } : { left: `${at * 100}%` }),
-      }}
-    />
-  )
-}
-
 function Frieze({
   id,
   steps,
@@ -159,59 +132,39 @@ function Frieze({
           Rail — tendu du centre de la première pastille au centre de la
           dernière. Les décalages compensent la demi-hauteur d'une pastille.
         */}
+        {/*
+          Le trait est tendu d'un CENTRE de pastille à l'autre. Un retrait fixe
+          de 18 px supposait les pastilles collées aux bords ; réparties à
+          parts égales, la première a son centre à la moitié d'une colonne,
+          soit 50/n pour cent — et le trait dépassait de part et d'autre.
+        */}
         <div
           className={cn(
             "pointer-events-none absolute",
-            vertical
-              ? "inset-y-[1.125rem] left-[1.125rem] w-px"
-              : "inset-x-[1.125rem] top-[1.125rem] h-px sm:inset-x-[1.375rem] sm:top-[1.375rem]"
+            vertical ? "left-[1.125rem] w-px" : "top-[1.125rem] h-px sm:top-[1.375rem]"
           )}
+          style={
+            vertical
+              ? { top: `${50 / steps.length}%`, bottom: `${50 / steps.length}%` }
+              : { left: `${50 / steps.length}%`, right: `${50 / steps.length}%` }
+          }
         >
-          <div ref={railRef} className="relative h-full w-full">
-            <svg
+          {/*
+            Trait plein, et non une ligne SVG à `pathLength`. Le viewBox est
+            déformé (`preserveAspectRatio="none"`, 100 unités pour six cents
+            pixels) : le tiret calculé en unités utilisateur se retrouvait
+            étiré n'importe comment et le remplissage sortait en pointillés
+            entre les repères. Deux blocs et un `scaleX` donnent un trait
+            continu, exact, et animé sur le compositeur.
+          */}
+          <div ref={railRef} className="relative h-full w-full bg-border">
+            <motion.div
               aria-hidden
-              className="absolute inset-0 h-full w-full overflow-visible"
-              viewBox={vertical ? "0 0 1 100" : "0 0 100 1"}
-              preserveAspectRatio="none"
-            >
-              <line
-                x1={vertical ? 0.5 : 0}
-                y1={vertical ? 0 : 0.5}
-                x2={vertical ? 0.5 : 100}
-                y2={vertical ? 100 : 0.5}
-                stroke="var(--color-border)"
-                strokeWidth={1}
-                vectorEffect="non-scaling-stroke"
-              />
-              {/*
-                Le chemin parcouru se trace à l'encre. En terracotta, il
-                formait une nouvelle ligne orange en haut d'une carte, alors
-                que l'accent est réservé à ce qui appelle une action — ici,
-                l'anneau de l'étape en cours.
-              */}
-              <motion.line
-                x1={vertical ? 0.5 : 0}
-                y1={vertical ? 0 : 0.5}
-                x2={vertical ? 0.5 : 100}
-                y2={vertical ? 100 : 0.5}
-                stroke="var(--color-ink)"
-                strokeWidth={1.4}
-                vectorEffect="non-scaling-stroke"
-                style={{ pathLength: drawn }}
-              />
-            </svg>
+              className="absolute inset-y-0 left-0 w-full origin-left bg-ink"
+              style={{ scaleX: drawn }}
+            />
 
-            {/* Repères d'étape, allumés au passage de la progression. */}
-            {steps.map((step, index) => (
-              <RailTick
-                key={`tick-${step.key}`}
-                progress={drawn}
-                at={index / lastIndex}
-                vertical={vertical}
-              />
-            ))}
-
-            {/* Marqueur voyageur — un simple losange d'encre cerclé de terracotta. */}
+            {/* Marqueur voyageur — réservé au régime scrubbé. */}
             {progress && !reduce && (
               <motion.span
                 aria-hidden

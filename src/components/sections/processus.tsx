@@ -404,22 +404,22 @@ function Rail({
               "md:w-auto md:flex-1"
             )}
           >
-            {/* Demi-trait de gauche — absent sur le premier repère. */}
-            {i > 0 && (
-              <span
-                aria-hidden
-                className={cn(
-                  "pointer-events-none absolute top-[22px] left-0 right-[calc(50%+18px)] h-px transition-colors duration-500 ease-nova",
-                  i <= actif ? "bg-ink" : "bg-border"
-                )}
-              />
-            )}
-            {/* Demi-trait de droite — absent sur le dernier. */}
+            {/*
+              UN seul segment par intervalle, et non deux demi-traits recollés
+              au bord des repères : à cet endroit-là, deux éléments voisins se
+              séparaient d'une fraction de pixel et le trait paraissait
+              pointillé.
+
+              Celui-ci part du bord droit de la pastille et déborde dans le
+              repère suivant jusqu'au bord gauche de la sienne. Les repères
+              étant de largeur égale, `calc(-50% + 18px)` tombe exactement
+              dessus — 18 px étant le rayon d'une pastille de 36.
+            */}
             {i < ETAPES.length - 1 && (
               <span
                 aria-hidden
                 className={cn(
-                  "pointer-events-none absolute top-[22px] left-[calc(50%+18px)] right-0 h-px transition-colors duration-500 ease-nova",
+                  "pointer-events-none absolute top-[22px] left-[calc(50%+18px)] right-[calc(-50%+18px)] h-px transition-colors duration-500 ease-nova",
                   i < actif ? "bg-ink" : "bg-border"
                 )}
               />
