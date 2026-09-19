@@ -3,16 +3,17 @@
 import { useState } from "react"
 import Link from "next/link"
 import { ArrowRight, ChevronDown, HelpCircle } from "lucide-react"
-import { AnimatePresence, motion } from "framer-motion"
+import { motion } from "framer-motion"
 
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Heading } from "@/components/ui/heading"
 import { Icon } from "@/components/ui/icon"
 import { NovaMark } from "@/components/ui/nova"
+import { PageHero } from "@/components/ui/page-hero"
 import { Section } from "@/components/ui/section"
 import { EASE_NOVA, useFloatIn } from "@/lib/motion"
+import { cn } from "@/lib/utils"
 
 type FloatFrom = { x?: number; y?: number; rotate?: number; scale?: number }
 
@@ -388,93 +389,100 @@ function FAQ() {
   const [openIndex, setOpenIndex] = useState<number | null>(null)
   const [showAll, setShowAll] = useState(false)
   const floatIn = useFloatIn()
-  const visibleQuestions = showAll ? QUESTIONS : QUESTIONS.slice(0, INITIAL_VISIBLE_QUESTIONS)
+  /*
+    Toutes les questions ET toutes les réponses sont rendues dans le HTML.
+    Auparavant, l'accordéon ne montait la réponse qu'à l'ouverture et les
+    questions au-delà de la huitième n'existaient pas du tout : Google ne
+    voyait que 207 mots sur une page qui en contient près de trois mille.
+    Le « voir plus » ne fait plus que masquer visuellement.
+  */
   const hiddenCount = QUESTIONS.length - INITIAL_VISIBLE_QUESTIONS
 
   return (
-    <Section>
-      <div className="mx-auto flex max-w-2xl flex-col items-center text-center md:max-w-3xl">
-        <motion.div
-          className="mb-4"
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, amount: 0.4 }}
-          variants={floatIn(0, { y: -40, scale: 0.85 })}
-        >
-          <Badge variant="outline">
-            <Icon icon={HelpCircle} className="size-3.5 text-accent" />
-            Questions fréquentes
-          </Badge>
-        </motion.div>
+    <>
+      <PageHero
+        eyebrow="Questions fréquentes"
+        icon={HelpCircle}
+        title="Vos questions, mes réponses"
+        lead={
+          <>
+            Tout ce qu&apos;il faut savoir avant de vous lancer. Une autre question ?
+            Contactez-moi,{" "}
+            <strong className="font-semibold text-text">
+              je réponds personnellement à chaque message
+            </strong>
+            .
+          </>
+        }
+      />
 
-        <motion.div
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, amount: 0.4 }}
-          variants={floatIn(0.12, { y: -60, scale: 0.94 })}
-        >
-          <Heading as="h1" variant="h2">Vos questions, mes réponses</Heading>
-        </motion.div>
-
-        <motion.p
-          className="measure mt-6 text-lead text-text-secondary"
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, amount: 0.4 }}
-          variants={floatIn(0.22, { y: 40 })}
-        >
-          Tout ce qu&apos;il faut savoir avant de vous lancer. Une autre question ? Contactez-moi,{" "}
-          <strong className="font-semibold text-text">je réponds personnellement à chaque message</strong>.
-        </motion.p>
-      </div>
-
-      <div className="mx-auto mt-[var(--section-gap)] flex max-w-3xl flex-col gap-3">
-        {visibleQuestions.map((item, index) => {
+      <Section>
+        <div className="mx-auto flex max-w-3xl flex-col gap-3">
+        {QUESTIONS.map((item, index) => {
           const isOpen = openIndex === index
           const from: FloatFrom =
             index % 2 === 0 ? { x: -140, rotate: -4 } : { x: 140, rotate: 4 }
+          // Masquée à l'œil tant que « voir plus » n'a pas été cliqué,
+          // mais toujours présente dans le document.
+          const replieé = !showAll && index >= INITIAL_VISIBLE_QUESTIONS
 
           return (
             <motion.div
               key={item.question}
+              className={cn(replieé && "hidden")}
               initial="hidden"
               whileInView="visible"
               viewport={{ once: true, amount: 0.3 }}
-              variants={floatIn(index * 0.08, from, { damping: 30, mass: 4 })}
+              variants={floatIn(Math.min(index, 8) * 0.08, from, { damping: 30, mass: 4 })}
             >
               <Card padding="none" className="overflow-hidden transition-colors duration-300 ease-nova hover:border-border-strong">
                 <button
                   type="button"
+                  id={`faq-question-${index}`}
                   onClick={() => setOpenIndex(isOpen ? null : index)}
                   aria-expanded={isOpen}
-                  className="group flex w-full items-center justify-between gap-4 rounded-xl p-6 text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/35"
+                  aria-controls={`faq-reponse-${index}`}
+                  className="group relative flex w-full items-center justify-center rounded-xl p-6 px-16 outline-none focus-visible:ring-3 focus-visible:ring-ring/35"
                 >
                   <span className="text-body font-medium text-text transition-colors duration-200 ease-nova group-hover:text-accent-strong">
                     {item.question}
                   </span>
-                  <motion.span
-                    animate={{ rotate: isOpen ? 180 : 0 }}
-                    transition={{ duration: 0.2, ease: EASE_NOVA }}
-                    className="flex size-8 shrink-0 items-center justify-center rounded-full border border-border-strong text-text-secondary transition-colors duration-200 ease-nova group-hover:border-accent group-hover:text-accent-strong"
-                  >
-                    <Icon icon={ChevronDown} className="size-4" />
-                  </motion.span>
+                  {/*
+                    La question est centrée : le chevron sort du flux et se cale
+                    à droite, sinon il se déplacerait avec la longueur du texte
+                    et les questions ne s'aligneraient plus d'une carte à l'autre.
+                  */}
+                  <span className="absolute right-6 top-1/2 -translate-y-1/2">
+                    <motion.span
+                      animate={{ rotate: isOpen ? 180 : 0 }}
+                      transition={{ duration: 0.2, ease: EASE_NOVA }}
+                      className="flex size-8 shrink-0 items-center justify-center rounded-full border border-border-strong text-text-secondary transition-colors duration-200 ease-nova group-hover:border-accent group-hover:text-accent-strong"
+                    >
+                      <Icon icon={ChevronDown} className="size-4" />
+                    </motion.span>
+                  </span>
                 </button>
 
-                <AnimatePresence initial={false}>
-                  {isOpen && (
-                    <motion.div
-                      key="content"
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: "auto", opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.3, ease: EASE_NOVA }}
-                      className="overflow-hidden"
-                    >
-                      <p className="border-t border-border px-6 pb-6 pt-5 text-body text-text-secondary">{item.answer}</p>
-                    </motion.div>
+                {/*
+                  Repli par `grid-template-rows` : la réponse reste dans le
+                  document même fermée — donc lisible par Google — au lieu
+                  d'être démontée. `inert` la sort proprement du parcours
+                  clavier et de l'arbre d'accessibilité quand elle est fermée.
+                */}
+                <div
+                  id={`faq-reponse-${index}`}
+                  role="region"
+                  aria-labelledby={`faq-question-${index}`}
+                  inert={!isOpen}
+                  className={cn(
+                    "grid transition-[grid-template-rows] duration-300 ease-nova motion-reduce:transition-none",
+                    isOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
                   )}
-                </AnimatePresence>
+                >
+                  <div className="overflow-hidden">
+                    <p className="border-t border-border px-6 pb-6 pt-5 text-body text-text-secondary">{item.answer}</p>
+                  </div>
+                </div>
               </Card>
             </motion.div>
           )
@@ -501,10 +509,11 @@ function FAQ() {
         )}
       </div>
 
-      <div className="mt-16">
-        <FaqCta />
-      </div>
-    </Section>
+        <div className="mt-16">
+          <FaqCta />
+        </div>
+      </Section>
+    </>
   )
 }
 

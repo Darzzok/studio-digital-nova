@@ -15,6 +15,11 @@ const nextConfig: NextConfig = {
     hébergement statique.
   */
   trailingSlash: true,
+  /*
+    Aucune optimisation d'images côté serveur : le site est exporté en statique.
+    Les déclinaisons sont produites au build par `scripts/images-responsives.mjs`
+    et servies par le composant `NovaImage`, qui écrit lui-même son `srcset`.
+  */
   images: {
     unoptimized: true,
   },

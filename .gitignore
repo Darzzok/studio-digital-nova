@@ -39,3 +39,16 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Réglages locaux de Claude Code — contiennent des commandes autorisées
+# (et donc parfois des clés). Jamais dans le dépôt.
+.claude/settings.local.json
+
+# Artefacts de déploiement
+/studio-digital-nova-hostinger*/
+studio-digital-nova-hostinger*.zip
+exemple-rapport-audit.pdf
+
+# Déclinaisons générées par scripts/images-responsives.mjs
+public/images/**/*-400.webp
+public/images/**/*-800.webp

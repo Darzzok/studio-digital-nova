@@ -1,6 +1,34 @@
+import { readFile } from "node:fs/promises"
+import path from "node:path"
+
 import { ImageResponse } from "next/og"
+import sharp from "sharp"
 
 import { ARTICLES, getArticleBySlug } from "@/lib/articles"
+
+/*
+  Les couvertures sont désormais hébergées localement, en WebP. Satori ne sait
+  ni aller chercher un chemin relatif, ni décoder le WebP : on lit donc le
+  fichier et on le convertit en JPEG à la volée, au moment du build.
+
+  Au passage, on divise la définition par deux et on compresse : la carte de
+  partage fait 1200×630, inutile d'y encoder une image de 1600 pixels de large.
+  Les fichiers générés passaient jusqu'à 1,5 Mo, ce qui décourage les robots
+  d'aperçu de LinkedIn et Facebook.
+*/
+async function couvertureEnJpeg(chemin: string): Promise<string | null> {
+  try {
+    const brut = await readFile(path.join(process.cwd(), "public", chemin))
+    const jpeg = await sharp(brut)
+      .resize(1200, 630, { fit: "cover" })
+      .jpeg({ quality: 72, mozjpeg: true })
+      .toBuffer()
+    return `data:image/jpeg;base64,${jpeg.toString("base64")}`
+  } catch {
+    // Couverture illisible : la carte se rabat sur le fond d'encre seul.
+    return null
+  }
+}
 
 export const dynamic = "force-static"
 export const alt = "Illustration de l'article"
@@ -16,6 +44,7 @@ type Props = { params: Promise<{ slug: string }> }
 export default async function Image({ params }: Props) {
   const { slug } = await params
   const article = getArticleBySlug(slug)
+  const couverture = article ? await couvertureEnJpeg(article.image.url) : null
 
   return new ImageResponse(
     (
@@ -29,10 +58,12 @@ export default async function Image({ params }: Props) {
           fontFamily: "sans-serif",
         }}
       >
-        {article && (
-          // eslint-disable-next-line @next/next/no-img-element
+        {couverture && (
           <img
-            src={article.image.url}
+            // Rendu par Satori dans un PNG : l'attribut n'a pas de portée
+            // réelle ici, mais il documente l'intention et satisfait la règle.
+            alt=""
+            src={couverture}
             width={1200}
             height={630}
             style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}

@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 
 import { JsonLd } from "@/components/seo/json-ld";
-import { breadcrumbJsonLd } from "@/lib/seo";
+import { breadcrumbJsonLd, faqPageJsonLd } from "@/lib/seo";
 import { siteConfig } from "@/lib/site";
 
 import { AuditContent } from "./audit-content";
+import { QUESTIONS_AUDIT } from "./questions";
 
 const title = "Audit gratuit de votre site internet";
 const description =
@@ -65,10 +66,14 @@ function auditToolJsonLd() {
 
 export default function AuditPage() {
   return (
-    <main className="flex-1">
+    <main id="contenu" className="flex-1">
       <JsonLd
         data={[
           auditToolJsonLd(),
+          /* Les cinq questions affichées sur la page, balisées à l'identique. */
+          faqPageJsonLd(
+            QUESTIONS_AUDIT.map((q) => ({ question: q.question, answer: q.reponse }))
+          ),
           breadcrumbJsonLd([
             { name: "Accueil", url: `${siteConfig.url}/` },
             { name: "Audit gratuit", url: `${siteConfig.url}/audit-gratuit/` },

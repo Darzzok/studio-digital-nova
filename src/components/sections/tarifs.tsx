@@ -113,7 +113,32 @@ function Tarifs() {
         </motion.p>
       </div>
 
-      <div className="mt-[var(--section-gap)] grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
+      {/*
+        Même traitement que les cas clients : sur mobile, les trois formules se
+        comparent en glissant. Empilées, elles faisaient trois écrans, et il
+        fallait défiler pour se souvenir du prix précédent. `pt-5` laisse la
+        place au badge « Le plus populaire », qui déborde du haut de la carte.
+      */}
+      {/*
+        L'entrée est portée par le RAIL, pas par chaque carte. Auparavant chaque
+        carte avait son propre `whileInView` : en glissant horizontalement, elles
+        rejouaient leur animation une à une et semblaient bouger dans tous les
+        sens. Le rendu serveur ignore la largeur d'écran et applique l'état caché
+        « desktop » (x ±180, rotate ±6), ce qui rendait le saut d'autant plus
+        visible. Désormais : une seule entrée en cascade quand la section arrive
+        à l'écran, puis les cartes ne bougent plus.
+      */}
+      <motion.div
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.15 }}
+        variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.08 } } }}
+        className={cn(
+          "mt-[var(--section-gap)]",
+          "rail-mobile -mx-4 gap-4 px-4 pb-2 pt-5",
+          "md:mx-0 md:grid md:grid-cols-2 md:gap-5 md:overflow-visible md:px-0 md:pb-0 lg:grid-cols-3"
+        )}
+      >
         {PLANS.map((plan, index) => {
           const column = index % 3
           const from: FloatFrom =
@@ -126,10 +151,7 @@ function Tarifs() {
           return (
             <motion.div
               key={plan.name}
-              className="relative"
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, amount: 0.3 }}
+              className="relative w-[85vw] shrink-0 snap-center sm:w-[70vw] md:w-auto md:shrink"
               variants={floatIn(index * 0.12, from, { damping: 30, mass: 4 })}
             >
               {plan.featured && (
@@ -144,7 +166,7 @@ function Tarifs() {
               <Card
                 tone={plan.featured ? "ink" : "paper"}
                 className={cn(
-                  "group relative flex h-full flex-col overflow-hidden text-left",
+                  "group relative flex h-full flex-col overflow-hidden",
                   "transition-[transform,box-shadow,border-color] duration-500 ease-nova hover:-translate-y-1",
                   plan.featured
                     ? "shadow-lg hover:border-accent/60 hover:shadow-lg"
@@ -199,7 +221,17 @@ function Tarifs() {
                   </span>
                 </div>
 
-                <div className="relative mt-7 flex items-start justify-between gap-4">
+                <div className="relative mt-7 flex flex-col items-center gap-5">
+                  <span
+                    className={cn(
+                      "flex size-9 shrink-0 items-center justify-center rounded-md group-hover:-translate-y-0.5",
+                      plan.featured
+                        ? "border border-accent bg-accent text-ink transition-colors duration-500 ease-nova"
+                        : plan.className
+                    )}
+                  >
+                    <Icon icon={plan.icon} className="size-4" />
+                  </span>
                   <div>
                     <p
                       className={cn(
@@ -218,16 +250,6 @@ function Tarifs() {
                       {plan.name}
                     </h3>
                   </div>
-                  <span
-                    className={cn(
-                      "flex size-9 shrink-0 items-center justify-center rounded-md group-hover:-translate-y-0.5",
-                      plan.featured
-                        ? "border border-accent bg-accent text-ink transition-colors duration-500 ease-nova"
-                        : plan.className
-                    )}
-                  >
-                    <Icon icon={plan.icon} className="size-4" />
-                  </span>
                 </div>
 
                 <p
@@ -251,7 +273,7 @@ function Tarifs() {
 
                 <DrawRule className="mt-6" tone={plan.featured ? "ink" : "light"} />
 
-                <div className="relative mt-5 flex flex-1 flex-col gap-3">
+                <div className="card-list relative mt-5 flex flex-1 flex-col gap-3">
                   {plan.features.map((feature) => (
                     <div key={feature} className="flex items-baseline gap-3">
                       <Icon
@@ -303,7 +325,7 @@ function Tarifs() {
             </motion.div>
           )
         })}
-      </div>
+      </motion.div>
     </Section>
   )
 }

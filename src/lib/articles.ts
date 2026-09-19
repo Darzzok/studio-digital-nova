@@ -48,6 +48,12 @@ export const CATEGORY_GRADIENT: Record<ArticleCategory, { from: string; to: stri
 export type Article = {
   slug: string
   title: string
+  /**
+   * Titre court réservé à la balise `<title>`. Les titres affichés en H1
+   * dépassent souvent 60 caractères et se faisaient tronquer dans Google.
+   * Absent, on retombe sur `title`.
+   */
+  seoTitle?: string
   metaDescription: string
   category: ArticleCategory
   image: { url: string; alt: string }
@@ -65,12 +71,13 @@ export type Article = {
 export const ARTICLES: Article[] = [
   {
     slug: "pourquoi-site-internet-entreprise-2026",
+    seoTitle: "Pourquoi votre entreprise a besoin d'un site en 2026",
     title: "Pourquoi votre entreprise a besoin d'un site internet en 2026",
     metaDescription:
-      "En 2026, l'absence de site internet coûte plus cher qu'on ne le pense aux TPE, artisans et commerçants. Découvrez pourquoi un site reste un investissement stratégique, pas une dépense.",
+      "Pour une TPE, un artisan ou un commerçant, l'absence de site coûte plus cher qu'on ne le pense. Pourquoi c'est un investissement, pas une dépense.",
     category: "Conseils TPE",
     image: {
-      url: "https://images.unsplash.com/photo-1687422808191-93810cd07ab0?auto=format&fit=crop&w=1200&q=80",
+      url: "/images/blog/1687422808191-93810cd07ab0.webp",
       alt: "Commerçante souriante dans sa boutique, illustrant la présence en ligne d'une TPE",
     },
     author: "Geoffrey — Studio Digital Nova",
@@ -183,12 +190,13 @@ export const ARTICLES: Article[] = [
 
   {
     slug: "7-erreurs-visiteurs-fuient-site",
+    seoTitle: "7 erreurs qui font fuir vos visiteurs",
     title: "7 erreurs qui font fuir vos visiteurs dès les premières secondes",
     metaDescription:
-      "Un visiteur quitte un site en quelques secondes s'il ne trouve pas ce qu'il cherche. Découvrez les 7 erreurs les plus fréquentes qui font fuir les visiteurs, et comment les éviter.",
+      "Un visiteur part en quelques secondes s'il ne trouve pas ce qu'il cherche. Les 7 erreurs les plus fréquentes, et comment les éviter.",
     category: "Webdesign",
     image: {
-      url: "https://images.unsplash.com/photo-1490222939321-2a267366a124?auto=format&fit=crop&w=1200&q=80",
+      url: "/images/blog/1490222939321-2a267366a124.webp",
       alt: "Main tenant un smartphone affichant un site web adapté au mobile",
     },
     author: "Geoffrey — Studio Digital Nova",
@@ -314,10 +322,10 @@ export const ARTICLES: Article[] = [
     slug: "comment-preparer-projet-site-internet",
     title: "Comment préparer efficacement son projet de site internet",
     metaDescription:
-      "Avant de contacter un prestataire, une bonne préparation fait toute la différence. Voici comment structurer votre réflexion pour un projet de site internet clair et sans mauvaise surprise.",
+      "Avant de contacter un prestataire, la préparation fait toute la différence. Comment structurer votre projet de site, sans mauvaise surprise.",
     category: "Création de site",
     image: {
-      url: "https://images.unsplash.com/photo-1506784881475-0e408bbca849?auto=format&fit=crop&w=1200&q=80",
+      url: "/images/blog/1506784881475-0e408bbca849.webp",
       alt: "Carnet de notes et stylo pour préparer un projet de site internet",
     },
     author: "Geoffrey — Studio Digital Nova",
@@ -425,12 +433,13 @@ export const ARTICLES: Article[] = [
 
   {
     slug: "choisir-bon-prestataire-site-internet",
+    seoTitle: "Choisir le bon prestataire pour son site internet",
     title: "Comment choisir le bon prestataire pour créer son site internet",
     metaDescription:
-      "Freelance, agence, plateforme en ligne : comment s'y retrouver et choisir le bon prestataire pour créer son site internet ? Les critères essentiels et les signaux à surveiller.",
+      "Freelance, agence ou plateforme : comment choisir pour créer son site internet. Les critères essentiels et les signaux à surveiller.",
     category: "Conseils TPE",
     image: {
-      url: "https://images.unsplash.com/photo-1521791136064-7986c2920216?auto=format&fit=crop&w=1200&q=80",
+      url: "/images/blog/1521791136064-7986c2920216.webp",
       alt: "Poignée de main entre un client et un prestataire lors d'un rendez-vous professionnel",
     },
     author: "Geoffrey — Studio Digital Nova",
@@ -550,12 +559,13 @@ export const ARTICLES: Article[] = [
 
   {
     slug: "elements-confiance-site-professionnel",
+    seoTitle: "Ce qui inspire confiance sur un site professionnel",
     title: "Les éléments qui inspirent confiance sur un site professionnel",
     metaDescription:
-      "La confiance se construit en quelques secondes sur un site internet. Découvrez les éléments concrets qui rassurent vos visiteurs et les incitent à passer à l'action.",
+      "La confiance se joue en quelques secondes. Les éléments concrets qui rassurent vos visiteurs et les incitent à vous contacter.",
     category: "Webdesign",
     image: {
-      url: "https://images.unsplash.com/photo-1648134859196-3aa762e9440d?auto=format&fit=crop&w=1200&q=80",
+      url: "/images/blog/1648134859196-3aa762e9440d.webp",
       alt: "Maquette d'interface de site web affichée sur un écran d'ordinateur",
     },
     author: "Geoffrey — Studio Digital Nova",
@@ -654,10 +664,10 @@ export const ARTICLES: Article[] = [
     slug: "ameliorer-visibilite-locale-google",
     title: "Comment améliorer sa visibilité locale grâce à Google",
     metaDescription:
-      "Fiche Google Business Profile, avis clients, site internet : découvrez les leviers concrets pour améliorer votre visibilité locale sur Google et attirer plus de clients près de chez vous.",
+      "Fiche Google Business Profile, avis clients, site internet : les leviers concrets pour être trouvé par les clients près de chez vous.",
     category: "SEO",
     image: {
-      url: "https://images.unsplash.com/photo-1587573578274-184d5ccabfc3?auto=format&fit=crop&w=1200&q=80",
+      url: "/images/blog/1587573578274-184d5ccabfc3.webp",
       alt: "Smartphone affichant une carte de géolocalisation, illustrant le référencement local",
     },
     author: "Geoffrey — Studio Digital Nova",
@@ -768,12 +778,13 @@ export const ARTICLES: Article[] = [
 
   {
     slug: "site-indispensable-malgre-reseaux-sociaux",
+    seoTitle: "Site internet ou réseaux sociaux : pourquoi les deux",
     title: "Pourquoi un site internet reste indispensable malgré les réseaux sociaux",
     metaDescription:
-      "Les réseaux sociaux ne remplacent pas un site internet. Découvrez pourquoi les deux sont complémentaires, et pourquoi miser uniquement sur les réseaux sociaux comporte des risques réels.",
+      "Les réseaux sociaux ne remplacent pas un site internet. Pourquoi les deux sont complémentaires, et les risques à ne miser que sur l'un.",
     category: "Marketing",
     image: {
-      url: "https://images.unsplash.com/photo-1611926653458-09294b3142bf?auto=format&fit=crop&w=1200&q=80",
+      url: "/images/blog/1611926653458-09294b3142bf.webp",
       alt: "Smartphone affichant des applications de réseaux sociaux à côté d'un ordinateur portable",
     },
     author: "Geoffrey — Studio Digital Nova",
@@ -863,10 +874,10 @@ export const ARTICLES: Article[] = [
     slug: "questions-avant-projet-digital",
     title: "Les questions à se poser avant de lancer son projet digital",
     metaDescription:
-      "Avant de vous lancer dans un projet de site internet, certaines questions méritent une réflexion sincère. Voici celles qui font vraiment la différence entre un projet réussi et un projet regretté.",
+      "Certaines questions méritent une réflexion sincère avant de lancer un projet de site. Celles qui font la différence entre réussite et regret.",
     category: "Conseils TPE",
     image: {
-      url: "https://images.unsplash.com/photo-1541140911322-98afe66ea6da?auto=format&fit=crop&w=1200&q=80",
+      url: "/images/blog/1541140911322-98afe66ea6da.webp",
       alt: "Carnet de planification ouvert pour préparer les questions avant un projet digital",
     },
     author: "Geoffrey — Studio Digital Nova",
@@ -957,12 +968,13 @@ export const ARTICLES: Article[] = [
 
   {
     slug: "transformer-visiteurs-clients",
+    seoTitle: "Transformer les visiteurs de votre site en clients",
     title: "Comment transformer les visiteurs de votre site en futurs clients",
     metaDescription:
-      "Attirer des visiteurs ne suffit pas : encore faut-il les convertir. Découvrez les leviers concrets pour transformer les visiteurs de votre site internet en demandes de devis et en clients.",
+      "Attirer des visiteurs ne suffit pas. Les leviers concrets pour transformer le trafic de votre site en demandes de devis et en clients.",
     category: "Marketing",
     image: {
-      url: "https://images.unsplash.com/photo-1700190827565-7b6247de4838?auto=format&fit=crop&w=1200&q=80",
+      url: "/images/blog/1700190827565-7b6247de4838.webp",
       alt: "Client satisfait effectuant un achat en ligne depuis son ordinateur",
     },
     author: "Geoffrey — Studio Digital Nova",
@@ -1065,12 +1077,13 @@ export const ARTICLES: Article[] = [
 
   {
     slug: "tendances-webdesign-experience-utilisateur",
+    seoTitle: "Tendances webdesign : celles qui changent vraiment l'UX",
     title: "Les tendances du webdesign qui améliorent réellement l'expérience utilisateur",
     metaDescription:
-      "Toutes les tendances webdesign ne se valent pas. Découvrez celles qui améliorent réellement l'expérience utilisateur, et celles à ne pas suivre aveuglément pour votre site professionnel.",
+      "Toutes les tendances webdesign ne se valent pas. Celles qui améliorent vraiment l'expérience, et celles à ne pas suivre aveuglément.",
     category: "Webdesign",
     image: {
-      url: "https://images.unsplash.com/photo-1750056393349-dfaf647f7400?auto=format&fit=crop&w=1200&q=80",
+      url: "/images/blog/1750056393349-dfaf647f7400.webp",
       alt: "Écran affichant une interface de design web moderne et épurée",
     },
     author: "Geoffrey — Studio Digital Nova",
@@ -1163,12 +1176,13 @@ export const ARTICLES: Article[] = [
 
   {
     slug: "wordpress-ou-site-sur-mesure",
+    seoTitle: "WordPress ou site sur mesure : que choisir ?",
     title: "WordPress ou site sur mesure : quel choix pour votre site professionnel ?",
     metaDescription:
-      "WordPress ou développement sur mesure : quelles différences réelles pour votre site professionnel ? Comparatif objectif pour faire le bon choix selon votre activité.",
+      "WordPress ou développement sur mesure : les différences réelles. Comparatif objectif pour choisir selon votre activité et votre budget.",
     category: "Création de site",
     image: {
-      url: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=1200&q=80",
+      url: "/images/blog/1498050108023-c5249f4df085.webp",
       alt: "Ordinateur portable affichant du code de développement web",
     },
     author: "Geoffrey — Studio Digital Nova",
@@ -1289,12 +1303,13 @@ export const ARTICLES: Article[] = [
 
   {
     slug: "maintenance-site-internet-apres-mise-en-ligne",
+    seoTitle: "Maintenance de site internet : ce qu'il faut prévoir",
     title: "Maintenance de site internet : ce qu'il faut absolument prévoir après la mise en ligne",
     metaDescription:
-      "Un site internet n'est jamais vraiment « terminé ». Découvrez ce qu'implique réellement la maintenance d'un site professionnel, et pourquoi l'anticiper évite bien des mauvaises surprises.",
+      "Un site n'est jamais vraiment « terminé ». Ce qu'implique la maintenance d'un site professionnel, et pourquoi l'anticiper évite des ennuis.",
     category: "Conseils TPE",
     image: {
-      url: "https://images.unsplash.com/photo-1591439657848-9f4b9ce436b9?auto=format&fit=crop&w=1200&q=80",
+      url: "/images/blog/1591439657848-9f4b9ce436b9.webp",
       alt: "Écran d'ordinateur affichant une mise à jour de sécurité logicielle",
     },
     author: "Geoffrey — Studio Digital Nova",

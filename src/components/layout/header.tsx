@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import Image from "next/image"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Dialog } from "@base-ui/react/dialog"
@@ -13,6 +14,14 @@ import { Icon } from "@/components/ui/icon"
 import { useIsMobile } from "@/hooks/use-is-mobile"
 import { cn } from "@/lib/utils"
 
+/*
+  Deux déclinaisons du même logo. Le fichier « footer » est la version claire
+  du pack de marque : sur ce site, la seule zone réellement sombre est l'entête
+  posée au-dessus du hero de l'accueil.
+*/
+const LOGO_SOMBRE = "/brand/logo-studio-digital-nova-header.webp"
+const LOGO_CLAIR = "/brand/logo-studio-digital-nova-footer.webp"
+
 const NAV_ITEMS = [
   { label: "Mes services", href: "/#services" },
   { label: "À propos", href: "/#a-propos" },
@@ -21,6 +30,26 @@ const NAV_ITEMS = [
   { label: "Cas client", href: "/#cas-client" },
   { label: "Blog", href: "/blog" },
   { label: "FAQ", href: "/faq" },
+]
+
+/*
+  Les pages de prestation n'étaient atteignables que par le pied de page — soit
+  seize écrans de défilement sur mobile. Elles rejoignent le tiroir, dans
+  l'espace qui y était vide.
+*/
+const PRESTATIONS = [
+  { label: "Site vitrine", href: "/creation-site-vitrine/" },
+  { label: "Site one page", href: "/creation-site-one-page/" },
+  { label: "Refonte", href: "/refonte-site-internet/" },
+  { label: "Référencement", href: "/referencement-seo/" },
+  { label: "Maintenance", href: "/maintenance-site-internet/" },
+  { label: "Tarifs et prix", href: "/tarifs-creation-site-internet/" },
+]
+
+const SECTEURS = [
+  { label: "Restaurant", href: "/site-internet-restaurant/" },
+  { label: "Artisan", href: "/site-internet-artisan/" },
+  { label: "TPE", href: "/site-internet-tpe/" },
 ]
 
 function Header() {
@@ -85,23 +114,38 @@ function Header() {
               },
             }}
           >
-            <span
-              className={cn(
-                "flex size-10 items-center justify-center rounded-md text-eyebrow transition-colors duration-300 ease-nova",
-                overDarkHero
-                  ? "bg-paper text-ink"
-                  : "bg-ink text-paper"
-              )}
-            >
-              SDN
-            </span>
-            <span
-              className={cn(
-                "font-heading text-[1.0625rem] tracking-[0.005em] transition-colors duration-300 ease-nova",
-                overDarkHero ? "text-on-ink" : "text-ink"
-              )}
-            >
-              Studio Digital Nova
+            {/*
+              Les deux versions sont superposées et fondues l'une dans l'autre :
+              l'entête passe au-dessus du hero sombre sur l'accueil, et un seul
+              fichier ne peut pas rester lisible sur les deux fonds. Le bloc a
+              une hauteur fixe pour que l'entête ne change jamais de taille.
+
+              `alt` est vide et le nom du studio est donné au lien lui-même :
+              sinon un lecteur d'écran annoncerait deux fois la même chose.
+            */}
+            <span className="relative block h-8 w-[124px] shrink-0 sm:h-9 sm:w-[140px]">
+              <Image
+                src={LOGO_SOMBRE}
+                alt=""
+                width={847}
+                height={218}
+                priority
+                className={cn(
+                  "absolute inset-0 h-full w-full object-contain object-left transition-opacity duration-300 ease-nova",
+                  overDarkHero ? "opacity-0" : "opacity-100"
+                )}
+              />
+              <Image
+                src={LOGO_CLAIR}
+                alt=""
+                width={467}
+                height={129}
+                priority
+                className={cn(
+                  "absolute inset-0 h-full w-full object-contain object-left transition-opacity duration-300 ease-nova",
+                  overDarkHero ? "opacity-100" : "opacity-0"
+                )}
+              />
             </span>
           </motion.a>
 
@@ -275,43 +319,68 @@ function Header() {
           )}
         >
           <div className="mb-6 flex items-center justify-between">
-            <span className="flex items-center gap-2.5">
-              <span className="flex size-9 items-center justify-center rounded-md bg-ink text-eyebrow text-paper">
-                SDN
-              </span>
-              <span className="font-heading text-[1.0625rem] text-ink">
-                Studio Digital Nova
-              </span>
-            </span>
+            {/* Le tiroir est sur fond clair : version sombre du logo. */}
+            <Image
+              src={LOGO_SOMBRE}
+              alt="Studio Digital Nova"
+              width={847}
+              height={218}
+              className="h-8 w-auto"
+            />
             <Dialog.Close
               aria-label="Fermer le menu"
-              className="flex size-10 items-center justify-center rounded-md text-text-secondary transition-colors duration-200 ease-nova hover:bg-secondary hover:text-accent-strong"
+              className="flex size-11 items-center justify-center rounded-md text-text-secondary transition-colors duration-200 ease-nova hover:bg-secondary hover:text-accent-strong"
             >
               <Icon icon={X} className="size-5" />
             </Dialog.Close>
           </div>
 
-          <nav className="flex flex-col">
-            {NAV_ITEMS.map((item) => (
-              <a
-                key={item.label}
-                href={item.href}
-                onClick={() => setMobileOpen(false)}
-                className="group flex items-center justify-between border-b border-border py-3.5 text-body font-medium text-text transition-colors duration-200 ease-nova hover:text-accent-strong"
-              >
-                {item.label}
-                <Icon
-                  icon={ArrowRight}
-                  className="size-3.5 -translate-x-1 text-text-muted opacity-0 transition-all duration-200 ease-nova group-hover:translate-x-0 group-hover:text-accent group-hover:opacity-100"
-                />
-              </a>
+          {/* Le tiroir défile si le contenu dépasse ; les deux boutons restent en pied. */}
+          <div className="-mr-2 min-h-0 flex-1 overflow-y-auto pr-2">
+            <nav className="flex flex-col">
+              {NAV_ITEMS.map((item) => (
+                <a
+                  key={item.label}
+                  href={item.href}
+                  onClick={() => setMobileOpen(false)}
+                  className="group flex items-center justify-between border-b border-border py-3.5 text-body font-medium text-text transition-colors duration-200 ease-nova hover:text-accent-strong"
+                >
+                  {item.label}
+                  <Icon
+                    icon={ArrowRight}
+                    className="size-3.5 -translate-x-1 text-text-muted opacity-0 transition-all duration-200 ease-nova group-hover:translate-x-0 group-hover:text-accent group-hover:opacity-100"
+                  />
+                </a>
+              ))}
+            </nav>
+
+            {[
+              { titre: "Prestations", liens: PRESTATIONS },
+              { titre: "Secteurs", liens: SECTEURS },
+            ].map((groupe) => (
+              <div key={groupe.titre} className="mt-7">
+                <p className="text-eyebrow uppercase text-text-muted">{groupe.titre}</p>
+                <ul className="mt-3 grid grid-cols-2 gap-x-3">
+                  {groupe.liens.map((lien) => (
+                    <li key={lien.href}>
+                      <Link
+                        href={lien.href}
+                        onClick={() => setMobileOpen(false)}
+                        className="flex min-h-11 items-center text-small text-text-secondary transition-colors duration-200 ease-nova hover:text-accent-strong"
+                      >
+                        {lien.label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             ))}
-          </nav>
+          </div>
 
           <Link
             href="/audit-gratuit/"
             onClick={() => setMobileOpen(false)}
-            className="group mt-auto pt-6"
+            className="group mt-6 shrink-0 pt-6"
           >
             <Button variant="outline" className="w-full">
               <Icon icon={Gauge} />
@@ -319,7 +388,7 @@ function Header() {
             </Button>
           </Link>
 
-          <Link href="/#contact" onClick={() => setMobileOpen(false)} className="group mt-3">
+          <Link href="/#contact" onClick={() => setMobileOpen(false)} className="group mt-3 shrink-0">
             <Button variant="primary" className="w-full">
               Demander un devis
               <Icon

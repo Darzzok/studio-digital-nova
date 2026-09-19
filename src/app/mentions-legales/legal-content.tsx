@@ -1,9 +1,11 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { Scale } from "lucide-react";
 
 import { Card } from "@/components/ui/card";
 import { Heading } from "@/components/ui/heading";
+import { PageHero } from "@/components/ui/page-hero";
 import { Section } from "@/components/ui/section";
 import { useFloatIn } from "@/lib/motion";
 
@@ -66,36 +68,18 @@ function LegalContent() {
   const floatIn = useFloatIn();
 
   return (
-    <Section>
-      <div className="mx-auto flex max-w-2xl flex-col items-center text-center md:max-w-3xl">
+    <>
+      <PageHero eyebrow="Informations légales" icon={Scale} title={<>Mentions légales</>} lead={<>Les informations légales relatives à l&apos;édition et à l&apos;hébergement de ce site.</>} />
+
+      <Section>
         <motion.div
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, amount: 0.4 }}
-          variants={floatIn(0, { y: -60, scale: 0.94 })}
-        >
-          <Heading variant="h1">Mentions légales</Heading>
-        </motion.div>
-
-        <motion.p
-          className="measure mt-6 text-lead text-text-secondary"
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, amount: 0.4 }}
-          variants={floatIn(0.1, { y: 40 })}
-        >
-          Les informations légales relatives à l&apos;édition et à l&apos;hébergement de ce site.
-        </motion.p>
-      </div>
-
-      <motion.div
-        className="mx-auto mt-[var(--section-gap)] max-w-3xl"
+        className="mx-auto max-w-3xl"
         initial="hidden"
         whileInView="visible"
-        viewport={{ once: true, amount: 0.2 }}
-        variants={floatIn(0.15, { y: 100 })}
+        viewport={{ once: true, amount: 0 }}
+        variants={floatIn(0.05, { y: 48 })}
       >
-        <Card className="flex flex-col gap-8 text-left">
+        <Card className="flex flex-col gap-8">
           {SECTIONS.map((section) => (
             <div key={section.title}>
               <Heading variant="h3">{section.title}</Heading>
@@ -104,7 +88,8 @@ function LegalContent() {
           ))}
         </Card>
       </motion.div>
-    </Section>
+      </Section>
+    </>
   );
 }
 

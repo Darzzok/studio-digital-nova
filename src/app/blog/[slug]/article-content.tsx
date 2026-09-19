@@ -1,7 +1,6 @@
 "use client"
 
 import { useRef, useState } from "react"
-import Image from "next/image"
 import Link from "next/link"
 import { motion, useMotionValueEvent, useScroll, useSpring } from "framer-motion"
 import type { MotionValue } from "framer-motion"
@@ -19,6 +18,7 @@ import {
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { NovaImage } from "@/components/ui/nova-image"
 import { Card } from "@/components/ui/card"
 import { Heading } from "@/components/ui/heading"
 import { Icon } from "@/components/ui/icon"
@@ -32,6 +32,7 @@ import {
   type Article,
   type ArticleBlock,
 } from "@/lib/articles"
+import { offresLieesAArticle } from "@/lib/offres"
 
 const CALLOUT_TONE: Record<string, string> = {
   primary: "border-l-mineral bg-mineral/6",
@@ -77,10 +78,9 @@ function ArticleHeroIllustration({ article }: { article: Article }) {
     <div className="relative mx-auto w-full max-w-md">
       <Card padding="none" className="relative overflow-hidden">
         <div className="relative h-64 w-full sm:h-72">
-          <Image
+          <NovaImage
             src={article.image.url}
             alt={article.image.alt}
-            fill
             sizes="(min-width: 1024px) 480px, 90vw"
             priority
             className="object-cover"
@@ -117,7 +117,7 @@ function TableOfContents({
       </div>
 
       <nav>
-        <ul className="flex flex-col gap-1">
+        <ul className="flex flex-col gap-1 text-left">
           {toc.map((item, index) => {
             const isActive = item.id === activeId
             return (
@@ -158,7 +158,7 @@ function ArticleBlockRenderer({ block }: { block: ArticleBlock }) {
       return <Heading variant="h3">{block.text}</Heading>
     case "list":
       return (
-        <ul className="measure mx-auto flex w-full flex-col gap-3 text-left">
+        <ul className="measure card-list flex flex-col gap-3">
           {block.items.map((item) => (
             <li key={item} className="flex items-start gap-3 text-body text-text-secondary">
               <Icon icon={Circle} className="mt-2.5 size-1.5 shrink-0 fill-current text-accent" />
@@ -186,7 +186,7 @@ function ArticleBlockRenderer({ block }: { block: ArticleBlock }) {
       return (
         <Card tone="ivory" padding="md" className="flex flex-col items-center text-center">
           <p className="mb-5 text-eyebrow uppercase text-text">{block.title}</p>
-          <div className="flex w-full flex-col gap-3 text-left">
+          <div className="card-list flex flex-col gap-3">
             {block.items.map((item) => (
               <div key={item} className="flex items-start gap-2.5">
                 <span className="mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full bg-accent/15 text-accent-strong">
@@ -216,15 +216,14 @@ function RelatedArticleCard({ article, index }: { article: Article; index: numbe
       <Link href={`/blog/${article.slug}`}>
         <Card padding="none" interactive className="group relative flex h-full flex-col gap-0 overflow-hidden">
           <div className="relative h-36 w-full overflow-hidden border-b border-border">
-            <Image
+            <NovaImage
               src={article.image.url}
               alt={article.image.alt}
-              fill
               sizes="(min-width: 1024px) 320px, 90vw"
               className="scale-[1.02] object-cover transition-transform duration-[900ms] ease-editorial group-hover:-translate-y-1.5 group-hover:scale-[1.06]"
             />
           </div>
-          <div className="flex flex-1 flex-col p-5 text-left">
+          <div className="flex flex-1 flex-col items-center p-5">
             <CardIndex value={String(index + 1).padStart(2, "0")} />
             <Badge variant="outline" className="mt-4">{article.category}</Badge>
             <h3 className="mt-3 font-heading text-body text-text transition-colors duration-300 ease-nova group-hover:text-accent-strong">{article.title}</h3>
@@ -270,6 +269,7 @@ function ArticleContent({ article }: { article: Article }) {
     .filter((block): block is Extract<ArticleBlock, { type: "heading" }> => block.type === "heading")
     .map((block) => ({ id: block.id, text: block.text }))
   const related = getRelatedArticles(article)
+  const offresLiees = offresLieesAArticle(article.slug, article.category)
   const articleRef = useRef<HTMLElement | null>(null)
   const { activeId, progress } = useReadingProgress(articleRef, toc.map((item) => item.id))
 
@@ -404,6 +404,46 @@ function ArticleContent({ article }: { article: Article }) {
           </aside>
         </div>
       </Section>
+
+      {/*
+        Maillage contextuel vers les prestations. Le pied de page pointe déjà
+        vers les neuf pages d'offre, mais à l'identique partout : un lien posé
+        dans le sujet de l'article vaut nettement mieux, pour le lecteur comme
+        pour le référencement.
+      */}
+      {offresLiees.length > 0 && (
+        <Section className="bg-surface" spacing="sm">
+          <div className="mx-auto max-w-3xl">
+            <p className="text-center text-eyebrow uppercase text-text-muted">
+              La prestation correspondante
+            </p>
+            <ul className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {offresLiees.map((offre) => (
+                <li key={offre.slug}>
+                  <Link href={`/${offre.slug}/`} className="group block h-full">
+                    <Card padding="md" interactive className="flex h-full flex-col">
+                      <p className="text-eyebrow uppercase text-text-muted">{offre.eyebrow}</p>
+                      <h3 className="mt-3 font-heading text-h3 text-text transition-colors duration-200 ease-nova group-hover:text-accent-strong">
+                        {offre.navLabel ?? offre.title}
+                      </h3>
+                      <p className="mt-2 flex-1 text-small text-text-secondary">
+                        {offre.description}
+                      </p>
+                      <span className="mx-auto mt-5 inline-flex items-center gap-2 text-small font-medium text-text">
+                        En savoir plus
+                        <Icon
+                          icon={ArrowRight}
+                          className="size-4 text-accent transition-transform duration-300 ease-nova group-hover:translate-x-1"
+                        />
+                      </span>
+                    </Card>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </Section>
+      )}
 
       {related.length > 0 && (
         <Section spacing="sm">

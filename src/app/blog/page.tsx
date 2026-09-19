@@ -8,14 +8,14 @@ import { siteConfig } from "@/lib/site";
 import { BlogContent } from "./blog-content";
 
 export const metadata: Metadata = {
-  title: "Blog — Conseils et guides pour votre site internet",
+  title: { absolute: "Blog — Conseils pour votre site internet" },
   description:
     "Conseils pratiques, guides et ressources pour développer votre présence en ligne et faire évoluer votre activité.",
   alternates: {
     canonical: "/blog",
   },
   openGraph: {
-    title: "Blog — Conseils et guides pour votre site internet",
+    title: "Blog — Conseils pour votre site internet",
     description:
       "Conseils pratiques, guides et ressources pour développer votre présence en ligne et faire évoluer votre activité.",
     url: `${siteConfig.url}/blog/`,
@@ -24,7 +24,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Blog — Conseils et guides pour votre site internet",
+    title: "Blog — Conseils pour votre site internet",
     description:
       "Conseils pratiques, guides et ressources pour développer votre présence en ligne et faire évoluer votre activité.",
   },
@@ -32,7 +32,7 @@ export const metadata: Metadata = {
 
 export default function BlogPage() {
   return (
-    <main className="flex-1">
+    <main id="contenu" className="flex-1">
       <JsonLd
         data={[
           blogJsonLd(ARTICLES),

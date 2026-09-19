@@ -10,13 +10,13 @@ const description =
   "Délais, tarifs, WordPress, SEO local : toutes les réponses aux questions des TPE, artisans et commerçants avant de créer leur site internet.";
 
 export const metadata: Metadata = {
-  title: "FAQ — Questions fréquentes sur la création de site internet",
+  title: "FAQ — Créer son site internet",
   description,
   alternates: {
     canonical: "/faq",
   },
   openGraph: {
-    title: "FAQ — Questions fréquentes sur la création de site internet",
+    title: "FAQ — Créer son site internet",
     description,
     url: `${siteConfig.url}/faq/`,
     type: "website",
@@ -24,14 +24,14 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "FAQ — Questions fréquentes sur la création de site internet",
+    title: "FAQ — Créer son site internet",
     description,
   },
 };
 
 export default function FaqPage() {
   return (
-    <main className="flex-1">
+    <main id="contenu" className="flex-1">
       <JsonLd
         data={[
           faqPageJsonLd(SITE_FAQ_ITEMS),

@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import Image from "next/image"
 import Link from "next/link"
 import { motion, useInView, useReducedMotion, useScroll, useSpring, useTransform } from "framer-motion"
 import { ArrowRight } from "lucide-react"
@@ -10,6 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Container } from "@/components/ui/container"
 import { Heading } from "@/components/ui/heading"
+import { NovaImage } from "@/components/ui/nova-image"
 import { Icon } from "@/components/ui/icon"
 import { EASE_NOVA, useFloatIn } from "@/lib/motion"
 
@@ -59,10 +59,9 @@ function Hero() {
         className="absolute inset-0"
         style={reduce ? undefined : { y: imageY, scale: imageScale }}
       >
-        <Image
-          src="https://images.unsplash.com/photo-1568918460973-fe7f54f82482?auto=format&fit=crop&w=2400&q=80"
+        <NovaImage
+          src="/images/blog/1568918460973-fe7f54f82482.webp"
           alt=""
-          fill
           priority
           sizes="100vw"
           className="object-cover"

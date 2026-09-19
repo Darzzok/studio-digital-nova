@@ -34,7 +34,7 @@ export const metadata: Metadata = {
 
 export default function Home() {
   return (
-    <main className="flex-1">
+    <main id="contenu" className="flex-1">
       <JsonLd data={professionalServiceJsonLd()} />
       <Hero />
       <Services />

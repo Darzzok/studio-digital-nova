@@ -1,6 +1,6 @@
 "use client"
 
-import { Fragment, useEffect, useState } from "react"
+import { Fragment, cloneElement, isValidElement, useEffect, useMemo, useState, useSyncExternalStore } from "react"
 import type { ReactNode } from "react"
 import Link from "next/link"
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion"
@@ -186,8 +186,23 @@ function FormField({
       <label htmlFor={htmlFor} className="text-eyebrow uppercase text-text-secondary">
         {label}
       </label>
-      {children}
-      {error && <p className="text-small text-error">{error}</p>}
+      {/*
+        Le message d'erreur est rattaché au champ : `aria-invalid` signale
+        l'état, `aria-describedby` fait lire le motif. Sans ça, un lecteur
+        d'écran annonce un champ valide alors qu'il est en erreur.
+        `role="alert"` fait annoncer le message dès son apparition.
+      */}
+      {isValidElement<{ "aria-invalid"?: boolean; "aria-describedby"?: string }>(children)
+        ? cloneElement(children, {
+            "aria-invalid": error ? true : undefined,
+            "aria-describedby": error ? `${htmlFor}-erreur` : undefined,
+          })
+        : children}
+      {error && (
+        <p id={`${htmlFor}-erreur`} role="alert" className="text-small text-error">
+          {error}
+        </p>
+      )}
     </div>
   )
 }
@@ -313,7 +328,7 @@ function StepNeeds({ value, onToggle }: { value: NeedId[]; onToggle: (id: NeedId
               padding="none"
               interactive
               className={cn(
-                "flex items-center gap-3 p-4",
+                "flex items-center gap-3 p-4 text-left",
                 selected && "border-ink bg-secondary"
               )}
             >
@@ -493,13 +508,42 @@ function Confirmation({ data, reduce }: { data: ConfiguratorData; reduce: boolea
 /* Section principale                                                       */
 /* ------------------------------------------------------------------------ */
 
+/** Relit le brouillon éventuel. Retourne `null` si rien d'exploitable. */
+function readStoredDraft(): PersistedState | null {
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw) as PersistedState
+    if (parsed.offer || parsed.needs?.length || parsed.name) return parsed
+    return null
+  } catch {
+    // localStorage indisponible — on ignore silencieusement.
+    return null
+  }
+}
+
 function Contact() {
   const reduce = Boolean(useReducedMotion())
   const floatIn = useFloatIn()
 
-  const [hydrated, setHydrated] = useState(false)
-  const [showResume, setShowResume] = useState(false)
+  /*
+    Savoir si l'on est côté navigateur, sans provoquer de rendu en cascade :
+    `useSyncExternalStore` renvoie `false` au rendu serveur et `true` dès
+    l'hydratation. C'est le remplaçant propre du `setState` dans un effet,
+    que React 19 signale désormais comme une erreur.
+  */
+  const hydrated = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  )
+
+  /* Brouillon éventuellement laissé lors d'une visite précédente. */
+  const stored = useMemo(() => (hydrated ? readStoredDraft() : null), [hydrated])
+  const [resumeDismissed, setResumeDismissed] = useState(false)
   const [savedPayload, setSavedPayload] = useState<PersistedState | null>(null)
+  const draft = savedPayload ?? stored
+  const showResume = Boolean(draft) && !resumeDismissed
 
   const [data, setData] = useState<ConfiguratorData>(EMPTY_DATA)
   const [step, setStep] = useState(0)
@@ -509,22 +553,6 @@ function Contact() {
   const [submitted, setSubmitted] = useState(false)
   const [sending, setSending] = useState(false)
   const [sendError, setSendError] = useState<string | null>(null)
-
-  useEffect(() => {
-    try {
-      const raw = window.localStorage.getItem(STORAGE_KEY)
-      if (raw) {
-        const parsed = JSON.parse(raw) as PersistedState
-        if (parsed.offer || parsed.needs?.length || parsed.name) {
-          setSavedPayload(parsed)
-          setShowResume(true)
-        }
-      }
-    } catch {
-      // localStorage indisponible — on ignore silencieusement.
-    }
-    setHydrated(true)
-  }, [])
 
   useEffect(() => {
     if (!hydrated || submitted || showResume) return
@@ -618,12 +646,12 @@ function Contact() {
   }
 
   function handleResume() {
-    if (!savedPayload) return
-    const { step: savedStep, maxStep: savedMax, ...rest } = savedPayload
+    if (!draft) return
+    const { step: savedStep, maxStep: savedMax, ...rest } = draft
     setData(rest)
     setStep(savedStep ?? 0)
     setMaxStep(savedMax ?? savedStep ?? 0)
-    setShowResume(false)
+    setResumeDismissed(true)
   }
 
   function handleRestart() {
@@ -633,7 +661,7 @@ function Contact() {
       // localStorage indisponible — on ignore silencieusement.
     }
     setSavedPayload(null)
-    setShowResume(false)
+    setResumeDismissed(true)
   }
 
   const stepVariants = {
@@ -685,7 +713,8 @@ function Contact() {
           viewport={{ once: true, amount: 0.2 }}
           variants={floatIn(0.1, { x: -160, rotate: -4 }, { damping: 30, mass: 4 })}
         >
-          <Card>
+          {/* Formulaire : les libellés de champ restent alignés à gauche. */}
+          <Card className="text-left">
             <AnimatePresence mode="wait" initial={false}>
               {showResume ? (
                 <motion.div
@@ -881,7 +910,7 @@ function Contact() {
               <Card
                 tone="ivory"
                 padding="sm"
-                className="group flex flex-col text-left transition-colors duration-500 ease-nova hover:border-border-strong"
+                className="group flex flex-col transition-colors duration-500 ease-nova hover:border-border-strong"
               >
                 <div className="flex items-center gap-4">
                   <CardIndex value={String(index + 1).padStart(2, "0")} className="flex-1" />

@@ -1,10 +1,10 @@
 "use client"
 
-import { useState } from "react"
+import Link from "next/link"
 import {
   ArrowLeftRight,
+  ArrowRight,
   Check,
-  ChevronDown,
   Globe,
   LayoutTemplate,
   Layers,
@@ -16,19 +16,18 @@ import {
 import { motion, useReducedMotion } from "framer-motion"
 
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Heading } from "@/components/ui/heading"
 import { Icon } from "@/components/ui/icon"
 import { CHIP, CardIndex, DrawRule } from "@/components/ui/nova"
 import { Section } from "@/components/ui/section"
-import { useIsMobile } from "@/hooks/use-is-mobile"
 import { EASE_NOVA, useFloatIn } from "@/lib/motion"
 import { cn } from "@/lib/utils"
 
 type FloatFrom = { x?: number; y?: number; rotate?: number; scale?: number }
 
-const FRAME = "relative h-40 w-full overflow-hidden rounded-lg border border-border bg-background"
+/* L'aperçu est décoratif : il cède la place au texte sur petit écran. */
+const FRAME = "relative h-28 w-full overflow-hidden rounded-lg border border-border bg-background sm:h-40"
 
 type PreviewProps = { reduce: boolean }
 
@@ -243,6 +242,7 @@ function ServerPreview({ reduce }: PreviewProps) {
 const SERVICES = [
   {
     title: "Site One Page",
+    href: "/creation-site-one-page/",
     description: (
       <>
         Une page unique et percutante pour présenter votre activité{" "}
@@ -260,6 +260,7 @@ const SERVICES = [
   },
   {
     title: "Site Vitrine",
+    href: "/creation-site-vitrine/",
     description: (
       <>
         Un site <strong className="font-semibold text-text">multi-pages complet</strong> pour
@@ -277,6 +278,7 @@ const SERVICES = [
   },
   {
     title: "Refonte de site",
+    href: "/refonte-site-internet/",
     description: (
       <>
         Redonnez <strong className="font-semibold text-text">une seconde vie</strong> à votre
@@ -294,6 +296,7 @@ const SERVICES = [
   },
   {
     title: "SEO",
+    href: "/referencement-seo/",
     description: (
       <>
         Une optimisation fine pour être{" "}
@@ -311,6 +314,7 @@ const SERVICES = [
   },
   {
     title: "Maintenance",
+    href: "/maintenance-site-internet/",
     description: (
       <>
         Mises à jour et suivi technique pour un site{" "}
@@ -328,6 +332,7 @@ const SERVICES = [
   },
   {
     title: "Hébergement & mise en ligne",
+    href: "/maintenance-site-internet/",
     description: (
       <>
         Un hébergement <strong className="font-semibold text-text">fiable et sécurisé</strong>,
@@ -345,17 +350,10 @@ const SERVICES = [
   },
 ]
 
-const INITIAL_VISIBLE_SERVICES = 3
-
 function Services() {
   const reduce = useReducedMotion()
-  const isMobile = useIsMobile()
   const floatIn = useFloatIn()
-  const [showAll, setShowAll] = useState(false)
 
-  const visibleServices =
-    isMobile && !showAll ? SERVICES.slice(0, INITIAL_VISIBLE_SERVICES) : SERVICES
-  const hiddenCount = SERVICES.length - INITIAL_VISIBLE_SERVICES
 
   return (
     <Section id="services" className="scroll-mt-24 bg-surface">
@@ -395,8 +393,31 @@ function Services() {
         </motion.p>
       </div>
 
-      <div className="mt-[var(--section-gap)] grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-        {visibleServices.map((service, index) => {
+      {/*
+        Sous 640 px, les six services se parcourent en glissant. Cela remplace
+        le « voir les 3 autres » : plus de clic pour découvrir la moitié de
+        l'offre, et la section ne fait plus qu'un écran au lieu de trois.
+
+        L'entrée est portée par le RAIL, pas par chaque carte. Auparavant chaque
+        carte avait son propre `whileInView` : en glissant horizontalement, elles
+        rejouaient leur animation une à une et semblaient bouger dans tous les
+        sens. Le rendu serveur ignore la largeur d'écran et applique l'état caché
+        « desktop » (x ±180, rotate ±6), ce qui rendait le saut d'autant plus
+        visible. Désormais : une seule entrée en cascade quand la section arrive
+        à l'écran, puis les cartes ne bougent plus.
+      */}
+      <motion.div
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.15 }}
+        variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.08 } } }}
+        className={cn(
+          "mt-[var(--section-gap)]",
+          "rail-mobile -mx-4 gap-4 px-4 pb-2",
+          "sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-5 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-3"
+        )}
+      >
+        {SERVICES.map((service, index) => {
           const column = index % 3
           const from: FloatFrom =
             column === 0
@@ -408,15 +429,13 @@ function Services() {
           return (
             <motion.div
               key={service.title}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, amount: 0.3 }}
+              className="w-[85vw] shrink-0 snap-center sm:w-auto sm:shrink"
               variants={floatIn(index * 0.12, from, { damping: 30, mass: 4 })}
             >
               <Card
                 tone="ivory"
                 padding="md"
-                className="group relative flex h-full flex-col overflow-hidden text-left transition-colors duration-500 ease-nova hover:border-border-strong"
+                className="group relative flex h-full flex-col overflow-hidden transition-colors duration-500 ease-nova hover:border-border-strong"
               >
                 {/* Ouverture éditoriale : rang, filet, pastille de service. */}
                 <div className="flex items-center gap-4">
@@ -441,13 +460,15 @@ function Services() {
                   </div>
                 </div>
 
-                <h3 className="mt-7 font-heading text-h3 text-text">{service.title}</h3>
+                <h3 className="mt-7 font-heading text-h3 text-text transition-colors duration-300 ease-nova group-hover:text-accent-strong">
+                  {service.title}
+                </h3>
 
                 <p className="mt-3 text-small text-text-secondary">{service.description}</p>
 
                 <DrawRule className="mt-6" />
 
-                <ul className="mt-5 flex w-full flex-1 flex-col gap-3">
+                <ul className="card-list mt-5 flex flex-col gap-3">
                   {service.features.map((feature, featureIndex) => (
                     <motion.li
                       key={feature}
@@ -462,31 +483,31 @@ function Services() {
                     </motion.li>
                   ))}
                 </ul>
+
+                {/*
+                  L'accès à la page dédiée est explicite. Le lien porte la zone
+                  cliquable étendue à toute la carte : le survol de n'importe quel
+                  point de la carte anime cette ligne, et un seul lien est exposé
+                  au clavier et aux lecteurs d'écran.
+                */}
+                <Link
+                  href={service.href}
+                  className="mx-auto mt-auto inline-flex w-fit items-center gap-2 pt-7 text-small font-medium text-text outline-none transition-colors duration-300 ease-nova hover:text-accent-strong focus-visible:text-accent-strong"
+                >
+                  <span className="absolute inset-0 z-10" aria-hidden />
+                  En savoir plus
+                  <span className="sr-only"> sur {service.title}</span>
+                  <Icon
+                    icon={ArrowRight}
+                    className="size-4 text-accent transition-transform duration-300 ease-nova group-hover:translate-x-1"
+                  />
+                </Link>
               </Card>
             </motion.div>
           )
         })}
-      </div>
+      </motion.div>
 
-      {isMobile && hiddenCount > 0 && (
-        <div className="mt-8 flex justify-center">
-          <Button
-            type="button"
-            variant="outline"
-            className="h-11 px-6 text-small"
-            onClick={() => setShowAll((prev) => !prev)}
-          >
-            {showAll ? "Afficher moins" : `Voir les ${hiddenCount} autres services`}
-            <motion.span
-              animate={{ rotate: showAll ? 180 : 0 }}
-              transition={{ duration: 0.2, ease: EASE_NOVA }}
-              className="flex items-center justify-center"
-            >
-              <Icon icon={ChevronDown} className="size-4" />
-            </motion.span>
-          </Button>
-        </div>
-      )}
     </Section>
   )
 }

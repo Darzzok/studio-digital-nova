@@ -1,7 +1,8 @@
 export const siteConfig = {
   name: "Studio Digital Nova",
   shortName: "Studio Digital Nova",
-  title: "Studio Digital Nova — Création de sites internet pour TPE et artisans",
+  // 57 caractères : tient entier dans les résultats Google (limite ~60).
+  title: "Studio Digital Nova — Sites internet pour TPE et artisans",
   description:
     "Sites internet modernes et rapides pour TPE, artisans et commerçants. Devis gratuit, tarifs clairs dès 690 €, livraison en quelques jours.",
   url: process.env.NEXT_PUBLIC_SITE_URL ?? "https://studiodigitalnova.fr",
@@ -19,8 +20,11 @@ export const siteConfig = {
     "site internet pas cher",
     "référencement local SEO",
   ],
-  /** Vide tant qu'aucun profil social n'est en ligne — à compléter dès leur création. */
-  social: {} as Record<string, string>,
+  /** Alimente `sameAs` dans les données structurées : relie l'entité à ses profils. */
+  social: {
+    linkedin: "https://www.linkedin.com/in/geoffrey-marechal-677417428",
+    facebook: "https://www.facebook.com/profile.php?id=61592909174137",
+  } as Record<string, string>,
 } as const;
 
 export const siteRoutes = ["/", "/audit-gratuit", "/blog", "/faq", "/mentions-legales", "/confidentialite"] as const;

@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from "react"
 import type { ReactNode } from "react"
-import Image from "next/image"
 import Link from "next/link"
 import { motion } from "framer-motion"
 import {
@@ -22,11 +21,13 @@ import {
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { NovaImage } from "@/components/ui/nova-image"
 import { Card } from "@/components/ui/card"
 import { Heading } from "@/components/ui/heading"
 import { Icon } from "@/components/ui/icon"
 import { Input } from "@/components/ui/input"
 import { CHIP, CardIndex, NovaMark } from "@/components/ui/nova"
+import { PageHero } from "@/components/ui/page-hero"
 import { Section } from "@/components/ui/section"
 import { ARTICLES, type Article } from "@/lib/articles"
 import { useFloatIn } from "@/lib/motion"
@@ -59,11 +60,17 @@ const CATEGORIES = [
 /* Sous-composants                                                          */
 /* ------------------------------------------------------------------------ */
 
+/*
+  Une pastille par coin, au même retrait des quatre côtés. Les décalages
+  irréguliers d'avant (-24 et -32 à gauche, -24 et -16 à droite, hauteurs
+  dépareillées) donnaient l'impression que certaines avaient glissé — la loupe
+  en particulier.
+*/
 const BUBBLES = [
-  { icon: Code2, className: CHIP.ink, pos: "-left-6 top-4", from: { x: -60, y: -30, rotate: -10 } },
-  { icon: Search, className: CHIP.mineral, pos: "-right-6 top-16", from: { x: 60, y: -20, rotate: 10 } },
-  { icon: Palette, className: CHIP.terracotta, pos: "-left-8 bottom-14", from: { x: -60, y: 30, rotate: -8 } },
-  { icon: BarChart3, className: CHIP.ochre, pos: "-right-4 -bottom-2", from: { x: 60, y: 30, rotate: 8 } },
+  { icon: Code2, className: CHIP.ink, pos: "-left-7 top-7", from: { x: -50, y: -24, rotate: -10 } },
+  { icon: Search, className: CHIP.mineral, pos: "-right-7 top-7", from: { x: 50, y: -24, rotate: 10 } },
+  { icon: Palette, className: CHIP.terracotta, pos: "-left-7 bottom-7", from: { x: -50, y: 24, rotate: -8 } },
+  { icon: BarChart3, className: CHIP.ochre, pos: "-right-7 bottom-7", from: { x: 50, y: 24, rotate: 8 } },
 ]
 
 function BlogHeroIllustration() {
@@ -109,57 +116,42 @@ function BlogHero() {
   const floatIn = useFloatIn()
 
   return (
-    <Section spacing="lg">
-      <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-2 lg:gap-16">
-        <div className="flex flex-col items-center text-center">
-          <motion.div
-            className="mb-4"
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, amount: 0.4 }}
-            variants={floatIn(0, { y: -40, scale: 0.85 })}
-          >
-            <Badge variant="outline">
-              <Icon icon={BookOpen} className="size-3.5 text-accent" />
-              Conseils &amp; Ressources
-            </Badge>
-          </motion.div>
-
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, amount: 0.4 }}
-            variants={floatIn(0.12, { y: -60, scale: 0.94 })}
-          >
-            <Heading variant="h1">Des conseils concrets pour votre activité</Heading>
-          </motion.div>
-
-          <motion.p
-            className="measure mt-6 text-lead text-text-secondary"
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, amount: 0.4 }}
-            variants={floatIn(0.22, { y: 40 })}
-          >
-            Découvrez des{" "}
-            <strong className="font-semibold text-text">conseils pratiques, des guides et des ressources</strong>{" "}
-            pour développer votre présence en ligne et faire évoluer votre activité. Des articles
-            écrits pour les{" "}
-            <strong className="font-semibold text-text">TPE, artisans, commerçants et indépendants</strong>{" "}
-            qui veulent avancer sereinement dans leur projet digital.
-          </motion.p>
-        </div>
-
+    <PageHero
+      eyebrow="Conseils & Ressources"
+      icon={BookOpen}
+      title="Des conseils concrets pour votre activité"
+      lead={
+        <>
+          Découvrez des{" "}
+          <strong className="font-semibold text-text">
+            conseils pratiques, des guides et des ressources
+          </strong>{" "}
+          pour développer votre présence en ligne et faire évoluer votre activité. Des articles
+          écrits pour les{" "}
+          <strong className="font-semibold text-text">
+            TPE, artisans, commerçants et indépendants
+          </strong>{" "}
+          qui veulent avancer sereinement dans leur projet digital.
+        </>
+      }
+      split
+      aside={
+        /*
+          La maquette est décorative : sur téléphone elle repoussait la liste
+          des articles d'un demi-écran sans rien apprendre au lecteur. Elle
+          revient dès 640 px, où la place existe.
+        */
         <motion.div
+          className="hidden sm:block"
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, amount: 0.2 }}
-          variants={floatIn(0.15, { x: 100, rotate: 3 }, { damping: 30, mass: 4 })}
+          variants={floatIn(0.15, { y: 60 }, { damping: 30, mass: 4 })}
         >
           <BlogHeroIllustration />
         </motion.div>
-      </div>
-    </Section>
+      }
+    />
   )
 }
 
@@ -179,11 +171,11 @@ function StatsRow() {
           <Card
             tone="ivory"
             padding="sm"
-            className="group flex h-full flex-col text-left transition-colors duration-500 ease-nova hover:border-border-strong"
+            className="group flex h-full flex-col transition-colors duration-500 ease-nova hover:border-border-strong"
           >
             <span
               className={cn(
-                "flex size-9 items-center justify-center rounded-md group-hover:-translate-y-0.5",
+                "mx-auto flex size-9 items-center justify-center rounded-md group-hover:-translate-y-0.5",
                 stat.className
               )}
             >
@@ -240,7 +232,7 @@ function CategoryFilters({ active, onSelect }: { active: string; onSelect: (cate
           key={category}
           type="button"
           variant={active === category ? "primary" : "outline"}
-          className="h-10 px-5"
+          className="h-11 px-5"
           onClick={() => onSelect(category)}
         >
           {category}
@@ -272,10 +264,9 @@ function ArticleCard({ article, index }: { article: Article; index: number }) {
           au survol, la carte elle-même ne bouge pas — elle n'est pas cliquable.
         */}
         <div className="relative h-48 w-full overflow-hidden border-b border-border">
-          <Image
+          <NovaImage
             src={article.image.url}
             alt={article.image.alt}
-            fill
             sizes="(min-width: 1024px) 400px, 90vw"
             className="scale-[1.02] object-cover transition-transform duration-[900ms] ease-editorial group-hover:-translate-y-1.5 group-hover:scale-[1.06]"
           />
@@ -290,7 +281,7 @@ function ArticleCard({ article, index }: { article: Article; index: number }) {
           </div>
         </div>
 
-        <div className="flex flex-1 flex-col p-6 text-left">
+        <div className="flex flex-1 flex-col p-6">
           <CardIndex value={String(index + 1).padStart(2, "0")} />
 
           <h3 className="mt-5 font-heading text-h3 text-text transition-colors duration-300 ease-nova group-hover:text-accent-strong">
@@ -299,7 +290,7 @@ function ArticleCard({ article, index }: { article: Article; index: number }) {
 
           <p className="mt-3 flex-1 text-small text-text-secondary">{article.excerpt}</p>
 
-          <div className="mt-6 flex items-center gap-5 border-t border-border pt-4 text-eyebrow uppercase text-text-muted">
+          <div className="mt-6 flex items-center justify-center gap-5 border-t border-border pt-4 text-eyebrow uppercase text-text-muted">
             <span className="flex items-center gap-1.5">
               <Icon icon={Clock} className="size-3" />
               {article.readingTime}

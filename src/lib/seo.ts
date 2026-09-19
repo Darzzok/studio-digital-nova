@@ -1,4 +1,5 @@
 import type { Article } from "@/lib/articles"
+import type { OffrePage } from "@/lib/offres"
 import { siteConfig } from "@/lib/site"
 
 /* ------------------------------------------------------------------------ */
@@ -54,13 +55,36 @@ function organizationJsonLd(): JsonLd {
     "@id": `${siteConfig.url}/#organization`,
     name: siteConfig.name,
     url: siteConfig.url,
-    logo: `${siteConfig.url}/favicon.ico`,
+    // Google attend une vraie image (112×112 minimum), pas une icône .ico.
+    logo: {
+      "@type": "ImageObject",
+      url: `${siteConfig.url}/apple-icon.png`,
+    },
     description: siteConfig.description,
     email: siteConfig.author.email,
-    founder: {
-      "@type": "Person",
-      name: siteConfig.author.name,
-    },
+    founder: { "@id": `${siteConfig.url}/#person` },
+    ...(sameAs.length > 0 ? { sameAs } : {}),
+  }
+}
+
+/**
+ * Le fondateur comme entité à part entière. Un site tenu par une personne
+ * gagne à ce que cette personne soit identifiable : c'est ce que Google
+ * évalue sous le terme d'expérience et d'autorité.
+ */
+function personJsonLd(): JsonLd {
+  const sameAs = Object.values(siteConfig.social)
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "Person",
+    "@id": `${siteConfig.url}/#person`,
+    name: siteConfig.author.name,
+    email: siteConfig.author.email,
+    url: siteConfig.url,
+    jobTitle: "Développeur web indépendant",
+    worksFor: { "@id": `${siteConfig.url}/#organization` },
+    knowsAbout: [...siteConfig.keywords],
     ...(sameAs.length > 0 ? { sameAs } : {}),
   }
 }
@@ -93,6 +117,40 @@ function professionalServiceJsonLd(): JsonLd {
       "@type": "Country",
       name: "France",
     },
+  }
+}
+
+/**
+ * Une prestation ou une page métier. `Service` plutôt que `Product` : il
+ * s'agit d'un service rendu, et `areaServed` porte le périmètre national.
+ * Le `FAQPage` est ajouté à part par la page, via `faqPageJsonLd`.
+ */
+function offreJsonLd(page: OffrePage): JsonLd {
+  const url = `${siteConfig.url}/${page.slug}/`
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "Service",
+    "@id": `${url}#service`,
+    name: page.title,
+    description: page.description,
+    url,
+    serviceType: page.eyebrow,
+    provider: { "@id": `${siteConfig.url}/#organization` },
+    areaServed: { "@type": "Country", name: "France" },
+    inLanguage: siteConfig.language,
+    ...(page.prix
+      ? {
+          offers: {
+            "@type": "Offer",
+            price: page.prix.montant.replace(/[^\d]/g, "") || undefined,
+            priceCurrency: "EUR",
+            description: page.prix.detail,
+            availability: "https://schema.org/InStock",
+            url: `${siteConfig.url}/#tarifs`,
+          },
+        }
+      : {}),
   }
 }
 
@@ -159,10 +217,7 @@ function blogPostingJsonLd(article: Article): JsonLd {
     image: `${url}/opengraph-image`,
     datePublished: isoDate,
     dateModified: isoDate,
-    author: {
-      "@type": "Person",
-      name: siteConfig.author.name,
-    },
+    author: { "@id": `${siteConfig.url}/#person` },
     publisher: { "@id": `${siteConfig.url}/#organization` },
     articleSection: article.category,
     keywords: [article.keywords.primary, ...article.keywords.secondary].join(", "),
@@ -173,7 +228,9 @@ function blogPostingJsonLd(article: Article): JsonLd {
 
 export {
   parseFrenchDateToIso,
+  offreJsonLd,
   organizationJsonLd,
+  personJsonLd,
   websiteJsonLd,
   professionalServiceJsonLd,
   breadcrumbJsonLd,

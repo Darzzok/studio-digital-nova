@@ -3,11 +3,11 @@
 import { useState } from "react"
 import { ArrowRight, Search, Smartphone, Sparkles, User, UserCheck } from "lucide-react"
 import { motion } from "framer-motion"
-import Image from "next/image"
 import Link from "next/link"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { NovaImage } from "@/components/ui/nova-image"
 import { Card } from "@/components/ui/card"
 import { Heading } from "@/components/ui/heading"
 import { Icon } from "@/components/ui/icon"
@@ -31,10 +31,9 @@ function AboutPortrait() {
     <Card padding="sm" className="relative overflow-hidden">
       <div className="relative aspect-4/5 w-full overflow-hidden rounded-md border border-border bg-background">
         {!imgError ? (
-          <Image
+          <NovaImage
             src="/images/geoffrey.webp"
             alt="Geoffrey, développeur web freelance et fondateur de Studio Digital Nova"
-            fill
             sizes="(min-width: 1024px) 480px, 90vw"
             /*
               La source est un paysage 960×768 recadré en 4/5 : 36 % de la
@@ -43,7 +42,6 @@ function AboutPortrait() {
               la droite. 63 % sur l'axe horizontal le ramène au milieu exact.
             */
             className="object-cover object-[63%_50%]"
-            loading="lazy"
             onError={() => setImgError(true)}
           />
         ) : (
@@ -127,7 +125,13 @@ function APropos() {
             {STRENGTHS.map((strength, index) => (
               <motion.div
                 key={strength.label}
-                className="flex flex-col items-start gap-2.5 sm:flex-row sm:items-center sm:gap-3"
+                /*
+                  Sur mobile, la pastille et son libellé s'alignaient à gauche
+                  de leur colonne : les quatre paraissaient de travers dans une
+                  section par ailleurs centrée. Ils sont désormais empilés et
+                  centrés, et reprennent leur disposition en ligne dès 640 px.
+                */
+                className="flex flex-col items-center gap-2.5 text-center sm:flex-row sm:items-center sm:gap-3 sm:text-left"
                 initial="hidden"
                 whileInView="visible"
                 viewport={{ once: true, amount: 0.4 }}

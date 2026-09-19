@@ -27,7 +27,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const url = `${siteConfig.url}/blog/${article.slug}`;
 
   return {
-    title: article.title,
+    // Titre absolu : le suffixe « | Studio Digital Nova » ajoutait 22
+    // caractères et faisait tronquer le titre dans les résultats.
+    title: { absolute: article.seoTitle ?? article.title },
     description: article.metaDescription,
     keywords: [article.keywords.primary, ...article.keywords.secondary],
     authors: [{ name: siteConfig.author.name, url: siteConfig.url }],
@@ -64,7 +66,7 @@ export default async function ArticlePage({ params }: PageProps) {
   const url = `${siteConfig.url}/blog/${article.slug}`;
 
   return (
-    <main className="flex-1">
+    <main id="contenu" className="flex-1">
       <JsonLd
         data={[
           blogPostingJsonLd(article),

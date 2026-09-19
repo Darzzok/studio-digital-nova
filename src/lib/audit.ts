@@ -71,20 +71,64 @@ export type AuditReport = {
   /** Note de confort visuel, agrégée des signaux mesurables. */
   visual: { score: number | null; signals: VisualSignal[] }
   /**
-   * Note pondérée par ce qui fait réellement perdre des clients à une petite
-   * entreprise. Ce n'est PAS un score Google : la moyenne plate des quatre
-   * catégories flatte (un 96 en « bonnes pratiques » masque un 51 en
-   * performance). Les scores bruts restent affichés à côté.
+   * Note finale : moyenne pondérée des mesures réelles, puis barème
+   * d'exigence (voir `BAREME`). Ce n'est PAS un score Google — Google note
+   * avec une courbe indulgente. Le brut reste affiché à côté, dans
+   * `overallRaw`, pour que le visiteur puisse recouper.
    */
   overall: number
+  /** La même moyenne pondérée, avant application du barème. */
+  overallRaw: number
 }
 
 /*
-  Pondération de la note globale. Assumée, et affichée au visiteur : la
-  vitesse et le confort de lecture pèsent plus lourd que la propreté
-  technique quand il s'agit de convertir un visiteur en client.
+  Pondération de la note globale. Assumée, et affichée au visiteur : ce qui
+  décide un visiteur, c'est d'abord ce qu'il voit et ressent. Le confort visuel
+  domine donc, la vitesse suit, la propreté technique compte pour peu.
 */
-const WEIGHTS = { performance: 0.4, visual: 0.3, seo: 0.2, "best-practices": 0.1 } as const
+const WEIGHTS = { visual: 0.5, performance: 0.25, seo: 0.15, "best-practices": 0.1 } as const
+
+/* -------------------------------------------------------------------------- */
+/* Barème                                                                      */
+/* -------------------------------------------------------------------------- */
+/*
+  Google note avec une courbe indulgente : un site tout juste correct y décroche
+  facilement 70. Ce barème note selon l'exigence appliquée à un site livré —
+  au-dessous de 95 sur la mesure brute, il reste du travail, et la note le dit.
+
+  Trois règles, pour que ce soit défendable :
+    1. la note ne sort JAMAIS d'ailleurs que de la mesure réelle ;
+    2. la fonction est monotone — un meilleur site obtient toujours une
+       meilleure note, jamais l'inverse ;
+    3. la table est publiée sur la page d'audit et reprise dans le PDF.
+*/
+export const BAREME: { brut: number; note: number }[] = [
+  { brut: 0, note: 0 },
+  { brut: 30, note: 8 },
+  { brut: 50, note: 20 },
+  { brut: 70, note: 40 },
+  { brut: 80, note: 55 },
+  { brut: 90, note: 75 },
+  { brut: 95, note: 90 },
+  { brut: 100, note: 100 },
+]
+
+/**
+ * Applique le barème d'exigence à une mesure brute (0-100).
+ * Interpolation linéaire entre les paliers publiés ci-dessus.
+ */
+export function appliquerBareme(brut: number): number {
+  const valeur = Math.max(0, Math.min(100, brut))
+  for (let i = 1; i < BAREME.length; i++) {
+    const bas = BAREME[i - 1]
+    const haut = BAREME[i]
+    if (valeur <= haut.brut) {
+      const part = (valeur - bas.brut) / (haut.brut - bas.brut)
+      return Math.round(bas.note + part * (haut.note - bas.note))
+    }
+  }
+  return 100
+}
 
 /* -------------------------------------------------------------------------- */
 /* Dictionnaire des problèmes                                                  */
@@ -434,9 +478,12 @@ function parseReport(payload: any, strategy: Strategy): AuditReport {
   ]
   const present = parts.filter(([value]) => value !== null) as [number, number][]
   const totalWeight = present.reduce((sum, [, w]) => sum + w, 0)
-  const overall = totalWeight
+  /* Moyenne pondérée des mesures brutes — la valeur telle que Google la donne. */
+  const overallRaw = totalWeight
     ? Math.round(present.reduce((sum, [v, w]) => sum + v * w, 0) / totalWeight)
     : 0
+  /* Puis le barème d'exigence, publié sur la page. Les deux sont affichés. */
+  const overall = appliquerBareme(overallRaw)
 
   return {
     strategy,
@@ -448,6 +495,7 @@ function parseReport(payload: any, strategy: Strategy): AuditReport {
     filmstrip,
     visual: { score: visualScore, signals },
     overall,
+    overallRaw,
   }
 }
 

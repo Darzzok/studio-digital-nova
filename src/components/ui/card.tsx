@@ -9,7 +9,13 @@ import { cn } from "@/lib/utils"
   mène nulle part ne se soulève pas — le survol reste un signal, pas un décor.
 */
 const cardVariants = cva(
-  "relative rounded-xl border transition-[transform,box-shadow,border-color] duration-300 ease-nova",
+  /*
+    Le texte des cartes est centré par défaut, à un seul endroit. Les listes à
+    puces font exception : leurs lignes restent alignées à gauche, mais le bloc
+    de liste est centré dans la carte — sans quoi le bord gauche des puces
+    devient irrégulier et la lecture en souffre. Voir l'utilitaire `card-list`.
+  */
+  "relative rounded-xl border text-center transition-[transform,box-shadow,border-color] duration-300 ease-nova",
   {
     variants: {
       tone: {
@@ -22,11 +28,16 @@ const cardVariants = cva(
         /** Filet seul — aucune surface, juste un trait. */
         outline: "border-border-strong bg-transparent text-text",
       },
+      /*
+        Sur mobile, une carte occupait un écran entier : l'accueil faisait
+        seize écrans. Le rembourrage est réduit sous 640 px, où l'espace est
+        compté, et retrouve sa générosité au-dessus.
+      */
       padding: {
         none: "p-0",
-        sm: "p-5",
-        md: "p-6 sm:p-7",
-        lg: "p-7 sm:p-9",
+        sm: "p-4 sm:p-5",
+        md: "p-5 sm:p-7",
+        lg: "p-6 sm:p-9",
       },
       /** Filet terracotta — ponctue une carte sans la colorer. */
       accent: {

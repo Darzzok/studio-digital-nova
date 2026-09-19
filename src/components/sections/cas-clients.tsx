@@ -9,11 +9,13 @@ import { Heading } from "@/components/ui/heading"
 import { Icon } from "@/components/ui/icon"
 import { CardIndex, DrawRule } from "@/components/ui/nova"
 import { Section } from "@/components/ui/section"
+import { cn } from "@/lib/utils"
 import { EASE_NOVA, useFloatIn } from "@/lib/motion"
 
 type FloatFrom = { x?: number; y?: number; rotate?: number; scale?: number }
 
-const FRAME = "relative h-40 w-full overflow-hidden rounded-lg border border-border bg-background"
+/* L'aperçu est décoratif : il cède la place au texte sur petit écran. */
+const FRAME = "relative h-28 w-full overflow-hidden rounded-lg border border-border bg-background sm:h-40"
 
 type PreviewVariant = "restaurant" | "artisan" | "pme"
 
@@ -217,7 +219,32 @@ function CasClients() {
         </motion.p>
       </div>
 
-      <div className="mt-[var(--section-gap)] grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
+      {/*
+        Sous 768 px, les trois cas se parcourent en glissant plutôt qu'en
+        défilant : empilés, ils faisaient trois écrans à eux seuls. L'accroche
+        par carte (`snap-center`) fait que chacune s'arrête bien en place. Le
+        débordement est volontaire, contenu dans ce seul rail.
+      */}
+      {/*
+        L'entrée est portée par le RAIL, pas par chaque carte. Auparavant chaque
+        carte avait son propre `whileInView` : en glissant horizontalement, elles
+        rejouaient leur animation une à une et semblaient bouger dans tous les
+        sens. Le rendu serveur ignore la largeur d'écran et applique l'état caché
+        « desktop » (x ±180, rotate ±6), ce qui rendait le saut d'autant plus
+        visible. Désormais : une seule entrée en cascade quand la section arrive
+        à l'écran, puis les cartes ne bougent plus.
+      */}
+      <motion.div
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.15 }}
+        variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.08 } } }}
+        className={cn(
+          "mt-[var(--section-gap)]",
+          "rail-mobile -mx-4 gap-4 px-4 pb-2",
+          "md:mx-0 md:grid md:grid-cols-2 md:gap-5 md:overflow-visible md:px-0 md:pb-0 lg:grid-cols-3"
+        )}
+      >
         {CASES.map((item, index) => {
           const column = index % 3
           const from: FloatFrom =
@@ -230,15 +257,13 @@ function CasClients() {
           return (
             <motion.div
               key={item.sector}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, amount: 0.3 }}
+              className="w-[85vw] shrink-0 snap-center sm:w-[70vw] md:w-auto md:shrink"
               variants={floatIn(index * 0.12, from, { damping: 30, mass: 4 })}
             >
               <Card
                 tone="ivory"
                 padding="md"
-                className="group relative flex h-full flex-col overflow-hidden text-left transition-colors duration-500 ease-nova hover:border-border-strong"
+                className="group relative flex h-full flex-col overflow-hidden transition-colors duration-500 ease-nova hover:border-border-strong"
               >
                 <div className="flex items-center gap-4">
                   <CardIndex value={String(index + 1).padStart(2, "0")} className="flex-1" />
@@ -262,28 +287,33 @@ function CasClients() {
 
                 {/*
                   Problématique → Solution → Résultat : une progression lue de
-                  haut en bas, portée par trois filets verticaux plutôt que par
-                  trois aplats. Le dernier filet est terracotta et signé.
+                  haut en bas. Sur une carte centrée, un filet vertical à gauche
+                  décale la lecture : chaque étape est donc annoncée par un
+                  filet court posé au-dessus, dans sa couleur. Le dernier reste
+                  terracotta et signé.
                 */}
                 <div className="mt-6 flex w-full flex-1 flex-col gap-6">
-                  <div className="border-l border-l-warning pl-4">
-                    <span className="flex items-center gap-2 text-eyebrow uppercase text-text-muted">
+                  <div>
+                    <span aria-hidden className="mx-auto block h-px w-8 bg-warning" />
+                    <span className="mt-3 flex items-center justify-center gap-2 text-eyebrow uppercase text-text-muted">
                       <Icon icon={CircleAlert} className="size-3 text-warning" />
                       Problématique
                     </span>
                     <p className="mt-2 text-small text-text-secondary">{item.problem}</p>
                   </div>
 
-                  <div className="border-l border-l-mineral pl-4">
-                    <span className="flex items-center gap-2 text-eyebrow uppercase text-text-muted">
+                  <div>
+                    <span aria-hidden className="mx-auto block h-px w-8 bg-mineral" />
+                    <span className="mt-3 flex items-center justify-center gap-2 text-eyebrow uppercase text-text-muted">
                       <Icon icon={CircleCheck} className="size-3 text-mineral" />
                       Solution
                     </span>
                     <p className="mt-2 text-small text-text-secondary">{item.solution}</p>
                   </div>
 
-                  <div className="border-l border-l-accent pl-4">
-                    <span className="flex items-center gap-2 text-eyebrow uppercase text-accent-strong">
+                  <div>
+                    <span aria-hidden className="mx-auto block h-px w-8 bg-accent" />
+                    <span className="mt-3 flex items-center justify-center gap-2 text-eyebrow uppercase text-accent-strong">
                       <Icon icon={Sparkles} className="size-3 text-accent" />
                       Résultat
                     </span>
@@ -294,7 +324,7 @@ function CasClients() {
             </motion.div>
           )
         })}
-      </div>
+      </motion.div>
     </Section>
   )
 }

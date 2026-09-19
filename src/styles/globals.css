@@ -370,3 +370,40 @@
 @utility measure {
   max-width: 62ch;
 }
+
+/*
+  Rail horizontal sur mobile : les cartes se parcourent en glissant.
+
+  `overflow-x: auto` fait passer `overflow-y` de `visible` à `auto` — c'est la
+  spécification, pas un bug du navigateur. Sans le forcer à `hidden`, le rail
+  défile AUSSI verticalement et les cartes semblent bouger dans tous les sens.
+  `overscroll-behavior-x: contain` empêche par ailleurs le geste de se
+  propager à la page une fois le bout du rail atteint.
+*/
+@utility rail-mobile {
+  display: flex;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/*
+  Liste dans une carte centrée. Le bloc se centre sur la largeur de sa ligne la
+  plus longue, mais chaque ligne reste alignée à gauche : les coches gardent un
+  bord commun et la liste reste lisible.
+*/
+@utility card-list {
+  /*
+    `fit-content` ne dépasse jamais la largeur disponible : inutile d'ajouter un
+    `max-width`, qui écraserait celui de `measure` quand les deux sont combinés.
+  */
+  width: fit-content;
+  margin-inline: auto;
+  text-align: left;
+}

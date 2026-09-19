@@ -354,8 +354,9 @@ function Processus() {
                     </div>
                   </div>
 
-                  <div className="relative mt-8 grid gap-7 sm:grid-cols-[auto_1fr] sm:gap-10">
-                    <div className="flex items-center gap-5 sm:flex-col sm:items-start sm:gap-6">
+                  {/* Colonne unique centrée : le rang et l'icône coiffent l'étape. */}
+                  <div className="relative mt-8 flex flex-col items-center gap-7">
+                    <div className="flex items-center gap-5">
                       {/* Repère graphique, pas une information : masqué aux lecteurs d'écran. */}
                       <span
                         aria-hidden
@@ -368,14 +369,14 @@ function Processus() {
                       </span>
                     </div>
 
-                    <div className="min-w-0 text-left">
+                    <div className="w-full min-w-0">
                       <h3 className="font-heading text-h2 text-on-ink">{active.title}</h3>
 
                       <p className="mt-4 text-lead text-on-ink-soft">{active.description}</p>
 
                       <div className="mt-8 h-px w-full bg-border-ink" />
 
-                      <ul className="mt-6 flex flex-col gap-4">
+                      <ul className="card-list mt-6 flex flex-col gap-4">
                         {active.details.map((detail) => (
                           <li key={detail} className="flex gap-4 text-small text-on-ink-soft">
                             <span

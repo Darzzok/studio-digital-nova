@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 
+import { JsonLd } from "@/components/seo/json-ld";
+import { breadcrumbJsonLd } from "@/lib/seo";
 import { siteConfig } from "@/lib/site";
 
 import { LegalContent } from "./legal-content";
@@ -24,7 +26,15 @@ export const metadata: Metadata = {
 
 export default function MentionsLegalesPage() {
   return (
-    <main className="flex-1">
+    <main id="contenu" className="flex-1">
+      <JsonLd
+        data={[
+          breadcrumbJsonLd([
+            { name: "Accueil", url: `${siteConfig.url}/` },
+            { name: "Mentions légales", url: `${siteConfig.url}/mentions-legales/` },
+          ]),
+        ]}
+      />
       <LegalContent />
     </main>
   );
