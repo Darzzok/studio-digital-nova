@@ -68,8 +68,8 @@ const NAV_ITEMS = [
   { label: "Tarifs", href: "/#tarifs" },
   { label: "Audit gratuit", href: "/audit-gratuit/" },
   { label: "Cas client", href: "/#cas-client" },
-  { label: "Blog", href: "/blog" },
-  { label: "FAQ", href: "/faq" },
+  { label: "Blog", href: "/blog/" },
+  { label: "FAQ", href: "/faq/" },
 ]
 
 /*
@@ -98,171 +98,141 @@ const RESEAUX = [
 ]
 
 const LEGAL_LINKS = [
-  { label: "Mentions légales", href: "/mentions-legales" },
-  { label: "Confidentialité", href: "/confidentialite" },
+  { label: "Mentions légales", href: "/mentions-legales/" },
+  { label: "Confidentialité", href: "/confidentialite/" },
 ]
 
 function Footer() {
   const floatIn = useFloatIn()
 
   return (
-    <footer data-slot="footer" className="relative w-full border-t border-border bg-surface">
-      <div aria-hidden className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-accent/45 to-transparent" />
-      <Container className="py-20">
-        {/*
-          Quatre blocs : la marque et le contact d'un côté, les trois colonnes de
-          liens de l'autre. En dessous de `lg`, les colonnes se répartissent sur
-          deux rangs plutôt que de s'empiler une par une.
-        */}
-        <div className="grid grid-cols-2 gap-x-6 gap-y-12 sm:grid-cols-3 sm:gap-x-8 lg:grid-cols-12">
-          <motion.div
-            className="col-span-2 flex flex-col gap-5 sm:col-span-3 lg:col-span-4 lg:pr-10"
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, amount: 0.15 }}
-            variants={floatIn(0, { y: 48 })}
-          >
-            {/*
-              Version SOMBRE du logo, et non la version claire du pack : le pied
-              de page de ce site est sur `bg-surface` (#fcfbf8), un fond clair.
-              La version blanche y serait invisible.
-            */}
-            <Image
-              src="/brand/logo-studio-digital-nova-header.webp"
-              alt="Studio Digital Nova"
-              width={847}
-              height={218}
-              /*
-                `self-start` est indispensable : dans un conteneur `flex-col`,
-                un enfant est étiré sur toute la largeur par défaut et `w-auto`
-                suit l'étirement — le logo se retrouvait en 344×36 au lieu de
-                140×36.
-              */
-              className="h-9 w-auto self-start"
-            />
-            <p className="measure max-w-sm text-body text-text-secondary">
-              Je crée des sites vitrines modernes, rapides et optimisés pour{" "}
-              <strong className="font-semibold text-text">convertir vos visiteurs en clients</strong>.
-            </p>
-
-            <a
-              href="mailto:contact@studiodigitalnova.fr"
-              className="group -my-1.5 flex min-h-11 w-fit max-w-full items-center gap-2.5 py-1.5 text-small text-text-secondary transition-colors duration-200 ease-nova hover:text-accent-strong"
-            >
-              <Icon
-                icon={Mail}
-                className="size-4 shrink-0 text-text-muted transition-colors duration-200 ease-nova group-hover:text-accent"
-              />
-              <span className="truncate">contact@studiodigitalnova.fr</span>
-            </a>
-
-            <ul className="flex items-center gap-3">
-              {RESEAUX.map((reseau) => (
-                <li key={reseau.label}>
-                  <a
-                    href={reseau.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label={reseau.label}
-                    title={reseau.label}
-                    className="flex size-10 items-center justify-center rounded-md border border-border text-text-secondary transition-[color,border-color,background-color,transform] duration-300 ease-nova hover:-translate-y-0.5 hover:border-ink hover:bg-ink hover:text-paper"
-                  >
-                    <Icon icon={reseau.icon} className="size-4" />
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </motion.div>
-
-          <motion.div
-            className="lg:col-span-3"
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, amount: 0.15 }}
-            variants={floatIn(0.08, { y: 48 })}
-          >
-            <p className="text-eyebrow uppercase text-text-muted">Navigation</p>
-            <ul className="mt-5 flex flex-col gap-3">
-              {NAV_ITEMS.map((item) => (
-                <li key={item.label}>
-                  <a
-                    href={item.href}
-                    className="-my-1.5 flex min-h-11 items-center py-1.5 text-small text-text-secondary transition-colors duration-200 ease-nova hover:text-accent-strong"
-                  >
-                    {item.label}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </motion.div>
-
-          <motion.div
-            className="lg:col-span-3"
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, amount: 0.15 }}
-            variants={floatIn(0.16, { y: 48 })}
-          >
-            <p className="text-eyebrow uppercase text-text-muted">Prestations</p>
-            <ul className="mt-5 flex flex-col gap-3">
-              {PRESTATION_ITEMS.map((item) => (
-                <li key={item.href}>
-                  <Link
-                    href={item.href}
-                    className="-my-1.5 flex min-h-11 items-center py-1.5 text-small text-text-secondary transition-colors duration-200 ease-nova hover:text-accent-strong"
-                  >
-                    {item.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </motion.div>
-
-          <motion.div
-            className="lg:col-span-2"
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, amount: 0.15 }}
-            variants={floatIn(0.24, { y: 48 })}
-          >
-            <p className="text-eyebrow uppercase text-text-muted">Secteurs</p>
-            <ul className="mt-5 flex flex-col gap-3">
-              {SECTEUR_ITEMS.map((item) => (
-                <li key={item.href}>
-                  <Link
-                    href={item.href}
-                    className="-my-1.5 flex min-h-11 items-center py-1.5 text-small text-text-secondary transition-colors duration-200 ease-nova hover:text-accent-strong"
-                  >
-                    {item.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </motion.div>
-        </div>
-
+    /*
+      Fond bleu nuit — le même `--nova-ink` que les boutons principaux. Le pied
+      de page ferme le site sur la couleur de la marque au lieu de se fondre
+      dans l'ivoire, et tout y est centré.
+    */
+    <footer data-slot="footer" className="relative w-full bg-surface-ink text-on-ink">
+      <div aria-hidden className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-accent/55 to-transparent" />
+      <Container className="py-16 sm:py-20">
         <motion.div
-          className="mt-16 flex flex-col items-center gap-4 border-t border-border pt-8 sm:flex-row sm:justify-between"
+          className="flex flex-col items-center gap-5 text-center"
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, amount: 0.15 }}
-          variants={floatIn(0.32, { y: 32 })}
+          variants={floatIn(0, { y: 40 })}
         >
-          <p className="text-small text-text-muted">
-            © {new Date().getFullYear()} Studio Digital Nova. Tous droits réservés.
+          {/*
+            Version claire du logo : le fond est désormais sombre. Les
+            dimensions intrinsèques sont celles du fichier, et seule la hauteur
+            est imposée — un `w-auto` dans un conteneur `flex-col` s'étire si
+            l'élément n'est pas sorti du flux d'étirement, d'où `mx-auto`.
+          */}
+          <Image
+            src="/brand/logo-studio-digital-nova-footer.webp"
+            alt="Studio Digital Nova"
+            width={467}
+            height={129}
+            className="mx-auto h-10 w-auto"
+          />
+          <p className="measure max-w-md text-body text-on-ink-soft">
+            Je crée des sites vitrines modernes, rapides et optimisés pour{" "}
+            <strong className="font-semibold text-on-ink">convertir vos visiteurs en clients</strong>.
           </p>
-          <ul className="flex items-center gap-6">
+
+          <a
+            href="mailto:contact@studiodigitalnova.fr"
+            className="group -my-1.5 flex min-h-11 max-w-full items-center gap-2.5 py-1.5 text-small text-on-ink-soft transition-colors duration-200 ease-nova hover:text-accent"
+          >
+            <Icon icon={Mail} className="size-4 shrink-0 text-on-ink-soft transition-colors duration-200 ease-nova group-hover:text-accent" />
+            <span className="truncate">contact@studiodigitalnova.fr</span>
+          </a>
+
+          <ul className="flex items-center justify-center gap-3">
+            {RESEAUX.map((reseau) => (
+              <li key={reseau.label}>
+                <a
+                  href={reseau.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={reseau.label}
+                  title={reseau.label}
+                  className="flex size-11 items-center justify-center rounded-md border border-border-ink text-on-ink-soft transition-[color,border-color,background-color,transform] duration-300 ease-nova hover:-translate-y-0.5 hover:border-paper hover:bg-paper hover:text-ink"
+                >
+                  <Icon icon={reseau.icon} className="size-4" />
+                </a>
+              </li>
+            ))}
+          </ul>
+        </motion.div>
+
+        <div aria-hidden className="mx-auto mt-14 h-px w-full max-w-xs bg-border-ink" />
+
+        {/*
+          Trois colonnes de liens, centrées. Sous 640 px elles s'empilent ;
+          au-dessus elles se répartissent à parts égales.
+        */}
+        <div className="mt-12 grid grid-cols-1 gap-x-8 gap-y-10 text-center sm:grid-cols-3">
+          {[
+            { titre: "Navigation", liens: NAV_ITEMS, ancre: true, delai: 0.08 },
+            { titre: "Prestations", liens: PRESTATION_ITEMS, ancre: false, delai: 0.16 },
+            { titre: "Secteurs", liens: SECTEUR_ITEMS, ancre: false, delai: 0.24 },
+          ].map((colonne) => (
+            <motion.div
+              key={colonne.titre}
+              className="flex flex-col items-center"
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, amount: 0.15 }}
+              variants={floatIn(colonne.delai, { y: 40 })}
+            >
+              <p className="text-eyebrow uppercase text-on-ink-soft">{colonne.titre}</p>
+              <ul className="mt-5 flex flex-col items-center gap-2.5">
+                {colonne.liens.map((item) => (
+                  <li key={item.href}>
+                    {colonne.ancre ? (
+                      <a
+                        href={item.href}
+                        className="-my-1.5 flex min-h-11 items-center py-1.5 text-small text-on-ink-soft transition-colors duration-200 ease-nova hover:text-accent"
+                      >
+                        {item.label}
+                      </a>
+                    ) : (
+                      <Link
+                        href={item.href}
+                        className="-my-1.5 flex min-h-11 items-center py-1.5 text-small text-on-ink-soft transition-colors duration-200 ease-nova hover:text-accent"
+                      >
+                        {item.label}
+                      </Link>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </motion.div>
+          ))}
+        </div>
+
+        <motion.div
+          className="mt-14 flex flex-col items-center gap-4 border-t border-border-ink pt-8 text-center"
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.15 }}
+          variants={floatIn(0.32, { y: 28 })}
+        >
+          <ul className="flex flex-wrap items-center justify-center gap-x-6">
             {LEGAL_LINKS.map((link) => (
               <li key={link.href}>
                 <Link
                   href={link.href}
-                  className="-my-2 flex min-h-11 items-center py-2 text-small text-text-secondary transition-colors duration-200 ease-nova hover:text-accent-strong"
+                  className="-my-2 flex min-h-11 items-center py-2 text-small text-on-ink-soft transition-colors duration-200 ease-nova hover:text-accent"
                 >
                   {link.label}
                 </Link>
               </li>
             ))}
           </ul>
+          <p className="text-small text-on-ink-soft/80">
+            © {new Date().getFullYear()} Studio Digital Nova. Tous droits réservés.
+          </p>
         </motion.div>
       </Container>
     </footer>

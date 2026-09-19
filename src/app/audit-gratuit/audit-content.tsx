@@ -12,7 +12,6 @@ import {
   Gauge,
   Link2,
   Loader2,
-  Lock,
   Mail,
   Monitor,
   RotateCcw,
@@ -63,7 +62,23 @@ const WEB3FORMS_ENDPOINT = "https://api.web3forms.com/submit"
    déjà qualifiés — mesurés, appréciés, ou non vérifiés.
    ========================================================================== */
 
-type Phase = "saisie" | "analyse" | "resultat" | "erreur"
+/*
+  Le parcours se fait en quatre temps, et le visiteur sait toujours où il en
+  est : l'adresse, les coordonnées, l'analyse, le rapport. Demander les
+  coordonnées AVANT l'analyse change tout — la personne voit son audit se faire
+  pour elle, au lieu de buter sur un mur à mi-parcours.
+*/
+type Phase = "adresse" | "coordonnees" | "analyse" | "resultat" | "erreur"
+
+/** Ce que le visiteur a laissé avant que l'analyse démarre. */
+type Contact = { prenom: string; email: string; telephone: string }
+
+const PARCOURS: { id: Phase; numero: number; titre: string }[] = [
+  { id: "adresse", numero: 1, titre: "Votre adresse" },
+  { id: "coordonnees", numero: 2, titre: "Vos coordonnées" },
+  { id: "analyse", numero: 3, titre: "L'analyse" },
+  { id: "resultat", numero: 4, titre: "Votre rapport" },
+]
 
 /** Les étapes réellement suivies. Aucune n'avance sans un fait observable. */
 type EtapeId = "connexion" | "mobile" | "ordinateur" | "bilan"
@@ -310,6 +325,74 @@ function CarteConstat({
         </button>
       )}
     </Card>
+  )
+}
+
+/* -------------------------------------------------------------------------- */
+/* Fil du parcours                                                             */
+/* -------------------------------------------------------------------------- */
+/*
+  Quatre pastilles, visibles dès que le parcours est engagé. Savoir qu'il reste
+  deux étapes, et lesquelles, vaut mieux que de découvrir un formulaire au
+  moment où l'on croyait avoir fini.
+*/
+function FilParcours({ phase, reduce }: { phase: Phase; reduce: boolean }) {
+  const courant = PARCOURS.findIndex((e) => e.id === phase)
+  if (courant < 0) return null
+  const etape = PARCOURS[courant]
+
+  return (
+    <nav aria-label="Étapes de l'audit" className="mb-8">
+      <ol className="flex items-start justify-center">
+        {PARCOURS.map((e, i) => {
+          const fait = i < courant
+          const actif = i === courant
+          return (
+            <li key={e.id} className="flex items-start">
+              <div className="flex w-16 flex-col items-center gap-2 sm:w-24">
+                <motion.span
+                  className={cn(
+                    "flex size-8 shrink-0 items-center justify-center rounded-full border font-heading text-small tabular-nums transition-colors duration-500 ease-nova",
+                    fait && "border-accent bg-accent text-paper",
+                    actif && "border-accent bg-accent/10 text-accent-strong",
+                    !fait && !actif && "border-border text-text-muted"
+                  )}
+                  animate={actif && !reduce ? { scale: [1, 1.07, 1] } : { scale: 1 }}
+                  transition={
+                    actif && !reduce
+                      ? { duration: 2.4, repeat: Infinity, ease: EASE_NOVA }
+                      : { duration: 0.3, ease: EASE_NOVA }
+                  }
+                >
+                  {fait ? <Icon icon={Check} className="size-3.5" /> : e.numero}
+                </motion.span>
+                <span
+                  className={cn(
+                    "hidden text-center text-[11px] uppercase leading-tight tracking-[0.1em] transition-colors duration-500 ease-nova sm:block",
+                    actif ? "text-text" : "text-text-muted"
+                  )}
+                >
+                  {e.titre}
+                </span>
+              </div>
+              {i < PARCOURS.length - 1 && (
+                <span
+                  aria-hidden
+                  className={cn(
+                    "mt-4 h-px w-4 shrink-0 transition-colors duration-500 ease-nova sm:w-8",
+                    fait ? "bg-accent" : "bg-border"
+                  )}
+                />
+              )}
+            </li>
+          )
+        })}
+      </ol>
+      {/* Sous 640 px les intitulés ne tiennent pas côte à côte : une ligne suffit. */}
+      <p className="mt-3 text-center text-small text-text-muted sm:hidden">
+        Étape {etape.numero} sur {PARCOURS.length} — <span className="text-text">{etape.titre}</span>
+      </p>
+    </nav>
   )
 }
 
@@ -792,15 +875,11 @@ function Resultats({
   rapports,
   appareil,
   onAppareil,
-  deverrouille,
-  barriere,
   reduce,
 }: {
   rapports: Partial<Record<Strategy, RapportPage>>
   appareil: Strategy
   onAppareil: (s: Strategy) => void
-  deverrouille: boolean
-  barriere: React.ReactNode
   reduce: boolean
 }) {
   const rapport = rapports[appareil] ?? rapports.mobile ?? rapports.desktop
@@ -895,42 +974,11 @@ function Resultats({
       {/* 3 — Capture annotée */}
       <CaptureAnnotee rapport={rapport} actif={repere} onChoisir={setRepere} />
 
-      {/* Barrière : au-delà, il faut laisser ses coordonnées */}
-      {!deverrouille && (
-        <>
-          <Card tone="ivory" padding="md">
-            <span className="mx-auto flex size-11 items-center justify-center rounded-md border border-border-strong text-text-secondary">
-              <Icon icon={Lock} className="size-5" />
-            </span>
-            <h3 className="mt-5 font-heading text-h2 text-text">La suite du rapport</h3>
-            <p className="measure mx-auto mt-3 text-body text-text-secondary">
-              L&apos;analyse est déjà faite. Voici ce qui reste à afficher :
-            </p>
-            <ul className="card-list mt-7 flex flex-col gap-3">
-              {[
-                reste.length > 0 ? `${reste.length} autre${reste.length > 1 ? "s" : ""} constat${reste.length > 1 ? "s" : ""}` : null,
-                `Le détail des ${rapport.dimensions.length} dimensions notées`,
-                rapport.vitals.length > 0 ? "Les temps ressentis par vos visiteurs" : null,
-                bons.length > 0 ? "Ce qui va bien et qu'il faut conserver" : null,
-                "Le rapport complet, et son PDF à télécharger",
-              ]
-                .filter((x): x is string => Boolean(x))
-                .map((l) => (
-                  <li key={l} className="flex items-baseline gap-3 text-small text-text-secondary">
-                    <Icon icon={Check} className="size-3 shrink-0 translate-y-0.5 text-accent" />
-                    {l}
-                  </li>
-                ))}
-            </ul>
-          </Card>
-          {barriere}
-        </>
-      )}
-
-      {/* 4 à 6 — le reste, une fois déverrouillé */}
-      {deverrouille && (
-        <>
-          <BlocTelechargement rapports={rapports} url={rapport.url} />
+      {/*
+        4 à 6 — le rapport en entier. Plus rien n'est masqué : les coordonnées
+        ont été laissées avant l'analyse.
+      */}
+      <BlocTelechargement rapports={rapports} url={rapport.url} />
 
           {bons.length > 0 && (
             <Card tone="ivory" padding="md">
@@ -1040,8 +1088,6 @@ function Resultats({
               ))}
             </ul>
           </Card>
-        </>
-      )}
 
       <p className="text-small text-text-muted">
         Analyse réalisée par l&apos;API Google PageSpeed Insights sur {rapport.url}
@@ -1112,42 +1158,118 @@ function domaineCourt(url: string): string {
 }
 
 async function transmettre(champs: Record<string, string>): Promise<boolean> {
-  try {
-    const rep = await fetch(WEB3FORMS_ENDPOINT, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Accept: "application/json" },
-      body: JSON.stringify({ access_key: WEB3FORMS_ACCESS_KEY, ...champs }),
-    })
-    return Boolean((await rep.json())?.success)
-  } catch {
-    return false
+  /*
+    Deux tentatives : une coupure réseau d'une seconde ne doit pas faire perdre
+    un prospect qui a laissé son numéro.
+  */
+  for (let essai = 0; essai < 2; essai++) {
+    try {
+      const rep = await fetch(WEB3FORMS_ENDPOINT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({ access_key: WEB3FORMS_ACCESS_KEY, ...champs }),
+      })
+      if ((await rep.json())?.success) return true
+    } catch {
+      /* on retente une fois */
+    }
+    if (essai === 0) await new Promise((r) => setTimeout(r, 1200))
   }
+  return false
+}
+
+/*
+  Le seul message qui part vers Studio Digital Nova, et il part une seule fois :
+  les coordonnées et l'audit complet dans le même envoi. Deux mails séparés
+  obligeaient à les rapprocher à la main.
+
+  Il part aussi quand l'analyse échoue : la personne a laissé son numéro, ce
+  n'est pas le moment de la perdre.
+*/
+async function signaler(
+  contact: Contact,
+  url: string,
+  rapports: Partial<Record<Strategy, RapportPage>>,
+  echec: string | null
+): Promise<boolean> {
+  const base = rapports.mobile ?? rapports.desktop ?? null
+
+  const audit = echec
+    ? [
+        "L'ANALYSE N'A PAS ABOUTI",
+        `  Motif : ${echec}`,
+        "",
+        "  Les coordonnées restent valables — à rappeler.",
+      ].join("\n")
+    : [
+        "SYNTHÈSE",
+        `  Note globale : ${base?.note == null ? "non calculée (bilan partiel)" : `${base.note}/100`}`,
+        `  Constats     : ${base?.constats.length ?? 0}`,
+        "",
+        "────────────────────────────────────────",
+        "",
+        resumerRapport(rapports.mobile ?? null, "VERSION MOBILE"),
+        "",
+        "────────────────────────────────────────",
+        "",
+        resumerRapport(rapports.desktop ?? null, "VERSION ORDINATEUR"),
+      ].join("\n")
+
+  const corps = [
+    "COORDONNÉES",
+    `  Prénom    : ${contact.prenom || "non renseigné"}`,
+    `  Email     : ${contact.email}`,
+    `  Téléphone : ${contact.telephone}`,
+    `  Site      : ${url}`,
+    `  Reçu le   : ${new Date().toLocaleString("fr-FR")}`,
+    "",
+    "────────────────────────────────────────",
+    "",
+    audit,
+    "",
+    "────────────────────────────────────────",
+    "",
+    "Le rapport s'est ouvert sur la page et le PDF est à sa main.",
+    "Aucun mail ne lui a été envoyé.",
+  ].join("\n")
+
+  return transmettre({
+    subject: `Audit ${domaineCourt(url)} — ${contact.prenom || contact.email}`,
+    from_name: contact.prenom || contact.email,
+    name: contact.prenom || "Non renseigné",
+    /* Répondre au message répond directement au visiteur. */
+    email: contact.email,
+    replyto: contact.email,
+    telephone: contact.telephone,
+    site: url,
+    message: corps,
+  })
 }
 
 /* -------------------------------------------------------------------------- */
-/* Barrière : coordonnées contre rapport complet                               */
+/* Étape 2 : les coordonnées, avant l'analyse                                  */
 /* -------------------------------------------------------------------------- */
-
-function Barriere({
+/*
+  Rien n'est envoyé d'ici : l'analyse n'a pas encore eu lieu. Cet écran ne fait
+  que recueillir de quoi rappeler la personne. Le relevé complet part une seule
+  fois, à la fin, avec les coordonnées et l'audit dans le même message.
+*/
+function EcranCoordonnees({
   url,
-  rapports,
-  onDeverrouille,
+  onValide,
+  onRetour,
 }: {
   url: string
-  rapports: Partial<Record<Strategy, RapportPage>>
-  onDeverrouille: () => void
+  onValide: (contact: Contact) => void
+  onRetour: () => void
 }) {
   const [prenom, setPrenom] = useState("")
   const [email, setEmail] = useState("")
   const [telephone, setTelephone] = useState("")
-  const [envoi, setEnvoi] = useState(false)
   const [erreur, setErreur] = useState<string | null>(null)
-  /* Empêche un second envoi si le visiteur clique deux fois. */
-  const dejaEnvoye = useRef(false)
 
-  async function soumettre(e: React.FormEvent) {
+  function soumettre(e: React.FormEvent) {
     e.preventDefault()
-    if (dejaEnvoye.current || envoi) return
     if (!email.trim() || !/.+@.+\..+/.test(email)) {
       setErreur("Merci d'indiquer une adresse email valide.")
       return
@@ -1156,76 +1278,38 @@ function Barriere({
       setErreur("Merci d'indiquer un numéro de téléphone valide.")
       return
     }
-    setEnvoi(true)
     setErreur(null)
-    dejaEnvoye.current = true
-
-    const fiche = [
-      "COORDONNÉES",
-      `  Prénom    : ${prenom || "non renseigné"}`,
-      `  Email     : ${email}`,
-      `  Téléphone : ${telephone}`,
-      `  Site      : ${url}`,
-      `  Reçu le   : ${new Date().toLocaleString("fr-FR")}`,
-      "",
-      "────────────────────────────────────────",
-      "",
-      resumerRapport(rapports.mobile ?? null, "VERSION MOBILE"),
-      "",
-      "────────────────────────────────────────",
-      "",
-      resumerRapport(rapports.desktop ?? null, "VERSION ORDINATEUR"),
-      "",
-      "────────────────────────────────────────",
-      "",
-      "Le rapport lui a été ouvert sur la page ; le PDF est à sa main. Aucun mail ne lui a été envoyé.",
-    ].join("\n")
-
-    const transmis = await transmettre({
-      subject: `Demande d\u0027audit — ${domaineCourt(url)}`,
-      from_name: prenom || email,
-      name: prenom || "Non renseigné",
-      email,
-      /* Répondre au mail répond directement au visiteur. */
-      replyto: email,
-      telephone,
-      site: url,
-      message: fiche,
-    })
-
-    if (!transmis) {
-      setErreur(
-        "Votre fiche n'a pas pu m'être transmise, mais votre rapport est bien débloqué. " +
-          "Écrivez-moi à contact@studiodigitalnova.fr si vous voulez que je le commente."
-      )
-    }
-
-    /*
-      Aucun PDF n'est produit ici : laisser ses coordonnées déverrouille le
-      rapport, rien de plus. Le visiteur déclenche lui-même le téléchargement
-      depuis le bloc dédié — c'est la seule voie, et elle n'existe qu'après
-      cette étape.
-    */
-    setEnvoi(false)
-    onDeverrouille()
+    onValide({ prenom: prenom.trim(), email: email.trim(), telephone: telephone.trim() })
   }
 
   return (
     <Card tone="ink" padding="md" className="grain-ink relative overflow-hidden lg:p-9">
       <div className="relative flex items-center justify-center gap-3">
-        <Badge variant="ink">Rapport complet</Badge>
+        <Badge variant="ink">Étape 2 sur 4</Badge>
         <NovaMark aria-hidden className="size-2.5 text-accent" />
       </div>
 
-      <h3 className="relative mt-7 font-heading text-h2 text-on-ink">
-        Vos coordonnées pour accéder au rapport
-      </h3>
+      <h2 className="relative mt-7 font-heading text-h2 text-on-ink">
+        À qui j&apos;envoie mes remarques ?
+      </h2>
       <p className="relative mx-auto mt-4 max-w-xl text-lead text-on-ink-soft">
-        Le reste de l&apos;analyse s&apos;affiche aussitôt, avec un bouton pour télécharger le
-        PDF depuis cette page. <strong className="font-semibold text-on-ink">Je ne vous envoie
-        rien</strong> — le fichier se fabrique sur votre appareil. Je lis le rapport de mon côté
-        et je reviens vers vous sous 24 heures, sans engagement.
+        L&apos;analyse de <strong className="font-semibold text-on-ink">{domaineCourt(url)}</strong>{" "}
+        démarre juste après. Elle prend une trentaine de secondes, et le rapport s&apos;affiche
+        ici même, en entier, avec son PDF à télécharger.
       </p>
+
+      <ul className="card-list relative mt-7 flex flex-col gap-3">
+        {[
+          "Le rapport complet s'ouvre sur cette page, rien à attendre.",
+          "Le PDF se fabrique sur votre appareil, d'un clic.",
+          "Je lis votre analyse de mon côté et je vous réponds sous 24 heures.",
+        ].map((l) => (
+          <li key={l} className="flex items-baseline gap-3 text-small text-on-ink-soft">
+            <Icon icon={Check} className="size-3 shrink-0 translate-y-0.5 text-accent" />
+            {l}
+          </li>
+        ))}
+      </ul>
 
       <form onSubmit={soumettre} className="relative mt-8 flex flex-col gap-4 text-left">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -1262,10 +1346,9 @@ function Barriere({
         <Button
           type="submit"
           variant="primary"
-          disabled={envoi}
           className="mt-2 w-full bg-paper text-ink hover:bg-accent hover:text-ink sm:mx-auto sm:w-fit"
         >
-          {envoi ? "Ouverture du rapport…" : "Accéder au rapport complet"}
+          Lancer l&apos;analyse
           <Icon icon={ArrowRight} />
         </Button>
 
@@ -1273,6 +1356,14 @@ function Barriere({
           Vos coordonnées me servent uniquement à vous recontacter au sujet de cette analyse.
           Aucune inscription, aucune revente, aucune relance automatique.
         </p>
+
+        <button
+          type="button"
+          onClick={onRetour}
+          className="mx-auto -my-1 min-h-11 text-small text-on-ink-soft underline decoration-border-ink underline-offset-4 transition-colors duration-200 ease-nova hover:text-on-ink"
+        >
+          Changer d&apos;adresse
+        </button>
       </form>
     </Card>
   )
@@ -1288,7 +1379,7 @@ function AuditContent() {
 
   const [saisie, setSaisie] = useState("")
   const [urlAnalysee, setUrlAnalysee] = useState("")
-  const [phase, setPhase] = useState<Phase>("saisie")
+  const [phase, setPhase] = useState<Phase>("adresse")
   const [rapports, setRapports] = useState<Partial<Record<Strategy, RapportPage>>>({})
   const [appareil, setAppareil] = useState<Strategy>("mobile")
   const [etats, setEtats] = useState<Record<EtapeId, EtatEtape>>({
@@ -1297,7 +1388,7 @@ function AuditContent() {
   const [apercus, setApercus] = useState<Partial<Record<Strategy, string>>>({})
   const [depouillement, setDepouillement] = useState<Depouillement | null>(null)
   const [erreur, setErreur] = useState<string | null>(null)
-  const [deverrouille, setDeverrouille] = useState(false)
+  const [contact, setContact] = useState<Contact | null>(null)
   const [focus, setFocus] = useState(false)
 
   /*
@@ -1351,8 +1442,13 @@ function AuditContent() {
     [reduce]
   )
 
-  const lancer = useCallback(
-    async (e?: React.FormEvent, adresseImposee?: string) => {
+  /*
+    Étape 1 → 2. On retient l'adresse et on demande les coordonnées. Rien n'est
+    mesuré ici : aucune requête ne part tant que la personne ne s'est pas
+    présentée.
+  */
+  const validerAdresse = useCallback(
+    (e?: React.FormEvent, adresseImposee?: string) => {
       e?.preventDefault()
       if (phase === "analyse") return
 
@@ -1365,20 +1461,37 @@ function AuditContent() {
       }
 
       abort.current?.abort()
-      const controleur = new AbortController()
-      abort.current = controleur
-
       setUrlAnalysee(url)
-      setDeverrouille(false)
+      setRapports({})
       setApercus({})
       setDepouillement(null)
+      setEtats({ connexion: "attente", mobile: "attente", ordinateur: "attente", bilan: "attente" })
       setErreur(null)
+      setPhase("coordonnees")
 
       if (typeof window !== "undefined") {
         const partage = new URL(window.location.href)
         partage.searchParams.set("url", url)
         window.history.replaceState(null, "", partage.toString())
       }
+    },
+    [saisie, phase]
+  )
+
+  /* Étape 2 → 3 → 4. Les coordonnées sont là : l'analyse peut partir. */
+  const lancerAnalyse = useCallback(
+    async (qui: Contact) => {
+      const url = urlAnalysee
+      if (!url) return
+
+      setContact(qui)
+      abort.current?.abort()
+      const controleur = new AbortController()
+      abort.current = controleur
+
+      setApercus({})
+      setDepouillement(null)
+      setErreur(null)
 
       /*
         Adresse déjà analysée : les mesures sont en mémoire, donc aucune requête
@@ -1394,6 +1507,7 @@ function AuditContent() {
         setEtats({ connexion: "termine", mobile: connu.mobile ? "termine" : "indisponible",
                    ordinateur: connu.desktop ? "termine" : "indisponible", bilan: "termine" })
         setPhase("analyse")
+        void signaler(qui, url, connu, null)
         await depouiller(connu, controleur.signal)
         return
       }
@@ -1430,11 +1544,13 @@ function AuditContent() {
         majEtape("connexion", "indisponible")
         majEtape("bilan", "indisponible")
         const raison = m.status === "rejected" ? m.reason : null
-        setErreur(
+        const message =
           raison instanceof AuditError
             ? raison.message
             : "L'analyse n'a pas abouti pour cette adresse."
-        )
+        setErreur(message)
+        /* La personne s'est présentée : sa fiche part, même sans audit. */
+        void signaler(qui, url, {}, message)
         setPhase("erreur")
         return
       }
@@ -1442,32 +1558,24 @@ function AuditContent() {
       majEtape("bilan", "termine")
       cache.current.set(url, suivant)
 
-      void transmettre({
-        subject: `Audit lancé sur ${domaineCourt(url)}`,
-        from_name: "Audit automatique",
-        name: "Visiteur anonyme",
-        email: "contact@studiodigitalnova.fr",
-        site: url,
-        message:
-          `Un visiteur vient d'analyser ${url}. Aucune coordonnée laissée à ce stade.\n\n` +
-          `${resumerRapport(suivant.mobile ?? null, "MOBILE")}\n\n` +
-          `${resumerRapport(suivant.desktop ?? null, "ORDINATEUR")}`,
-      })
+      void signaler(qui, url, suivant, null)
 
       await depouiller(suivant, controleur.signal)
     },
-    [saisie, phase, depouiller]
+    [urlAnalysee, depouiller]
   )
 
   function reinitialiser() {
     abort.current?.abort()
-    setPhase("saisie")
+    setPhase("adresse")
+    setSaisie("")
+    setUrlAnalysee("")
+    setContact(null)
     setRapports({})
     setEtats({ connexion: "attente", mobile: "attente", ordinateur: "attente", bilan: "attente" })
     setApercus({})
     setDepouillement(null)
     setErreur(null)
-    setDeverrouille(false)
     if (typeof window !== "undefined") {
       const propre = new URL(window.location.href)
       propre.searchParams.delete("url")
@@ -1476,25 +1584,38 @@ function AuditContent() {
   }
 
   /*
-    L'écran d'analyse vit plus bas que le formulaire : sans ce défilement, le
-    visiteur soumet son adresse et ne voit rien bouger. On l'y conduit dès que
-    l'analyse démarre — ou dès qu'une erreur doit être lue.
+    Tout le parcours se joue plus bas que le formulaire du hero : sans ce
+    défilement, le visiteur soumet son adresse et ne voit rien bouger. On
+    l'accompagne à chaque changement d'étape.
   */
   useEffect(() => {
-    if (phase !== "analyse" && phase !== "erreur") return
-    zone.current?.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" })
+    if (phase === "adresse") return
+    const viser = () =>
+      zone.current?.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" })
+    viser()
+    /*
+      Les animations d'entrée du hero peuvent encore déplacer la page pendant la
+      première seconde et décaler la cible sous l'en-tête. On revise une fois :
+      si le cadrage est déjà bon, rien ne bouge.
+    */
+    const id = setTimeout(viser, 900)
+    return () => clearTimeout(id)
   }, [phase, reduce])
 
-  /* Lien partagé : `?url=` relance la même analyse à l'ouverture. */
-  const dejaLance = useRef(false)
+  /*
+    Lien partagé : `?url=` reprend l'adresse et amène directement à l'étape des
+    coordonnées. Aucune analyse ne démarre toute seule — elle consomme du quota
+    et n'a de sens qu'une fois la personne présentée.
+  */
+  const dejaRepris = useRef(false)
   useEffect(() => {
-    if (dejaLance.current || !disponible) return
+    if (dejaRepris.current || !disponible) return
     const partagee = new URLSearchParams(window.location.search).get("url")
     if (!partagee) return
-    dejaLance.current = true
-    const id = setTimeout(() => void lancer(undefined, partagee), 0)
+    dejaRepris.current = true
+    const id = setTimeout(() => validerAdresse(undefined, partagee), 0)
     return () => clearTimeout(id)
-  }, [disponible, lancer])
+  }, [disponible, validerAdresse])
 
   const rapportCourant = rapports[appareil] ?? rapports.mobile ?? rapports.desktop ?? null
 
@@ -1553,7 +1674,7 @@ function AuditContent() {
         }
       >
         <div className="w-full">
-          <form onSubmit={lancer} className="w-full">
+          <form onSubmit={validerAdresse} className="w-full">
             {/*
               Sous 640 px, le bouton sort du cadre de saisie et passe en pleine
               largeur dessous : deux éléments empilés dans une même bordure
@@ -1617,8 +1738,8 @@ function AuditContent() {
               {phase !== "analyse" && <Icon icon={ArrowRight} />}
             </Button>
             <p className="mt-4 text-small text-text-muted">
-              L&apos;adresse analysée m&apos;est transmise pour que je puisse suivre les demandes.
-              Aucune autre donnée n&apos;est collectée tant que vous ne remplissez pas le formulaire.
+              Quatre étapes : votre adresse, vos coordonnées, l&apos;analyse, puis votre rapport.
+              Comptez une minute en tout.
             </p>
             {!disponible && (
               <p className="mt-3 text-small text-accent-strong">
@@ -1633,7 +1754,28 @@ function AuditContent() {
       {/* ---- Zone d'analyse, de résultat ou d'erreur --------------------- */}
       <Section className="bg-surface" spacing="default">
         <div ref={zone} className="mx-auto max-w-3xl scroll-mt-24">
+          {/* Le fil n'apparaît qu'une fois le parcours engagé. */}
+          {phase !== "adresse" && phase !== "erreur" && (
+            <FilParcours phase={phase} reduce={reduce} />
+          )}
+
           <AnimatePresence>
+            {phase === "coordonnees" && (
+              <motion.div
+                key="coordonnees"
+                initial={reduce ? false : { opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={reduce ? undefined : { opacity: 0 }}
+                transition={{ duration: 0.3, ease: EASE_NOVA }}
+              >
+                <EcranCoordonnees
+                  url={urlAnalysee}
+                  onValide={(qui) => void lancerAnalyse(qui)}
+                  onRetour={reinitialiser}
+                />
+              </motion.div>
+            )}
+
             {phase === "analyse" && (
               <motion.div
                 key="analyse"
@@ -1680,19 +1822,18 @@ function AuditContent() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, ease: EASE_NOVA }}
               >
+                {contact?.prenom && (
+                  <p className="mb-6 text-center text-lead text-text-secondary">
+                    Voilà votre rapport,{" "}
+                    <strong className="font-semibold text-text">{contact.prenom}</strong>.
+                  </p>
+                )}
+
                 <Resultats
                   rapports={rapports}
                   appareil={appareil}
                   onAppareil={setAppareil}
-                  deverrouille={deverrouille}
                   reduce={reduce}
-                  barriere={
-                    <Barriere
-                      url={urlAnalysee}
-                      rapports={rapports}
-                      onDeverrouille={() => setDeverrouille(true)}
-                    />
-                  }
                 />
 
                 <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
