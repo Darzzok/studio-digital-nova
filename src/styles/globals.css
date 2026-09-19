@@ -73,7 +73,13 @@
   --text-secondary: var(--nova-mineral);
   --text-muted: var(--nova-mineral-soft);
   --text-on-ink: var(--nova-paper);
-  --text-on-ink-soft: color-mix(in oklab, var(--nova-paper) 68%, transparent);
+  /*
+    82 % et non 68 % : sur le bleu nuit, le gris secondaire tombait à un blanc
+    cassé terne dès qu'on lisait au soleil ou sur un écran bon marché. Le
+    rapport de contraste passe d'environ 8:1 à 12:1, et la hiérarchie avec le
+    texte plein reste lisible.
+  */
+  --text-on-ink-soft: color-mix(in oklab, var(--nova-paper) 82%, transparent);
 
   /* Action principale — l'encre, pas l'accent. */
   --primary: var(--nova-ink);

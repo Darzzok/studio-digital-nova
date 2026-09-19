@@ -73,6 +73,9 @@ type Phase = "adresse" | "coordonnees" | "analyse" | "resultat" | "erreur"
 /** Ce que le visiteur a laissé avant que l'analyse démarre. */
 type Contact = { prenom: string; email: string; telephone: string }
 
+/** Hauteur réservée sous l'en-tête collant quand on amène une étape à l'écran. */
+const MARGE_HAUT = 96
+
 const PARCOURS: { id: Phase; numero: number; titre: string }[] = [
   { id: "adresse", numero: 1, titre: "Votre adresse" },
   { id: "coordonnees", numero: 2, titre: "Vos coordonnées" },
@@ -326,6 +329,20 @@ function CarteConstat({
       )}
     </Card>
   )
+}
+
+/*
+  Une carte sort par la gauche, la suivante entre par la droite : le parcours
+  se lit comme une progression, pas comme un rechargement.
+*/
+function glisse(reduce: boolean) {
+  if (reduce) return {}
+  return {
+    initial: { opacity: 0, x: 28 },
+    animate: { opacity: 1, x: 0 },
+    exit: { opacity: 0, x: -28 },
+    transition: { duration: 0.34, ease: EASE_NOVA },
+  }
 }
 
 /* -------------------------------------------------------------------------- */
@@ -654,7 +671,7 @@ function EcranProgression({
             />
           )}
         </div>
-        <p className="mt-3 text-center text-small text-on-ink-soft">
+        <p className="mt-3 text-center text-small text-on-ink">
           {depouillement
             ? `${depouillement.faites.length} / ${total} dimensions dépouillées`
             : "Durée inconnue — je n'affiche pas de pourcentage tant que Google n'a pas répondu."}
@@ -696,7 +713,7 @@ function EcranProgression({
               <span
                 className={cn(
                   "text-[10px] uppercase leading-tight tracking-[0.1em] transition-colors duration-500 ease-nova",
-                  etat === "attente" ? "text-on-ink-soft/70" : "text-on-ink"
+                  etat === "attente" ? "text-on-ink-soft" : "text-on-ink"
                 )}
               >
                 {etape.court}
@@ -1247,6 +1264,159 @@ async function signaler(
 }
 
 /* -------------------------------------------------------------------------- */
+/* Étape 1 : l'adresse                                                         */
+/* -------------------------------------------------------------------------- */
+/*
+  Première carte du parcours. Elle vit au même endroit que les trois suivantes
+  — le visiteur ne change jamais de zone, ce sont les cartes qui défilent.
+*/
+function CarteAdresse({
+  saisie,
+  onSaisie,
+  onSoumettre,
+  disponible,
+  reduce,
+}: {
+  saisie: string
+  onSaisie: (v: string) => void
+  onSoumettre: (e: React.FormEvent) => void
+  disponible: boolean
+  reduce: boolean
+}) {
+  const [focus, setFocus] = useState(false)
+
+  return (
+    <Card tone="ink" padding="md" className="grain-ink relative overflow-hidden lg:p-9">
+      <div className="relative flex items-center justify-center gap-3">
+        <Badge variant="ink">Étape 1 sur 4</Badge>
+        <NovaMark aria-hidden className="size-2.5 text-accent" />
+      </div>
+
+      <h2 className="relative mt-7 font-heading text-h2 text-on-ink">
+        Quelle adresse dois-je regarder ?
+      </h2>
+      <p className="relative mx-auto mt-4 max-w-xl text-lead text-on-ink">
+        Collez l&apos;adresse de votre site. Pas besoin du{" "}
+        <span className="whitespace-nowrap">https://</span> — je m&apos;en occupe.
+      </p>
+
+      <form onSubmit={onSoumettre} className="relative mt-8">
+        <div
+          className={cn(
+            "rounded-xl border p-0 transition-[border-color,box-shadow] duration-500 ease-nova sm:p-2",
+            focus
+              ? "border-accent shadow-[0_0_0_4px_rgba(217,108,79,0.18)]"
+              : "border-border-ink"
+          )}
+        >
+          <div className="flex flex-col sm:flex-row sm:gap-2">
+            <div className="relative flex-1">
+              <Icon
+                icon={Search}
+                className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-on-ink-soft"
+              />
+              {/*
+                `type="text"` et non `type="url"` : le navigateur exige un schéma
+                sur un champ `url` et refusait « monentreprise.fr » — l'exemple
+                donné par le champ lui-même. La validation revient à
+                `normalizeUrl`, qui complète le schéma et répond en français.
+              */}
+              <Input
+                type="text"
+                inputMode="url"
+                autoComplete="url"
+                spellCheck={false}
+                placeholder="monentreprise.fr"
+                aria-label="Adresse de votre site"
+                value={saisie}
+                onChange={(e) => onSaisie(e.target.value)}
+                onFocus={() => setFocus(true)}
+                onBlur={() => setFocus(false)}
+                className="h-14 border-transparent bg-transparent pl-11 text-lead text-on-ink shadow-none placeholder:text-on-ink-soft focus-visible:border-transparent focus-visible:ring-0 sm:h-13"
+              />
+            </div>
+            {/* Sur mobile le bouton sort du cadre : deux blocs dans une même bordure alourdissent. */}
+            <Button
+              type="submit"
+              variant="primary"
+              disabled={!disponible}
+              className="hidden h-13 shrink-0 bg-paper text-ink hover:bg-accent hover:text-ink sm:inline-flex"
+            >
+              Analyser mon site
+              <Icon icon={ArrowRight} />
+            </Button>
+          </div>
+        </div>
+
+        <Button
+          type="submit"
+          variant="primary"
+          disabled={!disponible}
+          className="mt-3 h-13 w-full bg-paper text-ink hover:bg-accent hover:text-ink sm:hidden"
+        >
+          Analyser mon site
+          <Icon icon={ArrowRight} />
+        </Button>
+
+        {!disponible && (
+          <p className="mt-4 text-small text-accent">
+            L&apos;analyse automatique est momentanément indisponible. Écrivez-moi et je la lance
+            de mon côté.
+          </p>
+        )}
+      </form>
+
+      <div aria-hidden className="relative mx-auto mt-9 h-px w-24 bg-border-ink" />
+
+      {/* Ce qui attend le visiteur : dit une fois, en trois lignes. */}
+      <ul className="card-list relative mt-7 flex flex-col gap-3 sm:flex-row sm:justify-center sm:gap-8">
+        {[
+          { icone: Smartphone, texte: "Vos deux versions, mobile et ordinateur" },
+          { icone: Eye, texte: "Les défauts situés sur votre capture" },
+          { icone: Download, texte: "Un rapport PDF à télécharger" },
+        ].map((l) => (
+          <li key={l.texte} className="flex items-baseline gap-3 text-small text-on-ink">
+            <Icon icon={l.icone} className="size-3.5 shrink-0 translate-y-0.5 text-accent" />
+            {l.texte}
+          </li>
+        ))}
+      </ul>
+
+      {/* Discret, mais il installe l'idée : un vrai document sort de là. */}
+      <motion.div
+        className="relative mx-auto mt-9 w-full max-w-xs"
+        initial={reduce ? false : { opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.15, ease: EASE_NOVA }}
+      >
+        <p className="text-eyebrow uppercase text-on-ink-soft">Exemple de rapport</p>
+        <div className="mt-3 overflow-hidden rounded-md border border-border-ink bg-white p-4 text-left">
+          <div className="relative overflow-hidden rounded-[3px]">
+            <div className="flex flex-col gap-2">
+              <div className="h-2.5 w-2/3 rounded-full bg-ink/70" />
+              <div className="h-2 w-1/2 rounded-full bg-ink/15" />
+              <div className="mt-2 h-14 rounded-md" style={{ backgroundImage: "var(--gradient-ink)" }} />
+            </div>
+            <span className="absolute left-0 top-[6%] flex size-4 items-center justify-center rounded-[2px] bg-accent font-heading text-[10px] text-accent-foreground">
+              1
+            </span>
+            <span aria-hidden className="absolute left-0 top-[6%] h-6 w-[58%] rounded-[3px] border-2 border-accent" />
+          </div>
+          <p className="mt-4 text-eyebrow uppercase text-accent-strong">Constat n° 1</p>
+          <p className="mt-2 text-small text-ink">Des textes manquent de contraste</p>
+          <p className="mt-1 text-small text-ink/60">
+            Difficile à lire au soleil. Assombrir le texte jusqu&apos;à 4,5:1.
+          </p>
+          <p className="mt-4 border-t border-ink/10 pt-3 text-[11px] uppercase tracking-[0.14em] text-ink/50">
+            Exemple illustratif — pas un vrai site
+          </p>
+        </div>
+      </motion.div>
+    </Card>
+  )
+}
+
+/* -------------------------------------------------------------------------- */
 /* Étape 2 : les coordonnées, avant l'analyse                                  */
 /* -------------------------------------------------------------------------- */
 /*
@@ -1267,9 +1437,16 @@ function EcranCoordonnees({
   const [email, setEmail] = useState("")
   const [telephone, setTelephone] = useState("")
   const [erreur, setErreur] = useState<string | null>(null)
+  /*
+    Le clic doit se voir tout de suite. La carte met un tiers de seconde à
+    s'effacer : sans cet état, le bouton reste inerte pendant ce temps et on
+    clique deux fois.
+  */
+  const [parti, setParti] = useState(false)
 
   function soumettre(e: React.FormEvent) {
     e.preventDefault()
+    if (parti) return
     if (!email.trim() || !/.+@.+\..+/.test(email)) {
       setErreur("Merci d'indiquer une adresse email valide.")
       return
@@ -1279,6 +1456,7 @@ function EcranCoordonnees({
       return
     }
     setErreur(null)
+    setParti(true)
     onValide({ prenom: prenom.trim(), email: email.trim(), telephone: telephone.trim() })
   }
 
@@ -1292,7 +1470,7 @@ function EcranCoordonnees({
       <h2 className="relative mt-7 font-heading text-h2 text-on-ink">
         À qui j&apos;envoie mes remarques ?
       </h2>
-      <p className="relative mx-auto mt-4 max-w-xl text-lead text-on-ink-soft">
+      <p className="relative mx-auto mt-4 max-w-xl text-lead text-on-ink">
         L&apos;analyse de <strong className="font-semibold text-on-ink">{domaineCourt(url)}</strong>{" "}
         démarre juste après. Elle prend une trentaine de secondes, et le rapport s&apos;affiche
         ici même, en entier, avec son PDF à télécharger.
@@ -1304,7 +1482,7 @@ function EcranCoordonnees({
           "Le PDF se fabrique sur votre appareil, d'un clic.",
           "Je lis votre analyse de mon côté et je vous réponds sous 24 heures.",
         ].map((l) => (
-          <li key={l} className="flex items-baseline gap-3 text-small text-on-ink-soft">
+          <li key={l} className="flex items-baseline gap-3 text-small text-on-ink">
             <Icon icon={Check} className="size-3 shrink-0 translate-y-0.5 text-accent" />
             {l}
           </li>
@@ -1346,13 +1524,23 @@ function EcranCoordonnees({
         <Button
           type="submit"
           variant="primary"
+          disabled={parti}
           className="mt-2 w-full bg-paper text-ink hover:bg-accent hover:text-ink sm:mx-auto sm:w-fit"
         >
-          Lancer l&apos;analyse
-          <Icon icon={ArrowRight} />
+          {parti ? (
+            <>
+              <Icon icon={Loader2} className="animate-spin" />
+              Je lance l&apos;analyse…
+            </>
+          ) : (
+            <>
+              Lancer l&apos;analyse
+              <Icon icon={ArrowRight} />
+            </>
+          )}
         </Button>
 
-        <p className="text-small text-on-ink-soft">
+        <p className="text-small text-on-ink">
           Vos coordonnées me servent uniquement à vous recontacter au sujet de cette analyse.
           Aucune inscription, aucune revente, aucune relance automatique.
         </p>
@@ -1389,7 +1577,6 @@ function AuditContent() {
   const [depouillement, setDepouillement] = useState<Depouillement | null>(null)
   const [erreur, setErreur] = useState<string | null>(null)
   const [contact, setContact] = useState<Contact | null>(null)
-  const [focus, setFocus] = useState(false)
 
   /*
     Sans ce repère, le visiteur restait sur le formulaire pendant les vingt
@@ -1590,15 +1777,18 @@ function AuditContent() {
   */
   useEffect(() => {
     if (phase === "adresse") return
-    const viser = () =>
-      zone.current?.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" })
-    viser()
     /*
-      Les animations d'entrée du hero peuvent encore déplacer la page pendant la
-      première seconde et décaler la cible sous l'en-tête. On revise une fois :
-      si le cadrage est déjà bon, rien ne bouge.
+      Position calculée, et non `scrollIntoView` : pendant que la hauteur du
+      panneau se réajuste d'une étape à l'autre, `scrollIntoView` visait une
+      cible mouvante et dépassait de près de mille pixels. Le haut du fil ne
+      bouge pas, lui — on s'y rend directement, une fois la carte échangée.
     */
-    const id = setTimeout(viser, 900)
+    const id = setTimeout(() => {
+      const cadre = zone.current
+      if (!cadre) return
+      const haut = cadre.getBoundingClientRect().top + window.scrollY - MARGE_HAUT
+      window.scrollTo({ top: Math.max(0, haut), behavior: reduce ? "auto" : "smooth" })
+    }, 420)
     return () => clearTimeout(id)
   }, [phase, reduce])
 
@@ -1642,218 +1832,114 @@ function AuditContent() {
             <strong className="font-semibold text-text">Gratuit, sans inscription.</strong>
           </>
         }
-        split
-        aside={
-          <div className="hidden lg:block">
-            <p className="text-eyebrow uppercase text-text-muted">Exemple de rapport</p>
-            <Card padding="sm" className="mt-3 text-left">
-              <div className="relative overflow-hidden rounded-md border border-border bg-background">
-                <div className="flex flex-col gap-2 p-4">
-                  <div className="h-2.5 w-2/3 rounded-full bg-text/70" />
-                  <div className="h-2 w-1/2 rounded-full bg-border" />
-                  <div className="mt-2 h-14 rounded-md" style={{ backgroundImage: "var(--gradient-ink)" }} />
-                </div>
-                <span className="absolute left-[10%] top-[16%] flex size-4 items-center justify-center rounded-[2px] bg-accent font-heading text-[10px] text-accent-foreground">
-                  1
-                </span>
-                <span
-                  aria-hidden
-                  className="absolute left-[10%] top-[16%] h-6 w-[58%] rounded-[3px] border-2 border-accent"
-                />
-              </div>
-              <p className="mt-4 text-eyebrow uppercase text-accent-strong">Constat n° 1</p>
-              <p className="mt-2 text-small text-text">Des textes manquent de contraste</p>
-              <p className="mt-1 text-small text-text-muted">
-                Difficile à lire au soleil. Assombrir le texte jusqu&apos;à 4,5:1.
-              </p>
-              <p className="mt-4 border-t border-border pt-3 text-[11px] uppercase tracking-[0.14em] text-text-muted">
-                Exemple illustratif — pas un vrai site
-              </p>
-            </Card>
-          </div>
-        }
+        childrenVariant="bloc"
       >
-        <div className="w-full">
-          <form onSubmit={validerAdresse} className="w-full">
-            {/*
-              Sous 640 px, le bouton sort du cadre de saisie et passe en pleine
-              largeur dessous : deux éléments empilés dans une même bordure
-              donnaient une boîte lourde et mal équilibrée.
-            */}
-            <div
-              className={cn(
-                "relative rounded-xl border bg-surface shadow-sm transition-[border-color,box-shadow] duration-500 ease-nova",
-                "p-0 sm:p-2",
-                focus ? "border-accent shadow-[0_0_0_4px_rgba(217,108,79,0.10)]" : "border-border-strong"
+        {/*
+          Tout le parcours tient ici, dans un seul cadre. Le visiteur ne change
+          jamais de zone : le fil reste en place et les cartes se relaient à
+          l'intérieur. La hauteur se réajuste toute seule (`layout`), sans à-coup
+          entre deux étapes de tailles différentes.
+        */}
+        <div ref={zone} className="mx-auto w-full max-w-3xl scroll-mt-24">
+          <FilParcours phase={phase} reduce={reduce} />
+
+          <motion.div layout={!reduce} transition={{ duration: 0.45, ease: EASE_NOVA }}>
+            <AnimatePresence mode="wait" initial={false}>
+              {phase === "adresse" && (
+                <motion.div key="adresse" {...glisse(reduce)}>
+                  <CarteAdresse
+                    saisie={saisie}
+                    onSaisie={setSaisie}
+                    onSoumettre={validerAdresse}
+                    disponible={disponible}
+                    reduce={reduce}
+                  />
+                </motion.div>
               )}
-            >
-              <div className="flex flex-col sm:flex-row sm:gap-2">
-                <div className="relative flex-1">
-                  <Icon
-                    icon={Search}
-                    className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-text-muted"
+
+              {phase === "coordonnees" && (
+                <motion.div key="coordonnees" {...glisse(reduce)}>
+                  <EcranCoordonnees
+                    url={urlAnalysee}
+                    onValide={(qui) => void lancerAnalyse(qui)}
+                    onRetour={reinitialiser}
                   />
-                  {/*
-                    `type="text"` et non `type="url"` : le navigateur exige un
-                    schéma sur un champ `url` et refusait « monentreprise.fr »
-                    — l'exemple donné par le champ lui-même — avec une bulle
-                    « Veuillez saisir une URL. ». Le formulaire ne partait pas.
-                    La validation revient à `normalizeUrl`, qui complète le
-                    schéma et répond en français quand l'adresse est fautive.
-                  */}
-                  <Input
-                    type="text"
-                    inputMode="url"
-                    autoComplete="url"
-                    spellCheck={false}
-                    placeholder="monentreprise.fr"
-                    aria-label="Adresse de votre site"
-                    value={saisie}
-                    onChange={(e) => setSaisie(e.target.value)}
-                    onFocus={() => setFocus(true)}
-                    onBlur={() => setFocus(false)}
-                    disabled={phase === "analyse"}
-                    className="h-14 border-transparent bg-transparent pl-11 text-lead shadow-none focus-visible:border-transparent focus-visible:ring-0 sm:h-13"
+                </motion.div>
+              )}
+
+              {phase === "analyse" && (
+                <motion.div key="analyse" {...glisse(reduce)}>
+                  <EcranProgression
+                    url={urlAnalysee}
+                    etats={etats}
+                    apercus={apercus}
+                    depouillement={depouillement}
+                    reduce={reduce}
+                    onAnnuler={reinitialiser}
                   />
-                </div>
-                <Button
-                  type="submit"
-                  variant="primary"
-                  disabled={phase === "analyse" || !disponible}
-                  className="hidden h-13 shrink-0 sm:inline-flex"
-                >
-                  {phase === "analyse" ? "Analyse en cours…" : "Analyser mon site"}
-                  {phase !== "analyse" && <Icon icon={ArrowRight} />}
-                </Button>
-              </div>
-            </div>
+                </motion.div>
+              )}
 
-            <Button
-              type="submit"
-              variant="primary"
-              disabled={phase === "analyse" || !disponible}
-              className="mt-3 h-13 w-full sm:hidden"
-            >
-              {phase === "analyse" ? "Analyse en cours…" : "Analyser mon site"}
-              {phase !== "analyse" && <Icon icon={ArrowRight} />}
-            </Button>
-            <p className="mt-4 text-small text-text-muted">
-              Quatre étapes : votre adresse, vos coordonnées, l&apos;analyse, puis votre rapport.
-              Comptez une minute en tout.
-            </p>
-            {!disponible && (
-              <p className="mt-3 text-small text-accent-strong">
-                L&apos;analyse automatique est momentanément indisponible. Écrivez-moi et je la
-                lance de mon côté.
-              </p>
-            )}
-          </form>
-        </div>
-      </PageHero>
+              {phase === "erreur" && (
+                <motion.div key="erreur" {...glisse(reduce)}>
+                  <Card tone="ink" padding="md" className="grain-ink relative overflow-hidden lg:p-9">
+                    <div className="relative flex items-center justify-center gap-3">
+                      <Badge variant="ink">Analyse interrompue</Badge>
+                      <NovaMark aria-hidden className="size-2.5 text-accent" />
+                    </div>
+                    <h2 className="relative mt-7 font-heading text-h2 text-on-ink">
+                      Je n&apos;ai pas pu aller au bout
+                    </h2>
+                    <p className="measure relative mx-auto mt-4 text-lead text-on-ink">{erreur}</p>
+                    <div className="relative mt-8">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={reinitialiser}
+                        className="border-border-ink text-on-ink hover:border-accent hover:text-accent"
+                      >
+                        <Icon icon={RotateCcw} />
+                        Reprendre depuis le début
+                      </Button>
+                    </div>
+                  </Card>
+                </motion.div>
+              )}
 
-      {/* ---- Zone d'analyse, de résultat ou d'erreur --------------------- */}
-      <Section className="bg-surface" spacing="default">
-        <div ref={zone} className="mx-auto max-w-3xl scroll-mt-24">
-          {/* Le fil n'apparaît qu'une fois le parcours engagé. */}
-          {phase !== "adresse" && phase !== "erreur" && (
-            <FilParcours phase={phase} reduce={reduce} />
-          )}
+              {phase === "resultat" && rapportCourant && (
+                <motion.div key="resultat" {...glisse(reduce)}>
+                  {contact?.prenom && (
+                    <p className="mb-6 text-center text-lead text-text-secondary">
+                      Voilà votre rapport,{" "}
+                      <strong className="font-semibold text-text">{contact.prenom}</strong>.
+                    </p>
+                  )}
 
-          <AnimatePresence>
-            {phase === "coordonnees" && (
-              <motion.div
-                key="coordonnees"
-                initial={reduce ? false : { opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={reduce ? undefined : { opacity: 0 }}
-                transition={{ duration: 0.3, ease: EASE_NOVA }}
-              >
-                <EcranCoordonnees
-                  url={urlAnalysee}
-                  onValide={(qui) => void lancerAnalyse(qui)}
-                  onRetour={reinitialiser}
-                />
-              </motion.div>
-            )}
+                  <Resultats
+                    rapports={rapports}
+                    appareil={appareil}
+                    onAppareil={setAppareil}
+                    reduce={reduce}
+                  />
 
-            {phase === "analyse" && (
-              <motion.div
-                key="analyse"
-                initial={reduce ? false : { opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={reduce ? undefined : { opacity: 0 }}
-                transition={{ duration: 0.3, ease: EASE_NOVA }}
-              >
-                <EcranProgression
-                  url={urlAnalysee}
-                  etats={etats}
-                  apercus={apercus}
-                  depouillement={depouillement}
-                  reduce={reduce}
-                  onAnnuler={reinitialiser}
-                />
-              </motion.div>
-            )}
-
-            {phase === "erreur" && (
-              <motion.div
-                key="erreur"
-                initial={reduce ? false : { opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, ease: EASE_NOVA }}
-              >
-                <Card padding="md" accent="left">
-                  <p className="text-eyebrow uppercase text-accent-strong">L&apos;analyse n&apos;a pas abouti</p>
-                  <p className="measure mx-auto mt-4 text-body text-text-secondary">{erreur}</p>
-                  <div className="mt-7">
+                  <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
                     <Button type="button" variant="outline" onClick={reinitialiser}>
                       <Icon icon={RotateCcw} />
-                      Réessayer
+                      Analyser une autre adresse
                     </Button>
+                    <Link href="/#contact" className="group">
+                      <Button variant="primary">
+                        <Icon icon={Mail} />
+                        Parler de ces corrections
+                      </Button>
+                    </Link>
                   </div>
-                </Card>
-              </motion.div>
-            )}
-
-            {phase === "resultat" && rapportCourant && (
-              <motion.div
-                key="resultat"
-                initial={reduce ? false : { opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, ease: EASE_NOVA }}
-              >
-                {contact?.prenom && (
-                  <p className="mb-6 text-center text-lead text-text-secondary">
-                    Voilà votre rapport,{" "}
-                    <strong className="font-semibold text-text">{contact.prenom}</strong>.
-                  </p>
-                )}
-
-                <Resultats
-                  rapports={rapports}
-                  appareil={appareil}
-                  onAppareil={setAppareil}
-                  reduce={reduce}
-                />
-
-                <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-                  <Button type="button" variant="outline" onClick={reinitialiser}>
-                    <Icon icon={RotateCcw} />
-                    Analyser une autre adresse
-                  </Button>
-                  <Link href="/#contact" className="group">
-                    <Button variant="primary">
-                      <Icon icon={Mail} />
-                      Parler de ces corrections
-                    </Button>
-                  </Link>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.div>
         </div>
-      </Section>
-
+      </PageHero>
       {/* ---- B. Trois dimensions ---------------------------------------- */}
       <Section spacing="default">
         <div className="mx-auto max-w-4xl">

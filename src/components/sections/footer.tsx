@@ -230,7 +230,7 @@ function Footer() {
               </li>
             ))}
           </ul>
-          <p className="text-small text-on-ink-soft/80">
+          <p className="text-small text-on-ink-soft">
             © {new Date().getFullYear()} Studio Digital Nova. Tous droits réservés.
           </p>
         </motion.div>

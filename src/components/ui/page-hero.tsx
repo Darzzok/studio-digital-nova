@@ -33,6 +33,12 @@ type PageHeroProps = {
   lead?: ReactNode;
   /** Boutons ou champ de saisie, sous le chapeau. */
   children?: ReactNode;
+  /**
+   * Disposition de `children`. « actions » aligne des boutons ; « bloc » laisse
+   * un panneau occuper toute la largeur de la colonne — un formulaire, un
+   * parcours en plusieurs écrans.
+   */
+  childrenVariant?: "actions" | "bloc";
   /** Contenu additionnel : sous la colonne centrée, ou à droite si `split`. */
   aside?: ReactNode;
   /**
@@ -49,6 +55,7 @@ function PageHero({
   title,
   lead,
   children,
+  childrenVariant = "actions",
   aside,
   split,
   className,
@@ -146,11 +153,20 @@ function PageHero({
           )}
 
           {children && (
+            /*
+              Entrée au montage, et non `whileInView` : ce bloc est au-dessus de
+              la ligne de flottaison par construction. Avec un seuil de 40 %, un
+              panneau plus haut que l'écran ne franchissait jamais la condition
+              et restait invisible, à `opacity: 0`.
+            */
             <motion.div
-              className="mt-10 flex w-full flex-col items-center gap-4 sm:w-auto sm:flex-row"
+              className={cn(
+                childrenVariant === "bloc"
+                  ? "mt-12 w-full"
+                  : "mt-10 flex w-full flex-col items-center gap-4 sm:w-auto sm:flex-row"
+              )}
               initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, amount: 0.4 }}
+              animate="visible"
               variants={floatIn(0.4, { y: 28 })}
             >
               {children}
