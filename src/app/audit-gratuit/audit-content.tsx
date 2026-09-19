@@ -39,6 +39,8 @@ import {
   normalizeUrl,
   runAudit,
   type Constat,
+  type DimensionId,
+  type NoteDimension,
   type RapportPage,
   type Strategy,
 } from "@/lib/audit"
@@ -67,11 +69,11 @@ type Phase = "saisie" | "analyse" | "resultat" | "erreur"
 type EtapeId = "connexion" | "mobile" | "ordinateur" | "bilan"
 type EtatEtape = "attente" | "cours" | "termine" | "indisponible"
 
-const ETAPES: { id: EtapeId; libelle: string }[] = [
-  { id: "connexion", libelle: "Connexion à votre site" },
-  { id: "mobile", libelle: "Analyse de la version mobile" },
-  { id: "ordinateur", libelle: "Analyse de la version ordinateur" },
-  { id: "bilan", libelle: "Préparation du bilan" },
+const ETAPES: { id: EtapeId; libelle: string; court: string }[] = [
+  { id: "connexion", libelle: "Connexion à votre site", court: "Connexion" },
+  { id: "mobile", libelle: "Analyse de la version mobile", court: "Mobile" },
+  { id: "ordinateur", libelle: "Analyse de la version ordinateur", court: "Ordinateur" },
+  { id: "bilan", libelle: "Préparation du bilan", court: "Bilan" },
 ]
 
 const TON_NOTE = (note: number) =>
@@ -315,73 +317,283 @@ function CarteConstat({
 /* Écran de progression                                                        */
 /* -------------------------------------------------------------------------- */
 /*
-  La barre suit les étapes RÉELLEMENT franchies : chaque étape terminée vaut
-  une part égale du total. Aucune minuterie ne pousse le pourcentage — l'ancien
-  écran plafonnait mathématiquement à 92 % et donnait l'impression d'un
-  blocage.
+  L'analyse dure vingt à trente secondes. Ce qui se passe pendant ce temps doit
+  se voir, sinon le visiteur a le sentiment que le résultat sort de nulle part.
+
+  Deux temps se succèdent ici, et ils ne mentent ni l'un ni l'autre :
+
+  1. LE RELEVÉ — les deux requêtes partent vers Google PageSpeed. Leur durée est
+     inconnue, donc la barre est indéterminée : un pourcentage inventé serait un
+     mensonge. Ce qui est montré est réel — le chrono qui tourne, l'état de
+     chaque appareil, et la capture dès qu'elle arrive.
+  2. LE DÉPOUILLEMENT — les mesures sont là. Les cinq dimensions se dévoilent
+     l'une après l'autre avec leur VRAIE note. L'espacement est un choix
+     d'affichage, jamais un calcul qui continue : rien n'est recalculé ici.
 */
+
+/** Ce que le moteur passe en revue. Chaque ligne correspond à un audit réel. */
+const REVUE = [
+  "Contraste des textes sur leur fond",
+  "Taille des caractères sur petit écran",
+  "Images sans dimensions déclarées",
+  "Images servies plus lourdes que nécessaire",
+  "Zones cliquables trop petites au doigt",
+  "Liens et boutons sans intitulé lisible",
+  "Décalages de la mise en page au chargement",
+  "Délai d'affichage du contenu principal",
+  "Titre, description et structure des titres",
+]
+
+type Depouillement = { dims: NoteDimension[]; faites: DimensionId[] }
+
+/** Attente que « Annuler » interrompt sur-le-champ. */
+function pause(ms: number, signal: AbortSignal) {
+  return new Promise<void>((resolve) => {
+    if (ms <= 0 || signal.aborted) return resolve()
+    const id = setTimeout(resolve, ms)
+    signal.addEventListener("abort", () => { clearTimeout(id); resolve() }, { once: true })
+  })
+}
+
+/** Compteur qui monte jusqu'à la vraie note. Aucune valeur intermédiaire n'est un résultat. */
+function Compteur({ valeur, reduce }: { valeur: number; reduce: boolean }) {
+  const [anime, setAnime] = useState(0)
+
+  useEffect(() => {
+    if (reduce) return
+    let image = 0
+    const depart = performance.now()
+    const tick = (t: number) => {
+      const p = Math.min(1, (t - depart) / 620)
+      setAnime(Math.round(valeur * (1 - Math.pow(1 - p, 3))))
+      if (p < 1) image = requestAnimationFrame(tick)
+    }
+    image = requestAnimationFrame(tick)
+
+    /*
+      Filet indispensable : dans un onglet passé en arrière-plan, le navigateur
+      n'exécute plus une seule image d'animation. Le compteur restait alors
+      bloqué sur 0 et affichait « 0/100 » comme si c'était la note. Ce délai
+      pose la vraie valeur quoi qu'il arrive.
+    */
+    const secours = setTimeout(() => setAnime(valeur), 800)
+
+    return () => {
+      cancelAnimationFrame(image)
+      clearTimeout(secours)
+    }
+  }, [valeur, reduce])
+
+  /* En mouvement réduit, la note s'affiche d'emblée : pas de compte à rebours. */
+  return <>{reduce ? valeur : anime}</>
+}
+
+/**
+ * Cadre d'appareil — téléphone ou ordinateur. La capture réelle s'y installe
+ * dès qu'elle arrive ; avant, c'est une trame vide, jamais une fausse image.
+ */
+function CadreAppareil({
+  type,
+  etat,
+  capture,
+  reduce,
+}: {
+  type: Strategy
+  etat: EtatEtape
+  capture: string | undefined
+  reduce: boolean
+}) {
+  const mobile = type === "mobile"
+
+  const contenu = (
+    <>
+      {capture ? (
+        /* eslint-disable-next-line @next/next/no-img-element */
+        <img src={capture} alt="" className="block h-full w-full object-cover object-top" />
+      ) : (
+        <div className="flex h-full flex-col gap-1.5 p-2">
+          {[72, 100, 48].map((l, i) => (
+            <motion.span
+              key={i}
+              className="h-1.5 rounded-full bg-ink/12"
+              style={{ width: `${l}%` }}
+              animate={reduce ? { opacity: 0.4 } : { opacity: [0.25, 0.6, 0.25] }}
+              transition={reduce ? undefined : { duration: 1.8, repeat: Infinity, delay: i * 0.2, ease: EASE_NOVA }}
+            />
+          ))}
+          <motion.span
+            className="mt-0.5 flex-1 rounded-sm bg-ink/8"
+            animate={reduce ? { opacity: 0.35 } : { opacity: [0.2, 0.45, 0.2] }}
+            transition={reduce ? undefined : { duration: 2.2, repeat: Infinity, ease: EASE_NOVA }}
+          />
+        </div>
+      )}
+
+      {/* Balayage : il accompagne une requête réellement en vol. */}
+      {etat === "cours" && !reduce && (
+        <>
+          <motion.span
+            aria-hidden
+            className="absolute inset-x-0 h-12"
+            style={{ backgroundImage: "linear-gradient(180deg, transparent, rgba(217,108,79,0.32), transparent)" }}
+            animate={{ top: ["-25%", "110%"] }}
+            transition={{ duration: 2.2, repeat: Infinity, ease: "linear" }}
+          />
+          <motion.span
+            aria-hidden
+            className="absolute inset-x-0 h-px bg-accent"
+            animate={{ top: ["-2%", "102%"] }}
+            transition={{ duration: 2.2, repeat: Infinity, ease: "linear" }}
+          />
+        </>
+      )}
+    </>
+  )
+
+  return (
+    <div className="flex flex-col items-center gap-3">
+      <div className="relative">
+        {mobile ? (
+          <div className="rounded-[1.05rem] border-2 border-border-ink bg-ink p-[3px]">
+            <div className="relative aspect-[9/18] w-[86px] overflow-hidden rounded-[0.72rem] bg-white sm:w-[100px]">
+              {contenu}
+              <span aria-hidden className="absolute left-1/2 top-1 z-10 h-1 w-7 -translate-x-1/2 rounded-full bg-ink/45" />
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center">
+            <div className="rounded-t-md border-2 border-b-0 border-border-ink bg-ink p-[3px]">
+              <div className="relative aspect-[16/10] w-[132px] overflow-hidden rounded-[3px] bg-white sm:w-[158px]">
+                {contenu}
+              </div>
+            </div>
+            <span aria-hidden className="h-[5px] w-[152px] rounded-b-md bg-border-ink sm:w-[178px]" />
+          </div>
+        )}
+
+        {/* Pastille d'état, posée sur le coin du cadre. */}
+        <AnimatePresence>
+          {(etat === "termine" || etat === "indisponible") && (
+            <motion.span
+              key={etat}
+              className={cn(
+                "absolute -right-1.5 -top-1.5 flex size-5 items-center justify-center rounded-full border-2 border-surface-ink",
+                etat === "termine" ? "bg-accent text-ink" : "bg-error text-paper"
+              )}
+              initial={reduce ? false : { scale: 0, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 0.34, ease: EASE_NOVA }}
+            >
+              <Icon icon={etat === "termine" ? Check : X} className="size-2.5" />
+            </motion.span>
+          )}
+        </AnimatePresence>
+      </div>
+
+      <p className="flex items-center gap-1.5 text-eyebrow uppercase text-on-ink-soft">
+        <Icon icon={mobile ? Smartphone : Monitor} className="size-3" />
+        {mobile ? "Mobile" : "Ordinateur"}
+      </p>
+    </div>
+  )
+}
+
 function EcranProgression({
   url,
   etats,
-  apercu,
+  apercus,
+  depouillement,
   reduce,
   onAnnuler,
 }: {
   url: string
   etats: Record<EtapeId, EtatEtape>
-  apercu: string | null
+  apercus: Partial<Record<Strategy, string>>
+  depouillement: Depouillement | null
   reduce: boolean
   onAnnuler: () => void
 }) {
-  const faites = ETAPES.filter((e) => etats[e.id] === "termine" || etats[e.id] === "indisponible")
-  const pourcent = Math.round((faites.length / ETAPES.length) * 100)
+  /* Chrono réel : il compte le temps écoulé, il n'anticipe rien. */
+  const [secondes, setSecondes] = useState(0)
+  useEffect(() => {
+    const debut = Date.now()
+    const id = setInterval(() => setSecondes(Math.floor((Date.now() - debut) / 1000)), 1000)
+    return () => clearInterval(id)
+  }, [])
+
+  /* Ce que l'analyse passe en revue — une énumération, pas un déroulé d'étapes. */
+  const [revue, setRevue] = useState(0)
+  useEffect(() => {
+    if (reduce || depouillement) return
+    const id = setInterval(() => setRevue((i) => (i + 1) % REVUE.length), 1900)
+    return () => clearInterval(id)
+  }, [reduce, depouillement])
+
+  const total = depouillement?.dims.length ?? 0
+  const pourcent = depouillement && total > 0
+    ? Math.round((depouillement.faites.length / total) * 100)
+    : 0
 
   return (
     <Card tone="ink" padding="md" role="status" aria-live="polite" className="grain-ink relative overflow-hidden lg:p-9">
-      <div className="relative flex items-center justify-center gap-3">
-        <Badge variant="ink">Analyse en cours</Badge>
+      <div className="relative flex flex-wrap items-center justify-center gap-x-3 gap-y-2">
+        <Badge variant="ink">{depouillement ? "Dépouillement des mesures" : "Relevé en cours"}</Badge>
         <NovaMark aria-hidden className="size-2.5 text-accent" />
+        <span className="font-heading text-small tabular-nums text-on-ink-soft">
+          {Math.floor(secondes / 60)}:{String(secondes % 60).padStart(2, "0")}
+        </span>
       </div>
 
-      <p className="relative mt-6 break-words text-center text-eyebrow uppercase text-on-ink-soft">
-        {url}
-      </p>
+      <p className="relative mt-5 break-words text-center text-eyebrow uppercase text-on-ink-soft">{url}</p>
 
-      {/* Barre liée à l'avancement réel */}
+      {/*
+        Indéterminée tant qu'on attend Google : la durée est inconnue, un
+        pourcentage serait inventé. Elle devient exacte au dépouillement, où
+        chaque cran correspond à une dimension réellement affichée.
+      */}
       <div className="relative mt-6">
-        <div className="h-1 w-full overflow-hidden rounded-full bg-border-ink">
-          <motion.div
-            className="h-full rounded-full bg-accent"
-            initial={false}
-            animate={{ scaleX: pourcent / 100 }}
-            style={{ transformOrigin: "left" }}
-            transition={reduce ? { duration: 0 } : { duration: 0.5, ease: EASE_NOVA }}
-          />
+        <div className="relative h-1 w-full overflow-hidden rounded-full bg-border-ink">
+          {depouillement ? (
+            <motion.div
+              className="h-full rounded-full bg-accent"
+              initial={false}
+              animate={{ scaleX: pourcent / 100 }}
+              style={{ transformOrigin: "left" }}
+              transition={reduce ? { duration: 0 } : { duration: 0.45, ease: EASE_NOVA }}
+            />
+          ) : reduce ? (
+            <div className="h-full w-1/4 rounded-full bg-accent/60" />
+          ) : (
+            <motion.div
+              className="absolute inset-y-0 w-1/3 rounded-full bg-gradient-to-r from-transparent via-accent to-transparent"
+              animate={{ left: ["-35%", "100%"] }}
+              transition={{ duration: 1.7, repeat: Infinity, ease: "easeInOut" }}
+            />
+          )}
         </div>
-        <p className="mt-3 flex items-baseline justify-center gap-2 text-center">
-          <motion.span
-            key={pourcent}
-            className="font-heading text-h3 tabular-nums text-on-ink"
-            initial={reduce ? false : { opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, ease: EASE_NOVA }}
-          >
-            {pourcent} %
-          </motion.span>
-          <span className="text-small text-on-ink-soft">
-            {faites.length} / {ETAPES.length} étapes
-          </span>
+        <p className="mt-3 text-center text-small text-on-ink-soft">
+          {depouillement
+            ? `${depouillement.faites.length} / ${total} dimensions dépouillées`
+            : "Durée inconnue — je n'affiche pas de pourcentage tant que Google n'a pas répondu."}
         </p>
       </div>
 
-      <ul className="card-list relative mt-8 flex flex-col gap-3">
+      {/* Les deux appareils, côte à côte, chacun avec son état et sa capture. */}
+      <div className="relative mt-9 flex items-end justify-center gap-7 sm:gap-10">
+        <CadreAppareil type="mobile" etat={etats.mobile} capture={apercus.mobile} reduce={reduce} />
+        <CadreAppareil type="desktop" etat={etats.ordinateur} capture={apercus.desktop} reduce={reduce} />
+      </div>
+
+      {/* Fil des étapes — quatre jalons, franchis sur un fait observable. */}
+      <ol className="relative mt-9 grid grid-cols-4 gap-1">
+        <span aria-hidden className="absolute left-[12.5%] right-[12.5%] top-[11px] h-px bg-border-ink" />
         {ETAPES.map((etape) => {
           const etat = etats[etape.id]
           return (
-            <li key={etape.id} className="flex items-center gap-3">
+            <li key={etape.id} className="relative flex flex-col items-center gap-2 text-center">
               <span
                 className={cn(
-                  "flex size-6 shrink-0 items-center justify-center rounded-full border transition-colors duration-500 ease-nova",
+                  "flex size-[23px] shrink-0 items-center justify-center rounded-full border bg-surface-ink transition-colors duration-500 ease-nova",
                   etat === "termine" && "border-accent bg-accent text-ink",
                   etat === "indisponible" && "border-error text-error",
                   etat === "cours" && "border-accent/60 text-accent",
@@ -400,86 +612,102 @@ function EcranProgression({
               </span>
               <span
                 className={cn(
-                  "text-small transition-colors duration-500 ease-nova",
-                  etat === "attente" ? "text-on-ink-soft" : "text-on-ink"
+                  "text-[10px] uppercase leading-tight tracking-[0.1em] transition-colors duration-500 ease-nova",
+                  etat === "attente" ? "text-on-ink-soft/70" : "text-on-ink"
                 )}
               >
-                {etape.libelle}
+                {etape.court}
               </span>
-              {etat === "indisponible" && (
-                <span className="ml-auto text-eyebrow uppercase text-error">Indisponible</span>
-              )}
             </li>
           )
         })}
-      </ul>
+      </ol>
 
-      {/*
-        La capture s'affiche dès qu'elle arrive, sans attendre la fin, avec un
-        balayage qui la parcourt tant que l'analyse continue. L'animation
-        accompagne un fait réel — l'image est bien là — au lieu de meubler.
-      */}
-      <AnimatePresence>
-        {apercu ? (
-          <motion.div
-            className="relative mt-8 flex flex-col items-center"
-            initial={reduce ? false : { opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, ease: EASE_NOVA }}
-          >
-            <p className="text-eyebrow uppercase text-on-ink-soft">Première image reçue</p>
-            <div className="relative mt-3 w-36 overflow-hidden rounded-md border border-border-ink bg-white">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={apercu} alt="" className="block w-full" />
-              {!reduce && (
-                <>
-                  <motion.span
-                    aria-hidden
-                    className="absolute inset-x-0 h-16"
-                    style={{
-                      backgroundImage:
-                        "linear-gradient(180deg, transparent, rgba(217,108,79,0.35), transparent)",
-                    }}
-                    animate={{ top: ["-20%", "110%"] }}
-                    transition={{ duration: 2.4, repeat: Infinity, ease: "linear" }}
-                  />
-                  <motion.span
-                    aria-hidden
-                    className="absolute inset-x-0 h-px bg-accent"
-                    animate={{ top: ["-2%", "102%"] }}
-                    transition={{ duration: 2.4, repeat: Infinity, ease: "linear" }}
-                  />
-                </>
-              )}
-            </div>
-          </motion.div>
+      {/* Bas de l'écran : la revue pendant l'attente, les notes au dépouillement. */}
+      <div className="relative mt-9 border-t border-border-ink pt-7">
+        {depouillement ? (
+          <>
+            <p className="text-eyebrow uppercase text-on-ink-soft">Vos notes, dimension par dimension</p>
+            <ul className="card-list mt-5 flex flex-col gap-3">
+              {depouillement.dims.map((d) => {
+                const fait = depouillement.faites.includes(d.id)
+                const ton = d.note !== null ? TON_NOTE(d.note) : null
+                return (
+                  <motion.li
+                    key={d.id}
+                    className="flex items-center gap-3"
+                    initial={false}
+                    animate={{ opacity: fait ? 1 : 0.32 }}
+                    transition={{ duration: 0.3, ease: EASE_NOVA }}
+                  >
+                    <span
+                      className={cn(
+                        "flex size-5 shrink-0 items-center justify-center rounded-full border transition-colors duration-300 ease-nova",
+                        fait ? "border-accent bg-accent text-ink" : "border-border-ink text-on-ink-soft"
+                      )}
+                    >
+                      {fait ? <Icon icon={Check} className="size-2.5" /> : <span className="size-1 rounded-full bg-current" />}
+                    </span>
+                    <span className="flex-1 text-left text-small text-on-ink">{d.libelle}</span>
+                    {fait && (
+                      <motion.span
+                        className="font-heading text-body tabular-nums"
+                        style={{ color: ton ? `var(--color-${d.note! >= 75 ? "success" : d.note! >= 45 ? "warning" : "accent"})` : undefined }}
+                        initial={reduce ? false : { opacity: 0, x: 8 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.3, ease: EASE_NOVA }}
+                      >
+                        {d.note === null ? (
+                          <span className="text-small text-on-ink-soft">non mesurée</span>
+                        ) : (
+                          <>
+                            <Compteur valeur={d.note} reduce={reduce} />
+                            <span className="text-small text-on-ink-soft">/100</span>
+                          </>
+                        )}
+                      </motion.span>
+                    )}
+                  </motion.li>
+                )
+              })}
+            </ul>
+          </>
         ) : (
-          /* Avant la première image : un cadre qui respire, pas un vide. */
-          <motion.div
-            key="attente"
-            className="relative mt-8 flex flex-col items-center"
-            initial={false}
-          >
-            <p className="text-eyebrow uppercase text-on-ink-soft">Capture en attente</p>
-            <div className="relative mt-3 flex h-40 w-36 flex-col gap-2 overflow-hidden rounded-md border border-border-ink p-3">
-              {[70, 100, 45].map((l, i) => (
-                <motion.span
+          <>
+            <p className="text-eyebrow uppercase text-on-ink-soft">Cette analyse passe en revue</p>
+            {/*
+              Fondu croisé, et non `mode="wait"` : l'attente entre la sortie et
+              l'entrée laissait la ligne vide un tiers de seconde à chaque
+              rotation, ce qui donnait un clignotement.
+            */}
+            <div className="relative mt-4 flex h-6 items-center justify-center">
+              <AnimatePresence initial={false}>
+                <motion.p
+                  key={reduce ? "fixe" : revue}
+                  className="absolute inset-x-0 text-small text-on-ink"
+                  initial={reduce ? false : { opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={reduce ? undefined : { opacity: 0, y: -8 }}
+                  transition={{ duration: 0.3, ease: EASE_NOVA }}
+                >
+                  {REVUE[reduce ? 0 : revue]}
+                </motion.p>
+              </AnimatePresence>
+            </div>
+            <div aria-hidden className="mt-4 flex items-center justify-center gap-1.5">
+              {REVUE.map((_, i) => (
+                <span
                   key={i}
-                  className="h-2 rounded-full bg-on-ink-soft/20"
-                  style={{ width: `${l}%` }}
-                  animate={reduce ? { opacity: 0.35 } : { opacity: [0.18, 0.4, 0.18] }}
-                  transition={reduce ? undefined : { duration: 1.8, repeat: Infinity, delay: i * 0.22, ease: EASE_NOVA }}
+                  className={cn(
+                    "h-1 rounded-full transition-all duration-500 ease-nova",
+                    !reduce && i === revue ? "w-5 bg-accent" : "w-1 bg-border-ink"
+                  )}
                 />
               ))}
-              <motion.span
-                className="mt-1 flex-1 rounded-md bg-on-ink-soft/10"
-                animate={reduce ? { opacity: 0.3 } : { opacity: [0.12, 0.28, 0.12] }}
-                transition={reduce ? undefined : { duration: 2.2, repeat: Infinity, ease: EASE_NOVA }}
-              />
             </div>
-          </motion.div>
+          </>
         )}
-      </AnimatePresence>
+      </div>
 
       <div className="relative mt-8">
         <Button
@@ -1066,10 +1294,18 @@ function AuditContent() {
   const [etats, setEtats] = useState<Record<EtapeId, EtatEtape>>({
     connexion: "attente", mobile: "attente", ordinateur: "attente", bilan: "attente",
   })
-  const [apercu, setApercu] = useState<string | null>(null)
+  const [apercus, setApercus] = useState<Partial<Record<Strategy, string>>>({})
+  const [depouillement, setDepouillement] = useState<Depouillement | null>(null)
   const [erreur, setErreur] = useState<string | null>(null)
   const [deverrouille, setDeverrouille] = useState(false)
   const [focus, setFocus] = useState(false)
+
+  /*
+    Sans ce repère, le visiteur restait sur le formulaire pendant les vingt
+    secondes d'analyse : l'écran de progression s'affichait hors champ, plus
+    bas, et le résultat semblait surgir de nulle part. On l'amène à l'écran.
+  */
+  const zone = useRef<HTMLDivElement | null>(null)
 
   const abort = useRef<AbortController | null>(null)
   const cache = useRef(new Map<string, Partial<Record<Strategy, RapportPage>>>())
@@ -1079,6 +1315,41 @@ function AuditContent() {
 
   const majEtape = (id: EtapeId, etat: EtatEtape) =>
     setEtats((c) => ({ ...c, [id]: etat }))
+
+  /*
+    Les mesures sont arrivées. On les dévoile dimension par dimension avant de
+    basculer sur le rapport : le visiteur voit ses notes se poser au lieu de
+    recevoir un mur de résultats d'un bloc.
+
+    Rien n'est calculé ici — `dims` vient du moteur, les notes sont déjà
+    établies. L'espacement est un choix d'affichage, et lui seul.
+  */
+  const depouiller = useCallback(
+    async (suivant: Partial<Record<Strategy, RapportPage>>, signal: AbortSignal) => {
+      const base = suivant.mobile ?? suivant.desktop
+      if (!base) return
+
+      const poser = () => {
+        setRapports(suivant)
+        setAppareil(suivant.mobile ? "mobile" : "desktop")
+        setPhase("resultat")
+        setDepouillement(null)
+      }
+
+      if (reduce) return poser()
+
+      setDepouillement({ dims: base.dimensions, faites: [] })
+      for (const d of base.dimensions) {
+        await pause(420, signal)
+        if (signal.aborted) return
+        setDepouillement((c) => (c ? { ...c, faites: [...c.faites, d.id] } : c))
+      }
+      await pause(900, signal)
+      if (signal.aborted) return
+      poser()
+    },
+    [reduce]
+  )
 
   const lancer = useCallback(
     async (e?: React.FormEvent, adresseImposee?: string) => {
@@ -1099,7 +1370,8 @@ function AuditContent() {
 
       setUrlAnalysee(url)
       setDeverrouille(false)
-      setApercu(null)
+      setApercus({})
+      setDepouillement(null)
       setErreur(null)
 
       if (typeof window !== "undefined") {
@@ -1108,13 +1380,21 @@ function AuditContent() {
         window.history.replaceState(null, "", partage.toString())
       }
 
+      /*
+        Adresse déjà analysée : les mesures sont en mémoire, donc aucune requête
+        ne part. Le relevé serait un mensonge — on passe directement au
+        dépouillement, qui lui montre de vraies notes.
+      */
       const connu = cache.current.get(url)
       if (connu) {
-        setRapports(connu)
-        setAppareil(connu.mobile ? "mobile" : "desktop")
+        setApercus({
+          ...(connu.mobile?.capture ? { mobile: connu.mobile.capture.data } : {}),
+          ...(connu.desktop?.capture ? { desktop: connu.desktop.capture.data } : {}),
+        })
         setEtats({ connexion: "termine", mobile: connu.mobile ? "termine" : "indisponible",
                    ordinateur: connu.desktop ? "termine" : "indisponible", bilan: "termine" })
-        setPhase("resultat")
+        setPhase("analyse")
+        await depouiller(connu, controleur.signal)
         return
       }
 
@@ -1129,7 +1409,7 @@ function AuditContent() {
           (r) => {
             majEtape("connexion", "termine")
             majEtape(etape, "termine")
-            if (r.capture) setApercu((a) => a ?? r.capture!.data)
+            if (r.capture) setApercus((a) => ({ ...a, [appareilCible]: r.capture!.data }))
             return r
           },
           (cause) => {
@@ -1161,9 +1441,6 @@ function AuditContent() {
 
       majEtape("bilan", "termine")
       cache.current.set(url, suivant)
-      setRapports(suivant)
-      setAppareil(suivant.mobile ? "mobile" : "desktop")
-      setPhase("resultat")
 
       void transmettre({
         subject: `Audit lancé sur ${domaineCourt(url)}`,
@@ -1176,8 +1453,10 @@ function AuditContent() {
           `${resumerRapport(suivant.mobile ?? null, "MOBILE")}\n\n` +
           `${resumerRapport(suivant.desktop ?? null, "ORDINATEUR")}`,
       })
+
+      await depouiller(suivant, controleur.signal)
     },
-    [saisie, phase]
+    [saisie, phase, depouiller]
   )
 
   function reinitialiser() {
@@ -1185,7 +1464,8 @@ function AuditContent() {
     setPhase("saisie")
     setRapports({})
     setEtats({ connexion: "attente", mobile: "attente", ordinateur: "attente", bilan: "attente" })
-    setApercu(null)
+    setApercus({})
+    setDepouillement(null)
     setErreur(null)
     setDeverrouille(false)
     if (typeof window !== "undefined") {
@@ -1194,6 +1474,16 @@ function AuditContent() {
       window.history.replaceState(null, "", propre.toString())
     }
   }
+
+  /*
+    L'écran d'analyse vit plus bas que le formulaire : sans ce défilement, le
+    visiteur soumet son adresse et ne voit rien bouger. On l'y conduit dès que
+    l'analyse démarre — ou dès qu'une erreur doit être lue.
+  */
+  useEffect(() => {
+    if (phase !== "analyse" && phase !== "erreur") return
+    zone.current?.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" })
+  }, [phase, reduce])
 
   /* Lien partagé : `?url=` relance la même analyse à l'ouverture. */
   const dejaLance = useRef(false)
@@ -1282,9 +1572,19 @@ function AuditContent() {
                     icon={Search}
                     className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-text-muted"
                   />
+                  {/*
+                    `type="text"` et non `type="url"` : le navigateur exige un
+                    schéma sur un champ `url` et refusait « monentreprise.fr »
+                    — l'exemple donné par le champ lui-même — avec une bulle
+                    « Veuillez saisir une URL. ». Le formulaire ne partait pas.
+                    La validation revient à `normalizeUrl`, qui complète le
+                    schéma et répond en français quand l'adresse est fautive.
+                  */}
                   <Input
-                    type="url"
+                    type="text"
                     inputMode="url"
+                    autoComplete="url"
+                    spellCheck={false}
                     placeholder="monentreprise.fr"
                     aria-label="Adresse de votre site"
                     value={saisie}
@@ -1332,7 +1632,7 @@ function AuditContent() {
 
       {/* ---- Zone d'analyse, de résultat ou d'erreur --------------------- */}
       <Section className="bg-surface" spacing="default">
-        <div className="mx-auto max-w-3xl">
+        <div ref={zone} className="mx-auto max-w-3xl scroll-mt-24">
           <AnimatePresence>
             {phase === "analyse" && (
               <motion.div
@@ -1345,7 +1645,8 @@ function AuditContent() {
                 <EcranProgression
                   url={urlAnalysee}
                   etats={etats}
-                  apercu={apercu}
+                  apercus={apercus}
+                  depouillement={depouillement}
                   reduce={reduce}
                   onAnnuler={reinitialiser}
                 />
