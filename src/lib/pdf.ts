@@ -565,6 +565,31 @@ export class DocumentPdf {
   }
 
   /**
+   * Vrai pied de page : un filet, la signature à gauche, la pagination à
+   * droite. Appeler juste avant `versOctets`. Les pages listées dans `sauter`
+   * n'en reçoivent pas — les aplats sombres, où un filet gris jurerait.
+   */
+  pieds(signature: string, sauter: number[] = []) {
+    const total = this.flux.length
+    const ligne = MARGE - 22
+    for (let i = 0; i < total; i++) {
+      if (sauter.includes(i + 1)) continue
+      const pagination = `${i + 1} / ${total}`
+      const poser = (texte: string, x: number) => {
+        const octets = versWinAnsi(texte)
+        const chaine = octets.map((o) => String.fromCharCode(o)).join("")
+        this.flux[i] +=
+          `\nBT /F1 7.5 Tf 0.55 0.58 0.62 rg 1 0 0 1 ${x.toFixed(2)} ${ligne.toFixed(2)} Tm (${chaine}) Tj ET`
+      }
+      this.flux[i] +=
+        `\n0.89 0.87 0.84 rg ${MARGE} ${(ligne + 13).toFixed(2)} ` +
+        `${(A4.largeur - MARGE * 2).toFixed(2)} 0.6 re f`
+      poser(signature, MARGE)
+      poser(pagination, A4.largeur - MARGE - mesurer(pagination, 7.5, "normale"))
+    }
+  }
+
+  /**
    * Numérote chaque page en pied. Appeler juste avant `versOctets`.
    * `sauter` laisse des pages sans pied — typiquement la couverture, où le
    * texte gris viendrait se poser sur un aplat sombre et chevaucher le pavé

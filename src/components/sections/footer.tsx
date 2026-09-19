@@ -171,7 +171,7 @@ function Footer() {
           Trois colonnes de liens, centrées. Sous 640 px elles s'empilent ;
           au-dessus elles se répartissent à parts égales.
         */}
-        <div className="mt-12 grid grid-cols-1 gap-x-8 gap-y-10 text-center sm:grid-cols-3">
+        <div className="mt-12 grid grid-cols-1 gap-x-8 gap-y-9 text-center sm:grid-cols-3">
           {[
             { titre: "Navigation", liens: NAV_ITEMS, ancre: true, delai: 0.08 },
             { titre: "Prestations", liens: PRESTATION_ITEMS, ancre: false, delai: 0.16 },
@@ -186,7 +186,12 @@ function Footer() {
               variants={floatIn(colonne.delai, { y: 40 })}
             >
               <p className="text-eyebrow uppercase text-on-ink-soft">{colonne.titre}</p>
-              <ul className="mt-5 flex flex-col items-center gap-2.5">
+              {/*
+                Sous 640 px, les dix-sept liens empilés faisaient un pied de
+                page interminable. Ils passent sur deux colonnes : la hauteur
+                est divisée par deux et rien n'est masqué derrière un dépliant.
+              */}
+              <ul className="mt-5 grid w-full grid-cols-2 gap-x-4 gap-y-1 sm:flex sm:w-auto sm:flex-col sm:items-center sm:gap-2.5">
                 {colonne.liens.map((item) => (
                   <li key={item.href}>
                     {colonne.ancre ? (

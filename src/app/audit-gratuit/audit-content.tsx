@@ -349,6 +349,159 @@ function glisse(reduce: boolean) {
 }
 
 /* -------------------------------------------------------------------------- */
+/* Le barème, les trois systèmes côte à côte                                   */
+/* -------------------------------------------------------------------------- */
+/*
+  C'était un bandeau déroulant qui ne montrait qu'une pondération sur trois.
+  Trois onglets, une barre proportionnelle : on voit la répartition avant de
+  lire le détail, et on compare les trois systèmes sans cliquer ailleurs.
+*/
+const COULEUR_DIMENSION: Record<DimensionId, string> = {
+  apparence: "var(--color-accent)",
+  parcours: "var(--color-mineral)",
+  performance: "var(--color-warning)",
+  referencement: "var(--color-success)",
+  pratiques: "var(--color-text-muted)",
+}
+
+function Bareme({ reduce }: { reduce: boolean }) {
+  const cles = Object.keys(PERIMETRES) as Perimetre[]
+  const [actif, setActif] = useState<Perimetre>("complet")
+  const onglets = useRef<(HTMLButtonElement | null)[]>([])
+
+  const perimetre = PERIMETRES[actif]
+  const total = perimetre.dimensions.reduce((s, id) => s + DIMENSIONS[id].poids, 0)
+  const parts = perimetre.dimensions.map((id) => ({
+    id,
+    libelle: DIMENSIONS[id].libelle,
+    sens: DIMENSIONS[id].sens,
+    part: DIMENSIONS[id].poids / total,
+  }))
+
+  /* Flèches, Origine et Fin : un jeu d'onglets se parcourt au clavier. */
+  function auClavier(e: React.KeyboardEvent, index: number) {
+    const sauts: Record<string, number> = {
+      ArrowRight: index + 1,
+      ArrowLeft: index - 1,
+      Home: 0,
+      End: cles.length - 1,
+    }
+    const cible = sauts[e.key]
+    if (cible === undefined) return
+    e.preventDefault()
+    const suivant = (cible + cles.length) % cles.length
+    setActif(cles[suivant])
+    onglets.current[suivant]?.focus()
+  }
+
+  return (
+    <Card padding="md" className="text-left lg:p-9">
+      <p className="text-center text-eyebrow uppercase text-text-muted">Le barème</p>
+      <Heading variant="h3" className="mt-4 text-center">
+        Comment la note est calculée
+      </Heading>
+      <p className="measure mx-auto mt-4 text-center text-small text-text-secondary">
+        La mesure vient de l&apos;API Google PageSpeed Insights, la même que pagespeed.web.dev.
+        Je ne la modifie pas : je la repondère selon ce que vous demandez d&apos;examiner.
+      </p>
+
+      <div
+        role="tablist"
+        aria-label="Systèmes de calcul"
+        className="mt-8 flex flex-col gap-2 sm:flex-row sm:justify-center"
+      >
+        {cles.map((cle, i) => {
+          const choisi = cle === actif
+          return (
+            <button
+              key={cle}
+              ref={(el) => { onglets.current[i] = el }}
+              role="tab"
+              type="button"
+              id={`bareme-onglet-${cle}`}
+              aria-selected={choisi}
+              aria-controls={`bareme-panneau-${cle}`}
+              tabIndex={choisi ? 0 : -1}
+              onClick={() => setActif(cle)}
+              onKeyDown={(e) => auClavier(e, i)}
+              className={cn(
+                "relative flex min-h-11 items-center justify-center rounded-md px-5 text-small outline-none transition-colors duration-300 ease-nova focus-visible:ring-3 focus-visible:ring-ring/35",
+                choisi ? "text-paper" : "text-text-secondary hover:text-text"
+              )}
+            >
+              {choisi && (
+                <motion.span
+                  layoutId={reduce ? undefined : "bareme-actif"}
+                  aria-hidden
+                  className="absolute inset-0 rounded-md bg-ink"
+                  transition={{ duration: 0.32, ease: EASE_NOVA }}
+                />
+              )}
+              <span className="relative font-heading">{PERIMETRES[cle].libelle}</span>
+            </button>
+          )
+        })}
+      </div>
+
+      <div
+        role="tabpanel"
+        id={`bareme-panneau-${actif}`}
+        aria-labelledby={`bareme-onglet-${actif}`}
+        className="mt-8"
+      >
+        <p className="text-center text-small text-text-secondary">{perimetre.promesse}</p>
+
+        {/* La répartition, en une barre : la proportion se voit avant de se lire. */}
+        <div className="mt-6 flex h-3 w-full overflow-hidden rounded-full bg-surface-sunken">
+          {parts.map((p) => (
+            <motion.span
+              key={p.id}
+              className="h-full first:rounded-l-full last:rounded-r-full"
+              style={{ backgroundColor: COULEUR_DIMENSION[p.id] }}
+              initial={false}
+              animate={{ width: `${p.part * 100}%` }}
+              transition={reduce ? { duration: 0 } : { duration: 0.45, ease: EASE_NOVA }}
+            />
+          ))}
+        </div>
+
+        <ul className="card-list mt-7 flex flex-col gap-4">
+          {parts.map((p) => (
+            <motion.li
+              key={p.id}
+              className="flex items-baseline gap-3"
+              initial={reduce ? false : { opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, ease: EASE_NOVA }}
+            >
+              <span
+                aria-hidden
+                className="size-2.5 shrink-0 translate-y-1 rounded-full"
+                style={{ backgroundColor: COULEUR_DIMENSION[p.id] }}
+              />
+              <span className="w-12 shrink-0 text-right font-heading tabular-nums text-text">
+                {Math.round(p.part * 100)} %
+              </span>
+              <span className="text-small text-text-secondary">
+                <strong className="font-semibold text-text">{p.libelle}</strong> — {p.sens}
+              </span>
+            </motion.li>
+          ))}
+        </ul>
+      </div>
+
+      <div className="mt-8 border-t border-border pt-6">
+        <p className="measure mx-auto text-center text-small text-text-muted">
+          Une dimension non mesurable sort du calcul au lieu de compter zéro. Les audits qui
+          alimentent « apparence » sont volontairement disjoints de la catégorie Performance de
+          Google : sans cela, un même défaut serait compté deux fois.
+        </p>
+      </div>
+    </Card>
+  )
+}
+
+/* -------------------------------------------------------------------------- */
 /* Fil du parcours                                                             */
 /* -------------------------------------------------------------------------- */
 /*
@@ -2165,46 +2318,10 @@ function AuditContent() {
         </div>
       </Section>
 
-      {/* ---- Méthodologie, repliée ------------------------------------- */}
+      {/* ---- Le barème, les trois systèmes ------------------------------ */}
       <Section spacing="sm">
         <div className="mx-auto max-w-3xl">
-          <details className="group rounded-xl border border-border bg-surface p-6 text-left">
-            <summary className="flex cursor-pointer items-center justify-between gap-4 font-heading text-h3 text-text outline-none marker:content-[''] focus-visible:ring-3 focus-visible:ring-ring/35">
-              Comment la note est calculée
-              <Icon
-                icon={ArrowRight}
-                className="size-4 shrink-0 text-accent transition-transform duration-300 ease-nova group-open:rotate-90"
-              />
-            </summary>
-            <div className="mt-6 flex flex-col gap-4 text-small text-text-secondary">
-              <p>
-                La mesure vient de l&apos;API Google PageSpeed Insights, la même que
-                pagespeed.web.dev. Je ne la modifie pas : je la repondère.
-              </p>
-              <ul className="card-list flex flex-col gap-2">
-                {Object.values(DIMENSIONS).map((d) => (
-                  <li key={d.libelle} className="flex items-baseline gap-3 tabular-nums">
-                    <span className="w-12 shrink-0 text-right font-heading text-accent-strong">
-                      {Math.round(d.poids * 100)} %
-                    </span>
-                    {d.libelle}
-                  </li>
-                ))}
-              </ul>
-              <p>
-                Les audits qui alimentent « apparence » sont volontairement <em>disjoints</em> de
-                la catégorie Performance de Google : sans cela, un même défaut serait compté deux
-                fois.
-              </p>
-              <p>
-                Chaque constat porte sa nature — <strong className="text-text">mesuré</strong>,{" "}
-                <strong className="text-text">apprécié</strong> ou{" "}
-                <strong className="text-text">non vérifié</strong>. L&apos;analyse ne juge ni vos
-                textes, ni votre offre, ni vos concurrents : ces points sont listés à part, sans
-                note.
-              </p>
-            </div>
-          </details>
+          <Bareme reduce={reduce} />
         </div>
       </Section>
 
