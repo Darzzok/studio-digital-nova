@@ -191,20 +191,20 @@ function Footer() {
                 page interminable. Ils passent sur deux colonnes : la hauteur
                 est divisée par deux et rien n'est masqué derrière un dépliant.
               */}
-              <ul className="mt-5 grid w-full grid-cols-2 gap-x-4 gap-y-1 sm:flex sm:w-auto sm:flex-col sm:items-center sm:gap-2.5">
+              <ul className="mt-5 grid w-full grid-cols-2 gap-x-4 gap-y-1 text-center sm:flex sm:w-auto sm:flex-col sm:items-center sm:gap-2.5">
                 {colonne.liens.map((item) => (
                   <li key={item.href}>
                     {colonne.ancre ? (
                       <a
                         href={item.href}
-                        className="-my-1.5 flex min-h-11 items-center py-1.5 text-small text-on-ink-soft transition-colors duration-200 ease-nova hover:text-accent"
+                        className="-my-1.5 flex min-h-11 items-center justify-center py-1.5 text-small text-on-ink-soft transition-colors duration-200 ease-nova hover:text-accent"
                       >
                         {item.label}
                       </a>
                     ) : (
                       <Link
                         href={item.href}
-                        className="-my-1.5 flex min-h-11 items-center py-1.5 text-small text-on-ink-soft transition-colors duration-200 ease-nova hover:text-accent"
+                        className="-my-1.5 flex min-h-11 items-center justify-center py-1.5 text-small text-on-ink-soft transition-colors duration-200 ease-nova hover:text-accent"
                       >
                         {item.label}
                       </Link>

@@ -54,8 +54,11 @@ const tonPriorite = (p: Constat["priorite"]): Couleur =>
 const LIBELLE_PRIORITE = { haute: "Prioritaire", moyenne: "À corriger", basse: "À surveiller" }
 const APPAREIL: Record<Strategy, string> = { mobile: "Mobile", desktop: "Ordinateur" }
 
-/** Au-delà, le rapport devient un annuaire : le reste va au récapitulatif. */
-const CONSTATS_DETAILLES = 4
+/**
+ * Constats détaillés par appareil. Au-delà, le rapport devient un annuaire :
+ * le reste tient en une ligne dans le récapitulatif.
+ */
+const CONSTATS_PAR_APPAREIL = 3
 
 export type InfosRapport = {
   url: string
@@ -130,7 +133,12 @@ function couverture(doc: DocumentPdf, infos: InfosRapport, base: RapportPage | n
     epaisseur: 10,
     piste: ENCRE_CLAIRE,
     texte: PAPIER,
-    legende: base?.note == null ? "Bilan partiel" : "Note globale",
+    legende:
+      base?.note == null
+        ? "Bilan partiel"
+        : infos.mobile && infos.desktop
+          ? `Note globale · ${APPAREIL[base.appareil].toLowerCase()}`
+          : "Note globale",
   })
 
   if (base) {
@@ -210,10 +218,10 @@ function couverture(doc: DocumentPdf, infos: InfosRapport, base: RapportPage | n
 /* La note                                                                     */
 /* -------------------------------------------------------------------------- */
 
-function laNote(doc: DocumentPdf, base: RapportPage) {
+function laNote(doc: DocumentPdf, base: RapportPage, autre: RapportPage | null) {
   const total = base.dimensions.reduce((s, d) => s + d.poids, 0)
 
-  titre(doc, "Votre note, dimension par dimension", 190)
+  titre(doc, `Votre note en ${APPAREIL[base.appareil].toLowerCase()}`, 190)
   chapeau(
     doc,
     `Pondération appliquée au périmètre demandé — ${PERIMETRES[base.perimetre].libelle.toLowerCase()}. ` +
@@ -238,15 +246,31 @@ function laNote(doc: DocumentPdf, base: RapportPage) {
       { taille: 9, couleur: VERT, largeur: doc.largeurUtile - 60 }
     )
   }
+
+  /* L'autre version en un chiffre : la comparaison vaut le détour. */
+  if (autre && autre.note !== null) {
+    doc.espace(8)
+    doc.texteCentre(
+      `Sur ${APPAREIL[autre.appareil].toLowerCase()}, la note globale est de ${autre.note}/100. Le détail de cette version suit.`,
+      { taille: 9, couleur: GRIS, largeur: doc.largeurUtile - 60 }
+    )
+  }
 }
 
 /* -------------------------------------------------------------------------- */
 /* Votre page, telle qu'elle a été vue                                         */
 /* -------------------------------------------------------------------------- */
 
-function capture(doc: DocumentPdf, rapport: RapportPage) {
+/*
+  Les repères portent le NUMÉRO DU CONSTAT auquel ils renvoient, et seuls les
+  constats détaillés plus bas en reçoivent un. Numérotés dans leur propre
+  ordre, ils désignaient des points que le lecteur ne retrouvait nulle part.
+*/
+function capture(doc: DocumentPdf, rapport: RapportPage, detailles: Constat[]) {
   if (!rapport.capture) return
-  const situes = rapport.constats.filter((c) => c.zone)
+  const situes = detailles
+    .map((c, i) => ({ c, rang: i + 1 }))
+    .filter(({ c }) => c.zone)
 
   /*
     La réserve se calcule sur la hauteur RÉELLE de l'image, pas sur une valeur
@@ -254,27 +278,31 @@ function capture(doc: DocumentPdf, rapport: RapportPage) {
     page et l'image passait à la suivante.
   */
   const ratio = rapport.capture.largeur / rapport.capture.hauteur
-  const largeurVoulue = rapport.appareil === "mobile" ? 138 : 296
-  titre(doc, `Votre page en ${APPAREIL[rapport.appareil].toLowerCase()}`, largeurVoulue / ratio + 46)
-
+  const largeurVoulue = rapport.appareil === "mobile" ? 132 : 290
+  /*
+    La réserve se calcule sur la hauteur RÉELLE de l'image : une estimation au
+    jugé laissait le titre seul en bas d'une page.
+  */
+  doc.reserverBloc(largeurVoulue / ratio + 46)
+  doc.espace(8)
   const pose = doc.imageJpegCentree(rapport.capture.data, largeurVoulue, ratio)
 
   if (pose && situes.length > 0) {
     const k = pose.largeur / rapport.capture.largeur
-    situes.forEach((c, i) => {
+    for (const { c, rang } of situes) {
       const z = c.zone!
       const x = pose.x + z.left * k
       const haut = pose.y + pose.hauteur - z.top * k
       const h = Math.max(6, z.height * k)
       doc.cadre(x, haut - h, Math.max(6, z.width * k), h, TERRACOTTA)
-      doc.numero(i + 1, x, haut - h - 12, TERRACOTTA, BLANC)
-    })
+      doc.numero(rang, x, haut - h - 12, TERRACOTTA, BLANC)
+    }
   }
 
   doc.espace(12)
   doc.texteCentre(
     situes.length > 0
-      ? `${situes.length} ${situes.length > 1 ? "repères situés" : "repère situé"} sur la partie visible de votre page.`
+      ? `Les repères portent le numéro du point correspondant, ci-dessous.`
       : "Capture réelle de votre page.",
     { taille: 8.5, couleur: GRIS }
   )
@@ -350,11 +378,37 @@ function constat(doc: DocumentPdf, c: Constat, rang: number) {
 }
 
 /* -------------------------------------------------------------------------- */
+/* Une section par appareil                                                    */
+/* -------------------------------------------------------------------------- */
+/*
+  Ordinateur d'abord, mobile ensuite. Chaque version a sa capture et ses
+  propres constats : mêler les deux obligeait le lecteur à vérifier, ligne à
+  ligne, de quel écran on parlait.
+*/
+function sectionAppareil(doc: DocumentPdf, rapport: RapportPage, montres: number): Constat[] {
+  const retenus = rapport.constats.slice(0, montres)
+
+  titre(doc, `Sur ${APPAREIL[rapport.appareil].toLowerCase()}`, 120)
+  chapeau(
+    doc,
+    rapport.constats.length === 0
+      ? "Aucun point au-dessus du seuil sur cette version."
+      : rapport.constats.length > montres
+        ? `${rapport.constats.length} points relevés. Les ${montres} plus rentables sont détaillés ici.`
+        : `${rapport.constats.length} ${rapport.constats.length > 1 ? "points relevés" : "point relevé"} sur cette version.`
+  )
+
+  capture(doc, rapport, retenus)
+  retenus.forEach((c, i) => constat(doc, c, i + 1))
+  return retenus
+}
+
+/* -------------------------------------------------------------------------- */
 /* Récapitulatif                                                               */
 /* -------------------------------------------------------------------------- */
 
-function recapitulatif(doc: DocumentPdf, tout: Constat[], montres: number) {
-  if (tout.length <= montres) return
+function recapitulatif(doc: DocumentPdf, restants: Constat[]) {
+  if (restants.length === 0) return
 
   titre(doc, "Tous les autres points relevés", 90)
   chapeau(doc, "Une ligne par point, du plus grave au moins grave. Le détail sur demande.")
@@ -368,7 +422,7 @@ function recapitulatif(doc: DocumentPdf, tout: Constat[], montres: number) {
   }
 
   const INTERLIGNE = 13.5
-  tout.slice(montres).forEach((c, i) => {
+  restants.forEach((c, i) => {
     doc.reserverBloc(22)
     const teinte = tonPriorite(c.priorite)
     /* La bande vise la ligne À VENIR : `texte` descend avant d'écrire. */
@@ -437,7 +491,7 @@ function proposition(
   doc.rectangle(0, 0, PAGE_PDF.largeur, PAGE_PDF.hauteur, ENCRE)
 
   const largeurPhrase = doc.largeurUtile - 60
-  const hauteurCarte = suite.formule ? 78 + suite.formule.inclus.length * 14 : 0
+  const hauteurCarte = suite.formule ? 94 + suite.formule.inclus.length * 15 : 0
   const hauteurPrestations = suite.prestations.reduce(
     (t, pr) => t + 30 + doc.mesurerHauteur(pr.ligne, 9, "normale", doc.largeurUtile - 40),
     0
@@ -471,37 +525,56 @@ function proposition(
     largeur: largeurPhrase,
   })
 
-  /* La carte tarifaire : le seul encadré de la page, et il est là pour vendre. */
+  /*
+    La carte tarifaire. Coins arrondis, bandeau d'en-tête terracotta, prix en
+    grand, coches tracées au trait : c'est la seule chose de cette page qui
+    doit arrêter l'œil, elle a donc droit au seul décor du document.
+  */
   if (suite.formule) {
     const f = suite.formule
-    doc.espace(24)
-    /*
-      Mesuré : le nom se pose à -21, le prix à -46, puis les lignes tous les
-      14 points à partir de -64. Avec 46 + n × 14, la dernière ligne tombait
-      quatre points SOUS le fond blanc.
-    */
-    const hauteur = 78 + f.inclus.length * 14
+    doc.espace(26)
+    const BANDEAU = 26
+    const hauteur = BANDEAU + 52 + f.inclus.length * 15 + 16
+    const largeurCarte = doc.largeurUtile - 76
+    const x = MARGE_PDF + 38
     const haut = doc.position
-    doc.rectangle(MARGE_PDF + 40, haut - hauteur, doc.largeurUtile - 80, hauteur, PAPIER)
-    doc.rectangle(MARGE_PDF + 40, haut - 3, doc.largeurUtile - 80, 3, TERRACOTTA)
+    const bas = haut - hauteur
+
+    doc.rectangleArrondi(x, bas, largeurCarte, hauteur, 7, PAPIER)
+    doc.rectangleArrondi(x, haut - BANDEAU, largeurCarte, BANDEAU, 7, TERRACOTTA, {
+      bg: false,
+      bd: false,
+    })
 
     const centre = MARGE_PDF + doc.largeurUtile / 2
-    doc.texteAbsolu(f.nom, centre - doc.largeurTexte(f.nom, 10, "grasse") / 2, haut - 21, {
-      taille: 10,
-      police: "grasse",
-      couleur: MINERAL,
-    })
-    doc.texteAbsolu(f.prix, centre - doc.largeurTexte(f.prix, 24, "grasse") / 2, haut - 46, {
-      taille: 24,
+    doc.texteAbsolu(
+      f.nom.toUpperCase(),
+      centre - doc.largeurTexte(f.nom.toUpperCase(), 8.5, "grasse") / 2,
+      haut - 17,
+      { taille: 8.5, police: "grasse", couleur: PAPIER }
+    )
+    doc.texteAbsolu(f.prix, centre - doc.largeurTexte(f.prix, 27, "grasse") / 2, haut - BANDEAU - 34, {
+      taille: 27,
       police: "grasse",
       couleur: ENCRE,
     })
+    doc.texteAbsolu(
+      "tout compris, annoncé d'avance",
+      centre - doc.largeurTexte("tout compris, annoncé d'avance", 8) / 2,
+      haut - BANDEAU - 48,
+      { taille: 8, couleur: GRIS }
+    )
+
+    /* Liste alignée sur un même bord gauche, l'ensemble centré dans la carte. */
+    const largeurListe = Math.max(...f.inclus.map((l) => doc.largeurTexte(l, 9))) + 16
+    const gaucheListe = centre - largeurListe / 2
     f.inclus.forEach((l, i) => {
-      const y = haut - 64 - i * 14
-      doc.rectangle(centre - 62, y + 3, 3, 3, TERRACOTTA)
-      doc.texteAbsolu(l, centre - 52, y, { taille: 9, couleur: ENCRE })
+      const y = haut - BANDEAU - 66 - i * 15
+      doc.coche(gaucheListe, y, 7, TERRACOTTA)
+      doc.texteAbsolu(l, gaucheListe + 16, y, { taille: 9, couleur: ENCRE })
     })
-    doc.placer(haut - hauteur - 10)
+
+    doc.placer(bas - 12)
     doc.texteCentre(`${siteConfig.url.replace(/^https?:\/\//, "")}${f.lien}`, {
       taille: 8,
       couleur: PAPIER_TERNE,
@@ -553,49 +626,39 @@ function proposition(
 
 export function construireRapport(infos: InfosRapport): Blob {
   const { url, prenom, perimetre, mobile, desktop } = infos
-  const base = mobile ?? desktop
+  /*
+    L'ordinateur passe devant : c'est la version mise en avant, et sa note est
+    celle qui figure en couverture. Le mobile suit, avec sa propre capture et
+    ses propres constats.
+  */
+  const base = desktop ?? mobile
+  const secondaire = desktop ? mobile : null
   const doc = new DocumentPdf()
 
   couverture(doc, infos, base)
 
   if (base) {
-    /*
-      La capture d'abord : on montre la page avant d'en parler. Elle ouvre la
-      deuxième page, et les barres de notes se glissent sous elle au lieu de
-      laisser un titre orphelin en bas.
-    */
-    const vitrine = mobile?.capture ? mobile : desktop?.capture ? desktop : null
-    if (vitrine) capture(doc, vitrine)
-
-    laNote(doc, base)
+    laNote(doc, base, secondaire)
 
     /*
-      Les constats des deux appareils, fusionnés et triés : le lecteur veut la
-      liste des choses à corriger, pas deux listes à rapprocher.
+      Ordinateur d'abord, mobile ensuite : c'est l'ordre demandé, et il
+      correspond à l'ordre de lecture d'un chef d'entreprise qui ouvre le
+      rapport sur son écran.
     */
-    const rang = { haute: 0, moyenne: 1, basse: 2 } as const
-    const tout = [mobile, desktop]
-      .filter((r): r is RapportPage => Boolean(r))
-      .flatMap((r) => r.constats)
-      .sort((a, b) => rang[a.priorite] - rang[b.priorite])
-
-    if (tout.length > 0) {
-      titre(doc, "Ce qu'il faut corriger", 150)
-      chapeau(
-        doc,
-        tout.length > CONSTATS_DETAILLES
-          ? `Les ${CONSTATS_DETAILLES} points les plus rentables à traiter, détaillés. Les autres suivent en liste.`
-          : "Chaque point, avec ce qui a été relevé et ce qu'il faut faire."
-      )
-      tout.slice(0, CONSTATS_DETAILLES).forEach((c, i) => constat(doc, c, i + 1))
+    const detailles = new Set<Constat>()
+    for (const r of [base, secondaire].filter((r): r is RapportPage => Boolean(r))) {
+      for (const c of sectionAppareil(doc, r, CONSTATS_PAR_APPAREIL)) detailles.add(c)
     }
 
-    /*
-      Le récapitulatif d'abord, les limites ensuite : la liste est plus longue
-      et se répartit mieux, et les quelques lignes de limites comblent ce
-      qu'elle laisse plutôt que de partir seules sur une page.
-    */
-    recapitulatif(doc, tout, CONSTATS_DETAILLES)
+    /* Ce qui n'a pas été détaillé, toutes versions confondues, du plus grave au moins. */
+    const rang = { haute: 0, moyenne: 1, basse: 2 } as const
+    const restants = [base, secondaire]
+      .filter((r): r is RapportPage => Boolean(r))
+      .flatMap((r) => r.constats)
+      .filter((c) => !detailles.has(c))
+      .sort((a, b) => rang[a.priorite] - rang[b.priorite])
+
+    recapitulatif(doc, restants)
     limites(doc, base)
   }
 

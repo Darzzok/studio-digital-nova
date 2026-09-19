@@ -531,6 +531,53 @@ export class DocumentPdf {
     return { x: this.margeGauche, y: this.y, largeur, hauteur }
   }
 
+  /**
+   * Rectangle à coins arrondis. Un PDF ne connaît que des courbes de Bézier :
+   * un quart de cercle s'approche avec des poignées à 0,5523 × le rayon,
+   * écart invisible à l'œil. `coins` permet de n'arrondir qu'un côté — une
+   * bandeau d'en-tête arrondi en haut, droit en bas.
+   */
+  rectangleArrondi(
+    x: number,
+    y: number,
+    largeur: number,
+    hauteur: number,
+    rayon: number,
+    couleur: Couleur,
+    coins: { hg?: boolean; hd?: boolean; bg?: boolean; bd?: boolean } = {}
+  ) {
+    const { hg = true, hd = true, bg = true, bd = true } = coins
+    const r = Math.min(rayon, largeur / 2, hauteur / 2)
+    const k = r * 0.5523
+    const [cr, cv, cb] = couleur
+    const x2 = x + largeur
+    const y2 = y + hauteur
+    const p: string[] = []
+
+    p.push(`${(x + (bg ? r : 0)).toFixed(2)} ${y.toFixed(2)} m`)
+    p.push(`${(x2 - (bd ? r : 0)).toFixed(2)} ${y.toFixed(2)} l`)
+    if (bd) p.push(`${(x2 - r + k).toFixed(2)} ${y.toFixed(2)} ${x2.toFixed(2)} ${(y + r - k).toFixed(2)} ${x2.toFixed(2)} ${(y + r).toFixed(2)} c`)
+    p.push(`${x2.toFixed(2)} ${(y2 - (hd ? r : 0)).toFixed(2)} l`)
+    if (hd) p.push(`${x2.toFixed(2)} ${(y2 - r + k).toFixed(2)} ${(x2 - r + k).toFixed(2)} ${y2.toFixed(2)} ${(x2 - r).toFixed(2)} ${y2.toFixed(2)} c`)
+    p.push(`${(x + (hg ? r : 0)).toFixed(2)} ${y2.toFixed(2)} l`)
+    if (hg) p.push(`${(x + r - k).toFixed(2)} ${y2.toFixed(2)} ${x.toFixed(2)} ${(y2 - r + k).toFixed(2)} ${x.toFixed(2)} ${(y2 - r).toFixed(2)} c`)
+    p.push(`${x.toFixed(2)} ${(y + (bg ? r : 0)).toFixed(2)} l`)
+    if (bg) p.push(`${x.toFixed(2)} ${(y + r - k).toFixed(2)} ${(x + r - k).toFixed(2)} ${y.toFixed(2)} ${(x + r).toFixed(2)} ${y.toFixed(2)} c`)
+
+    this.ecrire(`q ${cr} ${cv} ${cb} rg ${p.join(" ")} h f Q`)
+  }
+
+  /** Coche tracée au trait — plus juste qu'une puce carrée dans une liste d'inclus. */
+  coche(x: number, y: number, taille: number, couleur: Couleur) {
+    const [r, v, b] = couleur
+    this.ecrire(
+      `q ${r} ${v} ${b} RG 1.3 w 1 J 1 j ` +
+        `${x.toFixed(2)} ${(y + taille * 0.45).toFixed(2)} m ` +
+        `${(x + taille * 0.36).toFixed(2)} ${y.toFixed(2)} l ` +
+        `${(x + taille).toFixed(2)} ${(y + taille * 0.82).toFixed(2)} l S Q`
+    )
+  }
+
   /** Cadre non rempli — sert à cerner une zone sur une capture. */
   cadre(x: number, y: number, largeur: number, hauteur: number, couleur: Couleur, epaisseur = 1.4) {
     const [r, v, b] = couleur
