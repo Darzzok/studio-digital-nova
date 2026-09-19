@@ -68,7 +68,7 @@ const OFFERS = [
   {
     id: "essentiel",
     name: "Essentiel",
-    price: "690 €",
+    price: "690 €",
     scope: "One page",
     resume: "Une page optimisée, design personnalisé, livraison en 5 jours.",
     icon: Rocket,
@@ -77,7 +77,7 @@ const OFFERS = [
   {
     id: "pro",
     name: "Pro",
-    price: "990 €",
+    price: "990 €",
     scope: "Site vitrine",
     resume: "Jusqu'à 5 pages, optimisation SEO incluse, livraison en 10 jours.",
     icon: Sparkles,
@@ -87,7 +87,8 @@ const OFFERS = [
   {
     id: "premium",
     name: "Premium",
-    price: "À partir de 1 200 €",
+    /* Espaces insécables : « 1 200 € » restait coupé, le « 1 » seul sur sa ligne. */
+    price: "À partir de 1 200 €",
     scope: "Sur mesure",
     resume: "Fonctionnalités sur mesure, accompagnement dédié, optimisation avancée.",
     icon: Crown,
@@ -269,7 +270,11 @@ function ProgressFrieze({
           transition={{ duration: 0.3, ease: EASE_NOVA }}
           className="mt-5 text-center text-small text-text-secondary"
         >
-          {PROGRESS_MESSAGES[step]}
+          {/* Le rang chiffré d'abord : « où j'en suis » avant « ce qui reste ». */}
+          <span className="font-heading text-text">
+            Étape {step + 1} sur {STEP_LABELS.length}
+          </span>{" "}
+          — {PROGRESS_MESSAGES[step]}
         </motion.p>
       </AnimatePresence>
     </div>

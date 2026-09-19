@@ -34,7 +34,7 @@ const VITRINE: Prestation = {
   nom: "Création de site vitrine",
   ligne: "Jusqu'à 5 pages, optimisation SEO comprise, livraison en 10 jours.",
   lien: "/creation-site-vitrine/",
-  prix: "990 € — formule Pro",
+  prix: "990 € — formule Pro",
 }
 
 
@@ -67,14 +67,14 @@ export type Formule = {
 
 const ESSENTIEL: Formule = {
   nom: "Essentiel — one page",
-  prix: "690 €",
+  prix: "690 €",
   inclus: ["Design personnalisé", "Une page optimisée", "Formulaire de contact", "Livraison en 5 jours"],
   lien: "/creation-site-one-page/",
 }
 
 const PRO: Formule = {
   nom: "Pro — site vitrine",
-  prix: "990 €",
+  prix: "990 €",
   inclus: [
     "Jusqu'à 5 pages",
     "Optimisation SEO incluse",

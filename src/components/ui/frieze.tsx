@@ -105,7 +105,7 @@ function RailTick({
     <motion.span
       aria-hidden
       className={cn(
-        "pointer-events-none absolute bg-accent",
+        "pointer-events-none absolute bg-ink",
         vertical ? "left-1/2 h-px w-1.5 -translate-x-1/2" : "top-1/2 h-1.5 w-px -translate-y-1/2"
       )}
       style={{
@@ -183,13 +183,19 @@ function Frieze({
                 strokeWidth={1}
                 vectorEffect="non-scaling-stroke"
               />
+              {/*
+                Le chemin parcouru se trace à l'encre. En terracotta, il
+                formait une nouvelle ligne orange en haut d'une carte, alors
+                que l'accent est réservé à ce qui appelle une action — ici,
+                l'anneau de l'étape en cours.
+              */}
               <motion.line
                 x1={vertical ? 0.5 : 0}
                 y1={vertical ? 0 : 0.5}
                 x2={vertical ? 0.5 : 100}
                 y2={vertical ? 100 : 0.5}
-                stroke="var(--color-accent)"
-                strokeWidth={1}
+                stroke="var(--color-ink)"
+                strokeWidth={1.4}
                 vectorEffect="non-scaling-stroke"
                 style={{ pathLength: drawn }}
               />
@@ -277,9 +283,9 @@ function Frieze({
                     isActive && "scale-105 border-ink bg-ink text-paper",
                     // Une étape franchie s'efface légèrement : l'attention
                     // reste sur l'étape courante.
-                    isDone && "border-accent/40 bg-accent/10 text-accent-strong opacity-70",
+                    isDone && "border-ink/35 bg-ink/8 text-ink opacity-80",
                     !isActive && !isDone && "border-border-strong bg-surface text-text-muted opacity-60",
-                    isClickable && "cursor-pointer hover:opacity-100 hover:border-accent hover:text-accent-strong",
+                    isClickable && "cursor-pointer hover:opacity-100 hover:border-ink hover:text-ink",
                     !isClickable && !isActive && "cursor-default"
                   )}
                 >
@@ -308,11 +314,16 @@ function Frieze({
                   )}
                 </button>
 
+                {/*
+                  L'intitulé s'affiche à toutes les tailles. Masqué sous
+                  640 px, la frise se réduisait à quatre ronds numérotés : on
+                  voyait qu'on avançait, pas vers quoi.
+                */}
                 {!vertical && (
                   <span
                     className={cn(
-                      "hidden text-center text-eyebrow uppercase transition-colors duration-500 ease-nova sm:block",
-                      isActive ? "text-text" : "text-text-muted"
+                      "text-center text-[10px] uppercase leading-tight tracking-[0.08em] transition-colors duration-500 ease-nova sm:text-eyebrow",
+                      isActive ? "font-medium text-text" : "text-text-muted"
                     )}
                   >
                     {step.label}
