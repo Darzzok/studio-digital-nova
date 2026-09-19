@@ -684,7 +684,7 @@ function Resultats({
                 `Le détail des ${rapport.dimensions.length} dimensions notées`,
                 rapport.vitals.length > 0 ? "Les temps ressentis par vos visiteurs" : null,
                 bons.length > 0 ? "Ce qui va bien et qu'il faut conserver" : null,
-                "Le rapport complet en PDF",
+                "Le rapport complet, et son PDF à télécharger",
               ]
                 .filter((x): x is string => Boolean(x))
                 .map((l) => (
@@ -950,7 +950,7 @@ function Barriere({
       "",
       "────────────────────────────────────────",
       "",
-      "Le visiteur a téléchargé le PDF depuis la page. Aucun mail ne lui a été envoyé.",
+      "Le rapport lui a été ouvert sur la page ; le PDF est à sa main. Aucun mail ne lui a été envoyé.",
     ].join("\n")
 
     const transmis = await transmettre({
@@ -972,18 +972,12 @@ function Barriere({
       )
     }
 
-    try {
-      const { construireRapport, telechargerRapport } = await import("@/lib/audit-pdf")
-      telechargerRapport(
-        construireRapport({ url, prenom, mobile: rapports.mobile ?? null, desktop: rapports.desktop ?? null }),
-        url
-      )
-    } catch {
-      setErreur(
-        "Le PDF n'a pas pu être généré sur cet appareil. Le rapport complet reste consultable ci-dessous."
-      )
-    }
-
+    /*
+      Aucun PDF n'est produit ici : laisser ses coordonnées déverrouille le
+      rapport, rien de plus. Le visiteur déclenche lui-même le téléchargement
+      depuis le bloc dédié — c'est la seule voie, et elle n'existe qu'après
+      cette étape.
+    */
     setEnvoi(false)
     onDeverrouille()
   }
@@ -996,12 +990,13 @@ function Barriere({
       </div>
 
       <h3 className="relative mt-7 font-heading text-h2 text-on-ink">
-        Débloquez le rapport et son PDF
+        Vos coordonnées pour accéder au rapport
       </h3>
       <p className="relative mx-auto mt-4 max-w-xl text-lead text-on-ink-soft">
-        Le reste de l&apos;analyse s&apos;affiche tout de suite, et le PDF se télécharge depuis
-        cette page — je ne vous envoie rien. Je lis le rapport de mon côté et je reviens vers
-        vous sous 24 heures, sans engagement.
+        Le reste de l&apos;analyse s&apos;affiche aussitôt, avec un bouton pour télécharger le
+        PDF depuis cette page. <strong className="font-semibold text-on-ink">Je ne vous envoie
+        rien</strong> — le fichier se fabrique sur votre appareil. Je lis le rapport de mon côté
+        et je reviens vers vous sous 24 heures, sans engagement.
       </p>
 
       <form onSubmit={soumettre} className="relative mt-8 flex flex-col gap-4 text-left">
@@ -1042,7 +1037,7 @@ function Barriere({
           disabled={envoi}
           className="mt-2 w-full bg-paper text-ink hover:bg-accent hover:text-ink sm:mx-auto sm:w-fit"
         >
-          {envoi ? "Préparation du rapport…" : "Voir le rapport complet et recevoir le PDF"}
+          {envoi ? "Ouverture du rapport…" : "Accéder au rapport complet"}
           <Icon icon={ArrowRight} />
         </Button>
 
