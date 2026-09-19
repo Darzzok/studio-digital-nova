@@ -1,244 +1,530 @@
 "use client"
 
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useId, useRef, useState } from "react"
+import { motion, useReducedMotion } from "framer-motion"
 import {
-  ArrowLeft,
-  ArrowRight,
+  ChevronLeft,
+  ChevronRight,
   ClipboardCheck,
   Code2,
   Palette,
-  Route,
   Rocket,
   Search,
   Zap,
 } from "lucide-react"
-import {
-  AnimatePresence,
-  animate,
-  motion,
-  useInView,
-  useMotionValue,
-  useReducedMotion,
-} from "framer-motion"
 
 import { Badge } from "@/components/ui/badge"
-import { Card } from "@/components/ui/card"
-import { Frieze } from "@/components/ui/frieze"
 import { Heading } from "@/components/ui/heading"
 import { Icon } from "@/components/ui/icon"
-import { CHIP, NovaMark } from "@/components/ui/nova"
+import { NovaMark } from "@/components/ui/nova"
 import { Section } from "@/components/ui/section"
-import { useIsMobile } from "@/hooks/use-is-mobile"
 import { EASE_NOVA, useFloatIn } from "@/lib/motion"
 import { cn } from "@/lib/utils"
 
-const STEPS = [
-  {
-    number: "01",
-    title: "Découverte",
-    icon: Search,
-    className: CHIP.ink,
-    description: (
-      <>
-        J&apos;échange avec vous sur{" "}
-        <strong className="font-semibold text-on-ink">vos besoins, vos objectifs</strong> et votre
-        marché.
-      </>
-    ),
-    details: [
-      "Échange sur vos besoins et vos objectifs",
-      "Analyse de votre marché et de la concurrence",
-      "Définition claire du périmètre du projet",
-    ],
-  },
-  {
-    number: "02",
-    title: "Maquette",
-    icon: Palette,
-    className: CHIP.terracotta,
-    description: (
-      <>
-        Je conçois un design <strong className="font-semibold text-on-ink">sur mesure</strong> qui
-        vous ressemble.
-      </>
-    ),
-    details: [
-      "Choix des couleurs et de la typographie",
-      "Structure des pages pensée pour convertir",
-      "Allers-retours jusqu'à votre validation",
-    ],
-  },
-  {
-    number: "03",
-    title: "Développement",
-    icon: Code2,
-    className: CHIP.mineral,
-    description: (
-      <>
-        Le site prend vie avec un code{" "}
-        <strong className="font-semibold text-on-ink">propre et performant</strong>.
-      </>
-    ),
-    details: [
-      "Intégration responsive mobile et desktop",
-      "Code propre, rapide et maintenable",
-      "Tests sur tous les navigateurs",
-    ],
-  },
-  {
-    number: "04",
-    title: "Optimisation",
-    icon: Zap,
-    className: CHIP.ochre,
-    description: (
-      <>
-        <strong className="font-semibold text-on-ink">SEO, vitesse et accessibilité</strong> sont
-        peaufinés en détail.
-      </>
-    ),
-    details: [
-      "Vitesse de chargement optimisée",
-      "Référencement SEO technique et éditorial",
-      "Accessibilité vérifiée pour tous les visiteurs",
-    ],
-  },
-  {
-    number: "05",
-    title: "Validation",
-    icon: ClipboardCheck,
-    className: CHIP.ink,
-    description: (
-      <>
-        Vous testez et validez{" "}
-        <strong className="font-semibold text-on-ink">chaque détail</strong> avant la mise en
-        ligne.
-      </>
-    ),
-    details: [
-      "Relecture complète avec vous",
-      "Ajustements de dernière minute",
-      "Vérification sur mobile et sur ordinateur",
-    ],
-  },
-  {
-    number: "06",
-    title: "Mise en ligne",
-    icon: Rocket,
-    className: CHIP.sage,
-    description: (
-      <>
-        Votre site est publié et prêt à{" "}
-        <strong className="font-semibold text-on-ink">convertir vos visiteurs</strong>.
-      </>
-    ),
-    details: [
-      "Publication sur votre nom de domaine",
-      "Configuration finale sécurisée",
-      "Site prêt à convertir vos visiteurs",
-    ],
-  },
-]
+/* ==========================================================================
+   MA MÉTHODE — FRISE HORIZONTALE
+   ==========================================================================
+   Six étapes alignées sur un rail horizontal, à toutes les tailles d'écran.
+   L'étape active porte l'accent terracotta, les précédentes sont teintées,
+   les suivantes restent neutres : on lit la progression d'un coup d'œil.
 
-/** Projection des étapes dans le format de la frise partagée. */
-const FRIEZE_STEPS = STEPS.map((step) => ({
-  key: step.number,
-  label: step.title,
-  icon: step.icon,
-}))
+   Sous le rail, une carte en deux parties — le texte sur un fond très
+   légèrement terracotta, l'aperçu sur le bleu nuit.
 
-const STEP_COUNT = STEPS.length
-const LAST_INDEX = STEP_COUNT - 1
+   Pas de lecture automatique : le visiteur avance quand il le décide, au
+   clic, aux flèches du clavier ou en faisant glisser le rail sur mobile.
+   ========================================================================== */
+/* ==========================================================================
+   APERÇUS DE LA FRISE
+   ==========================================================================
+   Un visuel par étape, posé sur le bleu nuit. Chacun montre l'objet réel de
+   l'étape — une note de cadrage, une maquette, un navigateur en construction,
+   un cadran de mesure, une liste de relecture, une mise en ligne. Aucun n'est
+   réutilisé d'une étape à l'autre.
 
-/* Temps de lecture d'une étape avant que la frise n'avance d'elle-même. */
-const DWELL = 3400
-/* Après une sélection manuelle, on laisse la main au visiteur ce temps-là. */
-const RESUME_AFTER = 8000
+   Tout est en CSS et SVG : pas d'image à charger, et le rendu suit les tokens
+   de la charte.
+   ========================================================================== */
 
-const cardVariants = {
-  enter: (direction: number) => ({ opacity: 0, x: direction >= 0 ? 32 : -32 }),
-  center: { opacity: 1, x: 0 },
-  exit: (direction: number) => ({ opacity: 0, x: direction >= 0 ? -32 : 32 }),
+type ApercuProps = { reduce: boolean }
+
+const CADRE =
+  "relative h-full min-h-[172px] w-full overflow-hidden rounded-lg border border-border-ink bg-ink/40 p-4"
+
+/** 01 — Découverte : la note de cadrage qui se remplit. */
+function ApercuDecouverte({ reduce }: ApercuProps) {
+  return (
+    <div className={CADRE}>
+      <p className="text-[10px] uppercase tracking-[0.16em] text-on-ink-soft">Note de cadrage</p>
+      <div className="mt-4 flex flex-col gap-2.5">
+        {[88, 64, 76].map((largeur, i) => (
+          <div key={largeur} className="flex items-center gap-2.5">
+            <motion.span
+              className="size-3 shrink-0 rounded-[3px] border border-accent/70"
+              initial={reduce ? false : { backgroundColor: "rgba(217,108,79,0)" }}
+              animate={{ backgroundColor: "rgba(217,108,79,0.9)" }}
+              transition={reduce ? { duration: 0 } : { duration: 0.35, delay: 0.25 + i * 0.18 }}
+            />
+            <motion.span
+              className="h-1.5 rounded-full bg-on-ink-soft/35"
+              initial={reduce ? false : { width: 0 }}
+              animate={{ width: `${largeur}%` }}
+              transition={reduce ? { duration: 0 } : { duration: 0.5, delay: 0.2 + i * 0.18 }}
+            />
+          </div>
+        ))}
+      </div>
+      <p className="absolute bottom-4 left-4 font-heading text-small text-accent">Périmètre validé</p>
+    </div>
+  )
 }
 
-function Processus() {
-  const reduce = Boolean(useReducedMotion())
-  const isMobile = useIsMobile()
-  const floatIn = useFloatIn({ stiffness: 130, damping: 16, mass: 0.9 })
-
-  const [activeIndex, setActiveIndex] = useState(0)
-  const [direction, setDirection] = useState(1)
-  const [paused, setPaused] = useState(false)
-
-  const active = STEPS[activeIndex]
-
-  /*
-    La frise n'est plus pilotée par le scroll : elle avance seule, à rythme
-    régulier, tant qu'elle est visible. Le scroll ne fait qu'une chose —
-    décider si le défilement tourne ou non.
-  */
-  const sectionRef = useRef<HTMLDivElement | null>(null)
-  const inView = useInView(sectionRef, { amount: 0.35 })
-  const resumeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  /*
-    Le rail garde une progression continue : le marqueur glisse jusqu'au
-    repère de l'étape courante au lieu d'y sauter. C'est ce glissement qui
-    rend l'enchaînement lisible.
-  */
-  const progress = useMotionValue(0)
-  useEffect(() => {
-    const target = activeIndex / LAST_INDEX
-    if (reduce) {
-      progress.set(target)
-      return
-    }
-    const controls = animate(progress, target, {
-      type: "spring",
-      stiffness: 90,
-      damping: 22,
-      mass: 0.9,
-    })
-    return () => controls.stop()
-  }, [activeIndex, progress, reduce])
-
-  /* Le pas automatique. */
-  useEffect(() => {
-    if (reduce || paused || !inView) return
-    const id = setTimeout(() => {
-      setDirection(1)
-      setActiveIndex((current) => (current + 1) % STEP_COUNT)
-    }, DWELL)
-    return () => clearTimeout(id)
-  }, [activeIndex, reduce, paused, inView])
-
-  /* Quitter la section remet le parcours à son début. */
-  const seen = useRef(false)
-  useEffect(() => {
-    if (inView) {
-      seen.current = true
-      return
-    }
-    if (!seen.current) return
-    setDirection(1)
-    setActiveIndex(0)
-  }, [inView])
-
-  useEffect(() => () => {
-    if (resumeTimer.current) clearTimeout(resumeTimer.current)
-  }, [])
-
-  /* Sélection manuelle : on suspend, puis la main revient à la frise. */
-  const goToStep = useCallback(
-    (index: number) => {
-      const target = Math.min(LAST_INDEX, Math.max(0, index))
-      setDirection(target > activeIndex ? 1 : -1)
-      setActiveIndex(target)
-      setPaused(true)
-      if (resumeTimer.current) clearTimeout(resumeTimer.current)
-      resumeTimer.current = setTimeout(() => setPaused(false), RESUME_AFTER)
-    },
-    [activeIndex]
+/** 02 — Maquette : blocs de mise en page et nuancier. */
+function ApercuMaquette({ reduce }: ApercuProps) {
+  return (
+    <div className={CADRE}>
+      <p className="text-[10px] uppercase tracking-[0.16em] text-on-ink-soft">Maquette</p>
+      <div className="mt-4 flex gap-3">
+        <div className="flex flex-1 flex-col gap-2">
+          <motion.div
+            className="h-8 rounded-[5px] bg-on-ink-soft/25"
+            initial={reduce ? false : { scaleY: 0.2, opacity: 0 }}
+            animate={{ scaleY: 1, opacity: 1 }}
+            style={{ transformOrigin: "top" }}
+            transition={reduce ? { duration: 0 } : { duration: 0.4, delay: 0.15 }}
+          />
+          <div className="grid grid-cols-3 gap-2">
+            {[0, 1, 2].map((i) => (
+              <motion.div
+                key={i}
+                className="h-10 rounded-[5px] border border-border-ink"
+                initial={reduce ? false : { opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={reduce ? { duration: 0 } : { duration: 0.35, delay: 0.3 + i * 0.09 }}
+              />
+            ))}
+          </div>
+        </div>
+        <div className="flex w-7 flex-col gap-1.5">
+          {["var(--color-ink-700)", "var(--color-accent)", "var(--color-mineral)", "var(--color-on-ink-soft)"].map(
+            (c, i) => (
+              <motion.span
+                key={c}
+                className="h-5 rounded-[4px]"
+                style={{ backgroundColor: c }}
+                initial={reduce ? false : { opacity: 0, x: 6 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={reduce ? { duration: 0 } : { duration: 0.3, delay: 0.45 + i * 0.07 }}
+              />
+            )
+          )}
+        </div>
+      </div>
+    </div>
   )
+}
+
+/** 03 — Développement : le navigateur qui se construit, ligne à ligne. */
+function ApercuDeveloppement({ reduce }: ApercuProps) {
+  return (
+    <div className={CADRE}>
+      <div className="flex items-center gap-1.5 border-b border-border-ink pb-2.5">
+        <span className="size-1.5 rounded-full bg-on-ink-soft/40" />
+        <span className="size-1.5 rounded-full bg-on-ink-soft/40" />
+        <span className="size-1.5 rounded-full bg-on-ink-soft/40" />
+        <span className="ml-2 h-1.5 flex-1 rounded-full bg-on-ink-soft/15" />
+      </div>
+      <div className="mt-3 flex flex-col gap-1.5 font-mono">
+        {[42, 68, 30, 56, 48].map((largeur, i) => (
+          <div key={i} className="flex items-center gap-2">
+            <span className="w-3 text-right text-[9px] tabular-nums text-on-ink-soft/40">{i + 1}</span>
+            <motion.span
+              className={`h-1.5 rounded-full ${i === 2 ? "bg-accent/70" : "bg-on-ink-soft/30"}`}
+              initial={reduce ? false : { width: 0 }}
+              animate={{ width: `${largeur}%` }}
+              transition={reduce ? { duration: 0 } : { duration: 0.32, delay: 0.18 + i * 0.1 }}
+            />
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+/** 04 — Optimisation : le cadran de mesure qui monte. */
+function ApercuOptimisation({ reduce }: ApercuProps) {
+  return (
+    <div className={`${CADRE} flex items-center gap-5`}>
+      <div className="relative size-[76px] shrink-0">
+        <svg viewBox="0 0 36 36" className="size-full -rotate-90">
+          <circle cx="18" cy="18" r="15.5" fill="none" stroke="var(--color-border-ink)" strokeWidth="2.5" />
+          <motion.circle
+            cx="18" cy="18" r="15.5" fill="none"
+            stroke="var(--color-accent)" strokeWidth="2.5" strokeLinecap="round"
+            initial={reduce ? false : { pathLength: 0 }}
+            animate={{ pathLength: 0.94 }}
+            transition={reduce ? { duration: 0 } : { duration: 0.9, delay: 0.2 }}
+          />
+        </svg>
+        <span className="absolute inset-0 flex items-center justify-center font-heading text-body text-on-ink">
+          94
+        </span>
+      </div>
+      <div className="flex flex-1 flex-col gap-2.5">
+        {["Vitesse", "Référencement", "Accessibilité"].map((label, i) => (
+          <div key={label}>
+            <p className="text-[10px] text-on-ink-soft">{label}</p>
+            <div className="mt-1 h-1 w-full overflow-hidden rounded-full bg-border-ink">
+              <motion.div
+                className="h-full rounded-full bg-accent"
+                initial={reduce ? false : { scaleX: 0 }}
+                animate={{ scaleX: [0.82, 0.9, 0.86][i] }}
+                style={{ transformOrigin: "left" }}
+                transition={reduce ? { duration: 0 } : { duration: 0.55, delay: 0.3 + i * 0.12 }}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+/** 05 — Validation : la relecture qui se coche. */
+function ApercuValidation({ reduce }: ApercuProps) {
+  return (
+    <div className={CADRE}>
+      <p className="text-[10px] uppercase tracking-[0.16em] text-on-ink-soft">Relecture</p>
+      <div className="mt-4 flex flex-col gap-3">
+        {["Textes et images", "Mobile et ordinateur", "Formulaire de contact"].map((label, i) => (
+          <div key={label} className="flex items-center gap-2.5">
+            <motion.span
+              className="flex size-4 shrink-0 items-center justify-center rounded-full border border-accent/60"
+              initial={reduce ? false : { backgroundColor: "rgba(217,108,79,0)" }}
+              animate={{ backgroundColor: "rgba(217,108,79,0.95)" }}
+              transition={reduce ? { duration: 0 } : { duration: 0.3, delay: 0.3 + i * 0.22 }}
+            >
+              <svg viewBox="0 0 12 12" className="size-2.5" aria-hidden>
+                <motion.path
+                  d="M2.5 6.2 L5 8.6 L9.5 3.6" fill="none"
+                  stroke="var(--color-ink)" strokeWidth="2"
+                  strokeLinecap="round" strokeLinejoin="round"
+                  initial={reduce ? false : { pathLength: 0 }}
+                  animate={{ pathLength: 1 }}
+                  transition={reduce ? { duration: 0 } : { duration: 0.25, delay: 0.42 + i * 0.22 }}
+                />
+              </svg>
+            </motion.span>
+            <span className="text-[11px] text-on-ink-soft">{label}</span>
+          </div>
+        ))}
+      </div>
+      <p className="absolute bottom-4 left-4 font-heading text-small text-accent">Bon pour publication</p>
+    </div>
+  )
+}
+
+/** 06 — Mise en ligne : l'adresse qui bascule en ligne. */
+function ApercuMiseEnLigne({ reduce }: ApercuProps) {
+  return (
+    <div className={`${CADRE} flex flex-col justify-center`}>
+      <div className="flex items-center gap-2 rounded-md border border-border-ink bg-ink/60 px-3 py-2">
+        <svg viewBox="0 0 24 24" className="size-3.5 shrink-0 text-accent" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+          <rect x="4" y="11" width="16" height="9" rx="2" />
+          <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+        </svg>
+        <span className="truncate text-[11px] text-on-ink-soft">votre-entreprise.fr</span>
+      </div>
+      <motion.div
+        className="mt-3 flex items-center justify-center gap-2 rounded-full border border-accent/40 bg-accent/10 py-2"
+        initial={reduce ? false : { opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={reduce ? { duration: 0 } : { duration: 0.4, delay: 0.35 }}
+      >
+        <motion.span
+          className="size-1.5 rounded-full bg-accent"
+          animate={reduce ? { opacity: 1 } : { opacity: [1, 0.35, 1] }}
+          transition={reduce ? undefined : { duration: 2, repeat: Infinity, ease: EASE_NOVA }}
+        />
+        <span className="text-[10px] uppercase tracking-[0.16em] text-accent">En ligne</span>
+      </motion.div>
+      <p className="mt-3 text-center text-[10px] text-on-ink-soft">Certificat SSL actif</p>
+    </div>
+  )
+}
+
+/*
+  Le contenu de chaque étape. `benefice` répond à « qu'est-ce que j'y gagne »,
+  `livrable` à « qu'est-ce que je reçois concrètement ». Rien ici n'est promis
+  au-delà de ce que l'offre tient réellement.
+*/
+const ETAPES = [
+  {
+    numero: "01",
+    nom: "Découverte",
+    icone: Search,
+    benefice: "On cadre tout avant d'écrire la moindre ligne",
+    explication:
+      "Un échange sur votre activité, vos clients et ce que le site doit leur faire faire. C'est ce qui évite les mauvaises surprises en cours de route.",
+    livrable: "Un périmètre écrit et un devis clair sous 24 heures",
+    Apercu: ApercuDecouverte,
+  },
+  {
+    numero: "02",
+    nom: "Maquette",
+    icone: Palette,
+    benefice: "Vous voyez votre site avant qu'il existe",
+    explication:
+      "Couleurs, typographie et structure des pages sont posés et vous sont soumis. Rien n'est développé tant que vous n'avez pas validé.",
+    livrable: "Une maquette complète, avec les allers-retours nécessaires",
+    Apercu: ApercuMaquette,
+  },
+  {
+    numero: "03",
+    nom: "Développement",
+    icone: Code2,
+    benefice: "Le site est construit, pas assemblé depuis un thème",
+    explication:
+      "La maquette devient un vrai site : code propre, affichage soigné sur mobile comme sur ordinateur, testé sur les navigateurs courants.",
+    livrable: "Un site responsive et fonctionnel, prêt à être relu",
+    Apercu: ApercuDeveloppement,
+  },
+  {
+    numero: "04",
+    nom: "Optimisation",
+    icone: Zap,
+    benefice: "Rapide et trouvable, pas seulement agréable à regarder",
+    explication:
+      "Vitesse de chargement, bases du référencement et accessibilité sont repris en détail. C'est le travail qu'on ne voit pas et qui décide de vos visites.",
+    livrable: "Les mesures avant / après, et les réglages appliqués",
+    Apercu: ApercuOptimisation,
+  },
+  {
+    numero: "05",
+    nom: "Validation",
+    icone: ClipboardCheck,
+    benefice: "Rien ne part en ligne sans votre accord",
+    explication:
+      "On relit ensemble, page par page : les textes, les images, le formulaire. Les derniers ajustements sont faits à ce moment-là.",
+    livrable: "Une relecture complète avec vous, ajustements compris",
+    Apercu: ApercuValidation,
+  },
+  {
+    numero: "06",
+    nom: "Mise en ligne",
+    icone: Rocket,
+    benefice: "Votre site est publié, et vous en gardez la main",
+    explication:
+      "Publication sur votre nom de domaine, certificat de sécurité en place. Je reste joignable après la mise en ligne.",
+    livrable: "Le site en ligne, avec le certificat SSL actif",
+    Apercu: ApercuMiseEnLigne,
+  },
+] as const
+
+/* -------------------------------------------------------------------------- */
+/* Le rail                                                                     */
+/* -------------------------------------------------------------------------- */
+
+function Rail({
+  actif,
+  onChoisir,
+  idOnglets,
+  idPanneau,
+  reduce,
+}: {
+  actif: number
+  onChoisir: (i: number) => void
+  idOnglets: string
+  idPanneau: string
+  reduce: boolean
+}) {
+  const railRef = useRef<HTMLDivElement | null>(null)
+  const boutons = useRef<(HTMLButtonElement | null)[]>([])
+
+  /* L'étape active est ramenée dans le champ quand le rail déborde (mobile). */
+  useEffect(() => {
+    const b = boutons.current[actif]
+    const rail = railRef.current
+    if (!b || !rail || rail.scrollWidth <= rail.clientWidth) return
+    const cible = b.offsetLeft - rail.clientWidth / 2 + b.offsetWidth / 2
+    rail.scrollTo({ left: Math.max(0, cible), behavior: reduce ? "auto" : "smooth" })
+  }, [actif, reduce])
+
+  const auClavier = (e: React.KeyboardEvent) => {
+    const suivant =
+      e.key === "ArrowRight" ? actif + 1
+      : e.key === "ArrowLeft" ? actif - 1
+      : e.key === "Home" ? 0
+      : e.key === "End" ? ETAPES.length - 1
+      : null
+    if (suivant === null) return
+    e.preventDefault()
+    const i = Math.max(0, Math.min(ETAPES.length - 1, suivant))
+    onChoisir(i)
+    boutons.current[i]?.focus()
+  }
+
+  return (
+    <div
+      ref={railRef}
+      role="tablist"
+      aria-label="Les six étapes de la méthode"
+      onKeyDown={auClavier}
+      className={cn(
+        "rail-mobile -mx-4 gap-0 px-4 pb-3 md:mx-0 md:overflow-visible md:px-0 md:pb-0",
+        "md:flex md:justify-between"
+      )}
+    >
+      {/*
+        Le trait de liaison. Il est tracé derrière les repères, sur toute la
+        largeur, et se remplit en terracotta jusqu'à l'étape active.
+      */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute left-0 right-0 top-[19px] hidden h-px bg-border md:block"
+      />
+      <motion.span
+        aria-hidden
+        className="pointer-events-none absolute left-0 top-[19px] hidden h-px origin-left bg-accent md:block"
+        initial={false}
+        animate={{ scaleX: actif / (ETAPES.length - 1) }}
+        style={{ right: 0 }}
+        transition={reduce ? { duration: 0 } : { duration: 0.45, ease: EASE_NOVA }}
+      />
+
+      {ETAPES.map((etape, i) => {
+        const estActif = i === actif
+        const estPasse = i < actif
+        return (
+          <button
+            key={etape.numero}
+            ref={(el) => {
+              boutons.current[i] = el
+            }}
+            role="tab"
+            id={`${idOnglets}-${i}`}
+            aria-selected={estActif}
+            aria-controls={idPanneau}
+            tabIndex={estActif ? 0 : -1}
+            onClick={() => onChoisir(i)}
+            className={cn(
+              "group relative flex w-[104px] shrink-0 snap-center flex-col items-center gap-2.5",
+              "rounded-md pt-1 outline-none focus-visible:ring-3 focus-visible:ring-ring/35",
+              "md:w-auto md:flex-1"
+            )}
+          >
+            <span
+              className={cn(
+                "relative z-10 flex size-9 items-center justify-center rounded-full border bg-background",
+                "transition-[background-color,border-color,color,transform] duration-300 ease-nova",
+                estActif
+                  ? "scale-110 border-accent bg-accent text-accent-foreground"
+                  : estPasse
+                    ? "border-accent/45 bg-accent/12 text-accent-strong"
+                    : "border-border text-text-muted group-hover:border-border-strong"
+              )}
+            >
+              <Icon icon={etape.icone} className="size-4" />
+            </span>
+            <span
+              className={cn(
+                "font-heading text-[11px] tabular-nums transition-colors duration-300 ease-nova",
+                estActif ? "text-accent-strong" : "text-text-muted"
+              )}
+            >
+              {etape.numero}
+            </span>
+            <span
+              className={cn(
+                "text-center text-small leading-tight transition-colors duration-300 ease-nova",
+                estActif ? "font-semibold text-text" : "text-text-secondary"
+              )}
+            >
+              {etape.nom}
+            </span>
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+/* -------------------------------------------------------------------------- */
+/* La carte de détail                                                          */
+/* -------------------------------------------------------------------------- */
+
+function CarteEtape({
+  index,
+  idPanneau,
+  idOnglets,
+  reduce,
+}: {
+  index: number
+  idPanneau: string
+  idOnglets: string
+  reduce: boolean
+}) {
+  const etape = ETAPES[index]
+  return (
+    <div
+      role="tabpanel"
+      id={idPanneau}
+      aria-labelledby={`${idOnglets}-${index}`}
+      tabIndex={0}
+      className="mt-10 overflow-hidden rounded-xl border border-border outline-none focus-visible:ring-3 focus-visible:ring-ring/35"
+    >
+      <motion.div
+        key={etape.numero}
+        initial={reduce ? false : { opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={reduce ? { duration: 0 } : { duration: 0.3, ease: EASE_NOVA }}
+        className="grid grid-cols-1 lg:grid-cols-[1.15fr_0.85fr]"
+      >
+        {/* Texte — fond papier à peine teinté de terracotta. */}
+        <div className="bg-[color-mix(in_oklab,var(--color-accent)_5%,var(--color-surface))] p-6 text-left sm:p-8">
+          <p className="flex items-center gap-2.5 text-eyebrow uppercase text-accent-strong">
+            <span className="font-heading tabular-nums">{etape.numero}</span>
+            <span aria-hidden className="h-px w-6 bg-accent/50" />
+            {etape.nom}
+          </p>
+
+          <h3 className="mt-4 font-heading text-h2 text-text">{etape.benefice}</h3>
+          <p className="measure mt-4 text-body text-text-secondary">{etape.explication}</p>
+
+          <div className="mt-7 flex items-start gap-3 border-t border-border pt-5">
+            <NovaMark aria-hidden className="mt-1 size-3 shrink-0 text-accent" />
+            <p className="text-small text-text">
+              <span className="text-eyebrow uppercase text-text-muted">Ce que vous recevez</span>
+              <br />
+              {etape.livrable}
+            </p>
+          </div>
+        </div>
+
+        {/* Aperçu — bleu nuit. */}
+        <div className="grain-ink relative flex items-stretch bg-surface-ink p-5 sm:p-6">
+          <etape.Apercu reduce={reduce} />
+        </div>
+      </motion.div>
+    </div>
+  )
+}
+
+/* -------------------------------------------------------------------------- */
+/* Section                                                                     */
+/* -------------------------------------------------------------------------- */
+
+function Processus() {
+  const floatIn = useFloatIn()
+  const reduce = Boolean(useReducedMotion())
+  const [actif, setActif] = useState(0)
+  const base = useId()
+  const idOnglets = `${base}-onglet`
+  const idPanneau = `${base}-panneau`
+
+  const aller = useCallback((i: number) => {
+    setActif(Math.max(0, Math.min(ETAPES.length - 1, i)))
+  }, [])
 
   return (
     <Section id="ma-methode" className="scroll-mt-24 bg-surface">
@@ -251,7 +537,7 @@ function Processus() {
           variants={floatIn(0, { y: -40, scale: 0.85 })}
         >
           <Badge variant="outline">
-            <Icon icon={Route} className="size-3.5 text-accent" />
+            <NovaMark aria-hidden className="size-3 text-accent" />
             Ma méthode
           </Badge>
         </motion.div>
@@ -273,145 +559,52 @@ function Processus() {
           variants={floatIn(0.22, { y: 40 })}
         >
           Un <strong className="font-semibold text-text">processus clair et éprouvé</strong>, de
-          la première idée à la mise en ligne de votre site. Cliquez sur une étape pour en savoir
-          plus.
+          la première idée à la mise en ligne. Choisissez une étape pour voir ce qu&apos;elle
+          produit.
         </motion.p>
       </div>
 
-      {/*
-        Plus de piste de scroll ni d'épinglage : la section reprend sa hauteur
-        naturelle. Le défilement de la page n'a plus qu'un rôle — mettre en
-        marche ou suspendre le pas automatique selon que la frise est visible.
-      */}
       <motion.div
-        ref={sectionRef}
-        className="mt-[var(--section-gap)]"
+        className="relative mt-[var(--section-gap)]"
         initial="hidden"
         whileInView="visible"
-        viewport={{ once: true, amount: 0.2 }}
-        variants={floatIn(0.1, { y: 60, scale: 0.96 })}
-        onMouseEnter={() => setPaused(true)}
-        onMouseLeave={() => {
-          if (resumeTimer.current) clearTimeout(resumeTimer.current)
-          setPaused(false)
-        }}
+        viewport={{ once: true, amount: 0.15 }}
+        variants={floatIn(0.1, { y: 48 })}
       >
-        {/*
-          Desktop : le rail court à l'horizontale au-dessus du panneau.
-          Mobile : il descend le long du panneau. Même balisage, même
-          nombre d'étapes — seul l'axe change.
-        */}
-        <div className="flex gap-4 lg:block">
-          <Frieze
-            id="processus"
-            steps={FRIEZE_STEPS}
-            activeIndex={activeIndex}
-            onSelect={goToStep}
-            orientation={isMobile ? "vertical" : "horizontal"}
-            progress={reduce ? undefined : progress}
-            className="lg:mb-12"
-          />
+        <Rail
+          actif={actif}
+          onChoisir={aller}
+          idOnglets={idOnglets}
+          idPanneau={idPanneau}
+          reduce={reduce}
+        />
 
-          <div className="relative min-h-[24rem] flex-1 overflow-hidden sm:min-h-[19rem]">
-            <AnimatePresence mode="wait" custom={direction} initial={false}>
-              <motion.div
-                key={activeIndex}
-                custom={direction}
-                variants={cardVariants}
-                initial="enter"
-                animate="center"
-                exit="exit"
-                transition={reduce ? { duration: 0 } : { duration: 0.35, ease: EASE_NOVA }}
-              >
-                <Card
-                  tone="ink"
-                  padding="md"
-                  className="grain-ink relative overflow-hidden lg:p-9"
-                >
-                  {/*
-                    Bandeau : le rang de l'étape, le rappel de progression et
-                    la signature. Le rail interne reprend la grammaire des
-                    paliers tarifaires — six segments, remplis jusqu'ici.
-                  */}
-                  <div className="relative flex items-center justify-between gap-4">
-                    <Badge variant="ink">
-                      Étape {activeIndex + 1}/{STEP_COUNT}
-                    </Badge>
+        <CarteEtape index={actif} idPanneau={idPanneau} idOnglets={idOnglets} reduce={reduce} />
 
-                    <div className="flex items-center gap-3">
-                      <span aria-hidden className="flex w-20 items-center gap-1 sm:w-28">
-                        {STEPS.map((step, segment) => (
-                          <span
-                            key={`seg-${step.number}`}
-                            className={cn(
-                              "h-px flex-1 transition-colors duration-500 ease-nova",
-                              segment <= activeIndex ? "bg-accent" : "bg-border-ink"
-                            )}
-                          />
-                        ))}
-                      </span>
-                      <NovaMark aria-hidden className="size-2.5 shrink-0 text-accent" />
-                    </div>
-                  </div>
-
-                  {/* Colonne unique centrée : le rang et l'icône coiffent l'étape. */}
-                  <div className="relative mt-8 flex flex-col items-center gap-7">
-                    <div className="flex items-center gap-5">
-                      {/* Repère graphique, pas une information : masqué aux lecteurs d'écran. */}
-                      <span
-                        aria-hidden
-                        className="font-heading leading-[0.8] text-[clamp(3.25rem,2rem+5vw,5.5rem)] text-accent"
-                      >
-                        {active.number}
-                      </span>
-                      <span className="flex size-12 shrink-0 items-center justify-center rounded-md border border-border-ink text-accent">
-                        <Icon icon={active.icon} className="size-5" />
-                      </span>
-                    </div>
-
-                    <div className="w-full min-w-0">
-                      <h3 className="font-heading text-h2 text-on-ink">{active.title}</h3>
-
-                      <p className="mt-4 text-lead text-on-ink-soft">{active.description}</p>
-
-                      <div className="mt-8 h-px w-full bg-border-ink" />
-
-                      <ul className="card-list mt-6 flex flex-col gap-4">
-                        {active.details.map((detail) => (
-                          <li key={detail} className="flex gap-4 text-small text-on-ink-soft">
-                            <span
-                              aria-hidden
-                              className="relative top-[0.62em] h-px w-4 shrink-0 bg-accent"
-                            />
-                            <span>{detail}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
-                </Card>
-              </motion.div>
-            </AnimatePresence>
-          </div>
-        </div>
-
-        {/* Commandes manuelles — elles suspendent le pas automatique. */}
-        <div className="mt-8 flex items-center justify-center gap-3">
+        {/* Commandes précédente / suivante */}
+        <div className="mt-6 flex items-center justify-center gap-4">
           <button
             type="button"
-            onClick={() => goToStep((activeIndex - 1 + STEP_COUNT) % STEP_COUNT)}
+            onClick={() => aller(actif - 1)}
+            disabled={actif === 0}
             aria-label="Étape précédente"
-            className="flex size-11 shrink-0 items-center justify-center rounded-md border border-border-strong bg-surface text-text-secondary outline-none transition-colors duration-200 ease-nova hover:border-accent hover:text-accent-strong focus-visible:ring-3 focus-visible:ring-ring/35"
+            className="flex size-11 items-center justify-center rounded-md border border-border text-text-secondary outline-none transition-colors duration-200 ease-nova hover:border-border-strong hover:text-accent-strong focus-visible:ring-3 focus-visible:ring-ring/35 disabled:pointer-events-none disabled:opacity-35"
           >
-            <Icon icon={ArrowLeft} className="size-4" />
+            <Icon icon={ChevronLeft} className="size-4" />
           </button>
+
+          <p className="font-heading text-small tabular-nums text-text-muted" aria-live="polite">
+            {ETAPES[actif].numero} <span className="text-text-muted/60">/ 06</span>
+          </p>
+
           <button
             type="button"
-            onClick={() => goToStep((activeIndex + 1) % STEP_COUNT)}
+            onClick={() => aller(actif + 1)}
+            disabled={actif === ETAPES.length - 1}
             aria-label="Étape suivante"
-            className="flex size-11 shrink-0 items-center justify-center rounded-md border border-border-strong bg-surface text-text-secondary outline-none transition-colors duration-200 ease-nova hover:border-accent hover:text-accent-strong focus-visible:ring-3 focus-visible:ring-ring/35"
+            className="flex size-11 items-center justify-center rounded-md border border-border text-text-secondary outline-none transition-colors duration-200 ease-nova hover:border-border-strong hover:text-accent-strong focus-visible:ring-3 focus-visible:ring-ring/35 disabled:pointer-events-none disabled:opacity-35"
           >
-            <Icon icon={ArrowRight} className="size-4" />
+            <Icon icon={ChevronRight} className="size-4" />
           </button>
         </div>
       </motion.div>
