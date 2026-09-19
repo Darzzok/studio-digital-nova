@@ -249,7 +249,7 @@ function Frieze({
             "relative",
             vertical
               ? "flex flex-1 shrink-0 flex-col items-center justify-between"
-              : "flex items-start justify-between"
+              : "flex items-start justify-between gap-1 sm:gap-2"
           )}
         >
           {steps.map((step, index) => {
@@ -315,14 +315,16 @@ function Frieze({
                 </button>
 
                 {/*
-                  L'intitulé s'affiche à toutes les tailles. Masqué sous
-                  640 px, la frise se réduisait à quatre ronds numérotés : on
-                  voyait qu'on avançait, pas vers quoi.
+                  Quatre intitulés côte à côte demandent de la place :
+                  « COORDONNÉES » fait à lui seul 60 points, et sous 640 px une
+                  colonne n'en mesure plus que 54 — les mots se touchaient.
+                  Ils s'affichent donc à partir de `sm` ; en dessous, c'est
+                  l'étape en cours qui est nommée sous la barre de progression.
                 */}
                 {!vertical && (
                   <span
                     className={cn(
-                      "text-center text-[10px] uppercase leading-tight tracking-[0.08em] transition-colors duration-500 ease-nova sm:text-eyebrow",
+                      "hidden text-center text-eyebrow uppercase leading-tight transition-colors duration-500 ease-nova sm:block",
                       isActive ? "font-medium text-text" : "text-text-muted"
                     )}
                   >

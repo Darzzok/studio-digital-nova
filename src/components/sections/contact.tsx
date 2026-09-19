@@ -22,6 +22,7 @@ import {
   Send,
   Server,
   Sparkles,
+  UserRound,
 } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
@@ -42,8 +43,18 @@ import { cn } from "@/lib/utils"
 
 const STEP_LABELS = ["Formule", "Besoins", "Coordonnées", "Projet"]
 
-/** Projection des libellés dans le format de la frise partagée. */
-const FRIEZE_STEPS = STEP_LABELS.map((label) => ({ key: label, label }))
+/*
+  Une icône par étape plutôt qu'un rang chiffré : sur un rail de quatre
+  pastilles, un pictogramme se reconnaît d'un coup d'œil là où « 3 » demande
+  de recompter. Le rang reste annoncé aux lecteurs d'écran par `labelPrefix`.
+*/
+const STEP_ICONS = [Sparkles, ClipboardList, UserRound, MessageSquare]
+
+const FRIEZE_STEPS = STEP_LABELS.map((label, i) => ({
+  key: label,
+  label,
+  icon: STEP_ICONS[i],
+}))
 
 const PROGRESS_MESSAGES = [
   "Plus que 3 étapes avant votre proposition.",
@@ -250,16 +261,45 @@ function ProgressFrieze({
   onJump: (index: number) => void
   reduce: boolean
 }) {
+  /*
+    « Étape 1 sur 4 » vaut un quart, pas zéro : mesurée sur les intervalles,
+    la barre restait vide à la première étape et donnait l'impression que rien
+    n'avait commencé.
+  */
+  const avancement = Math.round(((step + 1) / STEP_LABELS.length) * 100)
+
   return (
     <div>
-      <Frieze
-        id="configurateur"
-        steps={FRIEZE_STEPS}
-        activeIndex={step}
-        reachableIndex={maxStep}
-        onSelect={onJump}
-        labelPrefix="Étape"
-      />
+      {/*
+        La frise repose sur un fond creusé et arrondi : posée à nu sur la carte,
+        elle flottait au-dessus du formulaire sans lui appartenir. Le cadre en
+        fait un bandeau de progression, et la barre fine du bas donne la mesure
+        d'un coup d'œil.
+      */}
+      <div className="rounded-xl bg-surface-sunken p-4 sm:p-5">
+        <Frieze
+          id="configurateur"
+          steps={FRIEZE_STEPS}
+          activeIndex={step}
+          reachableIndex={maxStep}
+          onSelect={onJump}
+          labelPrefix="Étape"
+        />
+
+        <div className="mt-4 h-1 w-full overflow-hidden rounded-full bg-border">
+          <motion.div
+            className="h-full rounded-full bg-ink"
+            initial={false}
+            animate={{ width: `${avancement}%` }}
+            transition={reduce ? { duration: 0 } : { duration: 0.45, ease: EASE_NOVA }}
+          />
+        </div>
+
+        {/* Sous 640 px, seule l'étape en cours est nommée : quatre intitulés n'y tiennent pas. */}
+        <p className="mt-3 text-center text-eyebrow uppercase text-text sm:hidden">
+          {STEP_LABELS[step]}
+        </p>
+      </div>
 
       <AnimatePresence mode="wait">
         <motion.p

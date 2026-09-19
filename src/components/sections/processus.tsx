@@ -376,22 +376,13 @@ function Rail({
       )}
     >
       {/*
-        Le trait de liaison. Il est tracé derrière les repères, sur toute la
-        largeur, et se remplit en terracotta jusqu'à l'étape active.
+        Le trait de liaison vit DANS chaque repère, en deux moitiés posées de
+        part et d'autre de la pastille. Tracé en un seul segment absolu sur le
+        conteneur, il devait être masqué sous 768 px : le rail y défile
+        horizontalement, et un trait calé sur `left-0 right-0` s'arrêtait au
+        bord visible au lieu de suivre le contenu. Découpé ainsi, il suit les
+        repères à toutes les largeurs, défilement compris.
       */}
-      <span
-        aria-hidden
-        className="pointer-events-none absolute left-0 right-0 top-[19px] hidden h-px bg-border md:block"
-      />
-      <motion.span
-        aria-hidden
-        className="pointer-events-none absolute left-0 top-[19px] hidden h-px origin-left bg-accent md:block"
-        initial={false}
-        animate={{ scaleX: actif / (ETAPES.length - 1) }}
-        style={{ right: 0 }}
-        transition={reduce ? { duration: 0 } : { duration: 0.45, ease: EASE_NOVA }}
-      />
-
       {ETAPES.map((etape, i) => {
         const estActif = i === actif
         const estPasse = i < actif
@@ -413,6 +404,27 @@ function Rail({
               "md:w-auto md:flex-1"
             )}
           >
+            {/* Demi-trait de gauche — absent sur le premier repère. */}
+            {i > 0 && (
+              <span
+                aria-hidden
+                className={cn(
+                  "pointer-events-none absolute top-[22px] left-0 right-[calc(50%+18px)] h-px transition-colors duration-500 ease-nova",
+                  i <= actif ? "bg-ink" : "bg-border"
+                )}
+              />
+            )}
+            {/* Demi-trait de droite — absent sur le dernier. */}
+            {i < ETAPES.length - 1 && (
+              <span
+                aria-hidden
+                className={cn(
+                  "pointer-events-none absolute top-[22px] left-[calc(50%+18px)] right-0 h-px transition-colors duration-500 ease-nova",
+                  i < actif ? "bg-ink" : "bg-border"
+                )}
+              />
+            )}
+
             <span
               className={cn(
                 "relative z-10 flex size-9 items-center justify-center rounded-full border bg-background",
@@ -420,7 +432,7 @@ function Rail({
                 estActif
                   ? "scale-110 border-accent bg-accent text-accent-foreground"
                   : estPasse
-                    ? "border-accent/45 bg-accent/12 text-accent-strong"
+                    ? "border-ink/35 bg-ink/8 text-ink"
                     : "border-border text-text-muted group-hover:border-border-strong"
               )}
             >
