@@ -75,22 +75,28 @@ const STEP_CONTENT = [
   section Tarifs. Une carte qui n'annonce qu'un nom et un prix ne permet pas
   de choisir : il faut savoir ce qu'on prend.
 */
+/*
+  Portée, accroche et prix repris tels quels de la grille publique affichée
+  dans la section Tarifs. L'accroche dit À QUI la formule s'adresse — c'est ce
+  qui permet de choisir. La liste de ce qu'elle contient reste sur la page
+  Tarifs : dans une carte de quatre lignes, elle noie le propos.
+*/
 const OFFERS = [
   {
     id: "essentiel",
     name: "Essentiel",
-    price: "690 €",
+    price: "690\u00a0€",
     scope: "One page",
-    resume: "Une page optimisée, design personnalisé, livraison en 5 jours.",
+    accroche: "Pour démarrer votre présence en ligne rapidement.",
     icon: Rocket,
     className: CHIP.mineral,
   },
   {
     id: "pro",
     name: "Pro",
-    price: "990 €",
+    price: "990\u00a0€",
     scope: "Site vitrine",
-    resume: "Jusqu'à 5 pages, optimisation SEO incluse, livraison en 10 jours.",
+    accroche: "La formule la plus complète pour convertir vos visiteurs.",
     icon: Sparkles,
     badge: "Le plus choisi",
     className: CHIP.terracotta,
@@ -98,10 +104,9 @@ const OFFERS = [
   {
     id: "premium",
     name: "Premium",
-    /* Espaces insécables : « 1 200 € » restait coupé, le « 1 » seul sur sa ligne. */
-    price: "À partir de 1 200 €",
+    price: "À partir de 1\u00a0200\u00a0€",
     scope: "Sur mesure",
-    resume: "Fonctionnalités sur mesure, accompagnement dédié, optimisation avancée.",
+    accroche: "Un accompagnement sur mesure, sans compromis.",
     icon: Crown,
     className: CHIP.ink,
   },
@@ -323,14 +328,15 @@ function StepBlock({ title, subtitle, children }: { title: string; subtitle: str
 }
 
 /*
-  Les cartes d'offre. Sur téléphone elles se lisent en ligne — pastille,
-  intitulé, prix — parce qu'empilées en colonne elles occupaient chacune un
-  tiers d'écran pour trois mots. À partir de 640 px elles reprennent leur
-  disposition verticale, en trois colonnes.
+  Les cartes d'offre. Tout y est centré, à toutes les tailles : la pastille,
+  l'intitulé, la portée, le prix, l'accroche. La disposition en ligne
+  qu'elles avaient sur téléphone gagnait en hauteur ce qu'elle perdait en
+  lisibilité — un texte aligné à gauche à côté d'une icône ne se lit pas comme
+  le reste du site, qui est centré partout.
 
-  Le filet terracotta posé sur le bord haut de la carte choisie a disparu : la
-  sélection se lit à la bordure encre, au fond teinté et à la pastille cochée,
-  qui glisse d'une carte à l'autre.
+  La sélection se lit à la bordure encre, au fond teinté et à la pastille
+  cochée, qui glisse d'une carte à l'autre. Aucun filet terracotta sur le bord
+  haut : l'accent est réservé à ce qui appelle une action.
 */
 function StepOffer({
   value,
@@ -351,14 +357,13 @@ function StepOffer({
             type="button"
             onClick={() => onSelect(offer.id)}
             aria-pressed={selected}
-            className="group block w-full rounded-xl text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/35"
+            className="group block w-full rounded-xl outline-none focus-visible:ring-3 focus-visible:ring-ring/35"
           >
             <Card
               padding="none"
               interactive
               className={cn(
-                "relative flex h-full items-center gap-4 p-4 text-left",
-                "sm:flex-col sm:items-center sm:gap-3 sm:p-6 sm:pt-7 sm:text-center",
+                "relative flex h-full flex-col items-center gap-2.5 p-5 text-center sm:gap-3 sm:p-6",
                 selected ? "border-ink bg-secondary shadow-md" : "border-border"
               )}
             >
@@ -372,6 +377,37 @@ function StepOffer({
                 />
               )}
 
+              {/* Coche de sélection, au coin, pour ne pas décaler le texte centré. */}
+              <span
+                className={cn(
+                  "absolute right-3 top-3 flex size-6 items-center justify-center rounded-full border transition-colors duration-300 ease-nova",
+                  selected
+                    ? "border-ink bg-ink text-paper"
+                    : "border-border-strong text-transparent group-hover:border-ink"
+                )}
+              >
+                <AnimatePresence initial={false}>
+                  {selected && (
+                    <motion.span
+                      key="coche"
+                      initial={reduce ? false : { scale: 0, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      exit={reduce ? undefined : { scale: 0, opacity: 0 }}
+                      transition={{ type: "spring", stiffness: 320, damping: 20 }}
+                    >
+                      <Icon icon={Check} className="size-3.5" />
+                    </motion.span>
+                  )}
+                </AnimatePresence>
+              </span>
+
+              {"badge" in offer && offer.badge && (
+                <span className="relative inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-accent px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-[0.08em] text-ink">
+                  <Icon icon={Sparkles} className="size-2.5" />
+                  {offer.badge}
+                </span>
+              )}
+
               <span
                 className={cn(
                   "relative flex size-11 shrink-0 items-center justify-center rounded-md transition-transform duration-300 ease-nova group-hover:-translate-y-0.5",
@@ -381,50 +417,10 @@ function StepOffer({
                 <Icon icon={offer.icon} className="size-5" />
               </span>
 
-              {/*
-                Le prix vit DANS le bloc de texte, et non dans une colonne à
-                droite : « À partir de 1 200 € » ne rentrait pas à côté de
-                « Premium » sur un écran de 375 px, et les deux se marchaient
-                dessus. Ici, il passe simplement à la ligne.
-              */}
-              <div className="relative min-w-0 flex-1 sm:w-full sm:flex-none">
-                {"badge" in offer && offer.badge && (
-                  <span className="mb-1.5 inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-accent px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.08em] text-ink">
-                    <Icon icon={Sparkles} className="size-2.5" />
-                    {offer.badge}
-                  </span>
-                )}
-                <p className="font-heading text-h3 leading-none text-text">{offer.name}</p>
-                <p className="mt-1.5 text-eyebrow uppercase text-text-muted">{offer.scope}</p>
-                {/* Le détail n'a la place de respirer qu'à partir de 640 px. */}
-                <p className="mt-2.5 hidden text-small text-text-secondary sm:block">{offer.resume}</p>
-                <p className="mt-2 font-heading text-body text-text sm:mt-3">{offer.price}</p>
-              </div>
-
-              <div className="relative flex shrink-0 items-center sm:absolute sm:right-4 sm:top-4">
-                <span
-                  className={cn(
-                    "flex size-6 shrink-0 items-center justify-center rounded-full border transition-colors duration-300 ease-nova",
-                    selected
-                      ? "border-ink bg-ink text-paper"
-                      : "border-border-strong text-transparent group-hover:border-ink"
-                  )}
-                >
-                  <AnimatePresence initial={false}>
-                    {selected && (
-                      <motion.span
-                        key="coche"
-                        initial={reduce ? false : { scale: 0, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        exit={reduce ? undefined : { scale: 0, opacity: 0 }}
-                        transition={{ type: "spring", stiffness: 320, damping: 20 }}
-                      >
-                        <Icon icon={Check} className="size-3.5" />
-                      </motion.span>
-                    )}
-                  </AnimatePresence>
-                </span>
-              </div>
+              <p className="relative font-heading text-h3 leading-none text-text">{offer.name}</p>
+              <p className="relative text-eyebrow uppercase text-text-muted">{offer.scope}</p>
+              <p className="relative font-heading text-body text-text">{offer.price}</p>
+              <p className="relative text-small leading-snug text-text-secondary">{offer.accroche}</p>
             </Card>
           </button>
         )

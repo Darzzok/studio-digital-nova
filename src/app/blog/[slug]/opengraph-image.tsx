@@ -5,6 +5,7 @@ import { ImageResponse } from "next/og"
 import sharp from "sharp"
 
 import { ARTICLES, getArticleBySlug } from "@/lib/articles"
+import { BandeauMarque } from "@/lib/og"
 
 /*
   Les couvertures sont désormais hébergées localement, en WebP. Satori ne sait
@@ -97,34 +98,7 @@ export default async function Image({ params }: Props) {
               gap: 16,
             }}
           >
-            <div
-              style={{
-                display: "flex",
-                width: 56,
-                height: 56,
-                borderRadius: 14,
-                backgroundColor: "#0b1726",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: 18,
-                fontWeight: 800,
-                letterSpacing: 0.5,
-                color: "#fcfbf8",
-              }}
-            >
-              SDN
-            </div>
-            <div
-              style={{
-                display: "flex",
-                fontSize: 28,
-                fontWeight: 600,
-                color: "#fcfbf8",
-                textShadow: "0 2px 14px rgba(0,0,0,0.7)",
-              }}
-            >
-              Studio Digital Nova
-            </div>
+            <BandeauMarque />
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
