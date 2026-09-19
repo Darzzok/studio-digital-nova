@@ -35,14 +35,17 @@ import {
   AuditError,
   DIMENSIONS,
   PAGESPEED_KEY,
+  PERIMETRES,
   normalizeUrl,
   runAudit,
   type Constat,
   type DimensionId,
   type NoteDimension,
+  type Perimetre,
   type RapportPage,
   type Strategy,
 } from "@/lib/audit"
+import { suiteProposee } from "@/lib/audit-offre"
 import { EASE_NOVA, useFloatIn } from "@/lib/motion"
 import { cn } from "@/lib/utils"
 
@@ -834,9 +837,13 @@ function EcranProgression({
 function BlocTelechargement({
   rapports,
   url,
+  prenom,
+  perimetre,
 }: {
   rapports: Partial<Record<Strategy, RapportPage>>
   url: string
+  prenom: string
+  perimetre: Perimetre
 }) {
   const [etat, setEtat] = useState<"pret" | "encours" | "echec">("pret")
 
@@ -847,11 +854,13 @@ function BlocTelechargement({
       telechargerRapport(
         construireRapport({
           url,
-          prenom: "",
+          prenom,
+          perimetre,
           mobile: rapports.mobile ?? null,
           desktop: rapports.desktop ?? null,
         }),
-        url
+        url,
+        prenom
       )
       setEtat("pret")
     } catch {
@@ -892,11 +901,13 @@ function Resultats({
   rapports,
   appareil,
   onAppareil,
+  prenom,
   reduce,
 }: {
   rapports: Partial<Record<Strategy, RapportPage>>
   appareil: Strategy
   onAppareil: (s: Strategy) => void
+  prenom: string
   reduce: boolean
 }) {
   const rapport = rapports[appareil] ?? rapports.mobile ?? rapports.desktop
@@ -936,13 +947,29 @@ function Resultats({
           <div className="min-w-0 text-center sm:text-left">
             <p className="text-eyebrow uppercase text-on-ink-soft">Page analysée</p>
             <p className="mt-2 break-all font-heading text-h3 text-on-ink">{rapport.url}</p>
+            <p className="mt-2 text-small text-on-ink-soft">
+              Regard demandé :{" "}
+              <span className="text-on-ink">{PERIMETRES[rapport.perimetre].libelle.toLowerCase()}</span>{" "}
+              — {PERIMETRES[rapport.perimetre].resume.toLowerCase()}.
+            </p>
             <p className="mt-4 text-lead text-on-ink-soft">{synthese}</p>
           </div>
         </div>
 
         <p className="relative mt-7 border-t border-border-ink pt-5 text-small text-on-ink-soft">
-          Pondération : {Object.values(DIMENSIONS).map((d) => `${d.libelle.toLowerCase()} ${Math.round(d.poids * 100)} %`).join(", ")}.
-          Une dimension non mesurable sort du calcul au lieu de compter zéro.
+          {/*
+            La pondération affichée est celle qui a servi, renormalisée sur le
+            périmètre demandé — pas la grille générale, qui ne correspondrait à
+            rien quand une partie du barème est hors sujet.
+          */}
+          Pondération :{" "}
+          {(() => {
+            const total = rapport.dimensions.reduce((s, d) => s + d.poids, 0)
+            return rapport.dimensions
+              .map((d) => `${d.libelle.toLowerCase()} ${Math.round((d.poids / total) * 100)} %`)
+              .join(", ")
+          })()}
+          . Une dimension non mesurable sort du calcul au lieu de compter zéro.
         </p>
 
         {lesDeux && (
@@ -995,7 +1022,12 @@ function Resultats({
         4 à 6 — le rapport en entier. Plus rien n'est masqué : les coordonnées
         ont été laissées avant l'analyse.
       */}
-      <BlocTelechargement rapports={rapports} url={rapport.url} />
+      <BlocTelechargement
+        rapports={rapports}
+        url={rapport.url}
+        prenom={prenom}
+        perimetre={rapport.perimetre}
+      />
 
           {bons.length > 0 && (
             <Card tone="ivory" padding="md">
@@ -1106,6 +1138,40 @@ function Resultats({
             </ul>
           </Card>
 
+      {/* Ce qui suit l'analyse : deux prestations au plus, choisies d'après ce qui a été mesuré. */}
+      {(() => {
+        const suite = suiteProposee(rapport, rapport.perimetre)
+        return (
+          <Card tone="ivory" padding="md">
+            <p className="text-eyebrow uppercase text-accent-strong">{suite.titre}</p>
+            <DrawRule className="mt-4" />
+            <p className="measure mx-auto mt-6 text-body text-text-secondary">{suite.phrase}</p>
+            <div className="mt-7 grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {suite.prestations.map((pr) => (
+                <Link key={pr.lien} href={pr.lien} className="group">
+                  <Card padding="sm" interactive className="h-full">
+                    <p className="font-heading text-body text-text">{pr.nom}</p>
+                    <p className="mt-2 text-small text-text-secondary">{pr.ligne}</p>
+                    {pr.prix && (
+                      <p className="mt-3 text-eyebrow uppercase text-accent-strong">{pr.prix}</p>
+                    )}
+                  </Card>
+                </Link>
+              ))}
+            </div>
+            <p className="mt-7 text-small text-text-muted">
+              Devis gratuit sous 24 heures, sans engagement —{" "}
+              <a
+                href="mailto:contact@studiodigitalnova.fr"
+                className="text-accent-strong underline decoration-accent/40 underline-offset-4"
+              >
+                contact@studiodigitalnova.fr
+              </a>
+            </p>
+          </Card>
+        )
+      })()}
+
       <p className="text-small text-text-muted">
         Analyse réalisée par l&apos;API Google PageSpeed Insights sur {rapport.url}
         {lesDeux ? ", en versions mobile et ordinateur" : ""}. Les mesures sont relevées en
@@ -1130,6 +1196,7 @@ function resumerRapport(r: RapportPage | null, appareil: string): string {
 
   const lignes: string[] = []
   lignes.push(`${appareil} — ${r.url}`)
+  lignes.push(`Périmètre : ${PERIMETRES[r.perimetre].libelle} — ${PERIMETRES[r.perimetre].resume}`)
   lignes.push(
     `Note globale : ${r.note === null ? "bilan partiel, non calculée" : `${r.note}/100`}`
   )
@@ -1232,6 +1299,8 @@ async function signaler(
         resumerRapport(rapports.desktop ?? null, "VERSION ORDINATEUR"),
       ].join("\n")
 
+  const suite = suiteProposee(base, base?.perimetre ?? "complet")
+
   const corps = [
     "COORDONNÉES",
     `  Prénom    : ${contact.prenom || "non renseigné"}`,
@@ -1246,12 +1315,16 @@ async function signaler(
     "",
     "────────────────────────────────────────",
     "",
+    "PISTE COMMERCIALE (celle affichée dans son rapport)",
+    `  ${suite.phrase}`,
+    ...suite.prestations.map((pr) => `  · ${pr.nom}${pr.prix ? ` — ${pr.prix}` : ""}`),
+    "",
     "Le rapport s'est ouvert sur la page et le PDF est à sa main.",
     "Aucun mail ne lui a été envoyé.",
   ].join("\n")
 
   return transmettre({
-    subject: `Audit ${domaineCourt(url)} — ${contact.prenom || contact.email}`,
+    subject: `Audit ${contact.prenom || contact.email} — ${domaineCourt(url)}`,
     from_name: contact.prenom || contact.email,
     name: contact.prenom || "Non renseigné",
     /* Répondre au message répond directement au visiteur. */
@@ -1273,12 +1346,16 @@ async function signaler(
 function CarteAdresse({
   saisie,
   onSaisie,
+  perimetre,
+  onPerimetre,
   onSoumettre,
   disponible,
   reduce,
 }: {
   saisie: string
   onSaisie: (v: string) => void
+  perimetre: Perimetre
+  onPerimetre: (p: Perimetre) => void
   onSoumettre: (e: React.FormEvent) => void
   disponible: boolean
   reduce: boolean
@@ -1348,11 +1425,56 @@ function CarteAdresse({
           </div>
         </div>
 
+        {/*
+          Ce qu'on regarde. Le choix se fait ici, avant l'adresse validée :
+          il change les catégories demandées à Google, les dimensions notées,
+          la pondération de la note et la suite proposée.
+        */}
+        <fieldset className="mt-7">
+          <legend className="mx-auto mb-4 text-eyebrow uppercase text-on-ink-soft">
+            Que dois-je regarder ?
+          </legend>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            {(Object.keys(PERIMETRES) as Perimetre[]).map((cle) => {
+              const p = PERIMETRES[cle]
+              const actif = perimetre === cle
+              return (
+                <button
+                  key={cle}
+                  type="button"
+                  onClick={() => onPerimetre(cle)}
+                  aria-pressed={actif}
+                  className={cn(
+                    "relative flex min-h-11 flex-col items-center gap-1.5 rounded-lg border p-4 text-center outline-none transition-[border-color,background-color,transform] duration-300 ease-nova focus-visible:ring-3 focus-visible:ring-ring/35",
+                    actif
+                      ? "border-accent bg-accent/12"
+                      : "border-border-ink hover:border-on-ink-soft"
+                  )}
+                >
+                  {actif && (
+                    <motion.span
+                      layoutId={reduce ? undefined : "perimetre-actif"}
+                      aria-hidden
+                      className="absolute inset-0 rounded-lg border-2 border-accent"
+                      transition={{ duration: 0.3, ease: EASE_NOVA }}
+                    />
+                  )}
+                  <span className={cn("relative font-heading text-body", actif ? "text-on-ink" : "text-on-ink-soft")}>
+                    {p.libelle}
+                  </span>
+                  <span className="relative text-small leading-snug text-on-ink-soft">{p.resume}</span>
+                </button>
+              )
+            })}
+          </div>
+          <p className="mt-4 text-small text-on-ink">{PERIMETRES[perimetre].promesse}</p>
+        </fieldset>
+
         <Button
           type="submit"
           variant="primary"
           disabled={!disponible}
-          className="mt-3 h-13 w-full bg-paper text-ink hover:bg-accent hover:text-ink sm:hidden"
+          className="mt-6 h-13 w-full bg-paper text-ink hover:bg-accent hover:text-ink sm:hidden"
         >
           Analyser mon site
           <Icon icon={ArrowRight} />
@@ -1426,10 +1548,12 @@ function CarteAdresse({
 */
 function EcranCoordonnees({
   url,
+  perimetre,
   onValide,
   onRetour,
 }: {
   url: string
+  perimetre: Perimetre
   onValide: (contact: Contact) => void
   onRetour: () => void
 }) {
@@ -1471,9 +1595,9 @@ function EcranCoordonnees({
         À qui j&apos;envoie mes remarques ?
       </h2>
       <p className="relative mx-auto mt-4 max-w-xl text-lead text-on-ink">
-        L&apos;analyse de <strong className="font-semibold text-on-ink">{domaineCourt(url)}</strong>{" "}
-        démarre juste après. Elle prend une trentaine de secondes, et le rapport s&apos;affiche
-        ici même, en entier, avec son PDF à télécharger.
+        J&apos;examine <strong className="font-semibold text-on-ink">{domaineCourt(url)}</strong>{" "}
+        sous l&apos;angle «&nbsp;{PERIMETRES[perimetre].libelle.toLowerCase()}&nbsp;». Une trentaine
+        de secondes, et le rapport s&apos;affiche ici même, en entier, avec son PDF à télécharger.
       </p>
 
       <ul className="card-list relative mt-7 flex flex-col gap-3">
@@ -1577,6 +1701,8 @@ function AuditContent() {
   const [depouillement, setDepouillement] = useState<Depouillement | null>(null)
   const [erreur, setErreur] = useState<string | null>(null)
   const [contact, setContact] = useState<Contact | null>(null)
+  /* Ce que le visiteur a demandé de regarder. Tout en découle. */
+  const [perimetre, setPerimetre] = useState<Perimetre>("complet")
 
   /*
     Sans ce repère, le visiteur restait sur le formulaire pendant les vingt
@@ -1685,7 +1811,7 @@ function AuditContent() {
         ne part. Le relevé serait un mensonge — on passe directement au
         dépouillement, qui lui montre de vraies notes.
       */
-      const connu = cache.current.get(url)
+      const connu = cache.current.get(`${perimetre}|${url}`)
       if (connu) {
         setApercus({
           ...(connu.mobile?.capture ? { mobile: connu.mobile.capture.data } : {}),
@@ -1706,7 +1832,7 @@ function AuditContent() {
       /* Chaque piste bascule sur un fait réel : sa requête a abouti, ou non. */
       const piste = (appareilCible: Strategy, etape: EtapeId) => {
         majEtape(etape, "cours")
-        return runAudit(url, appareilCible, controleur.signal).then(
+        return runAudit(url, appareilCible, controleur.signal, perimetre).then(
           (r) => {
             majEtape("connexion", "termine")
             majEtape(etape, "termine")
@@ -1743,13 +1869,13 @@ function AuditContent() {
       }
 
       majEtape("bilan", "termine")
-      cache.current.set(url, suivant)
+      cache.current.set(`${perimetre}|${url}`, suivant)
 
       void signaler(qui, url, suivant, null)
 
       await depouiller(suivant, controleur.signal)
     },
-    [urlAnalysee, depouiller]
+    [urlAnalysee, perimetre, depouiller]
   )
 
   function reinitialiser() {
@@ -1850,6 +1976,8 @@ function AuditContent() {
                   <CarteAdresse
                     saisie={saisie}
                     onSaisie={setSaisie}
+                    perimetre={perimetre}
+                    onPerimetre={setPerimetre}
                     onSoumettre={validerAdresse}
                     disponible={disponible}
                     reduce={reduce}
@@ -1861,6 +1989,7 @@ function AuditContent() {
                 <motion.div key="coordonnees" {...glisse(reduce)}>
                   <EcranCoordonnees
                     url={urlAnalysee}
+                    perimetre={perimetre}
                     onValide={(qui) => void lancerAnalyse(qui)}
                     onRetour={reinitialiser}
                   />
@@ -1919,6 +2048,7 @@ function AuditContent() {
                     rapports={rapports}
                     appareil={appareil}
                     onAppareil={setAppareil}
+                    prenom={contact?.prenom ?? ""}
                     reduce={reduce}
                   />
 

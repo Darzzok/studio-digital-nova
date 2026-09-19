@@ -52,7 +52,12 @@ function versWinAnsi(texte: string): number[] {
 let contexteMesure: CanvasRenderingContext2D | null = null
 
 function mesurer(texte: string, taille: number, police: Police): number {
-  if (!contexteMesure) {
+  /*
+    `document` peut manquer : rendu côté serveur, outil en ligne de commande.
+    On retombe alors sur une approximation plutôt que de jeter une exception au
+    milieu de la génération.
+  */
+  if (!contexteMesure && typeof document !== "undefined") {
     contexteMesure = document.createElement("canvas").getContext("2d")
   }
   if (!contexteMesure) return texte.length * taille * 0.5
@@ -169,6 +174,21 @@ export class DocumentPdf {
     return this.y
   }
 
+  /**
+   * Place le curseur à une hauteur choisie sur la page courante. Sert aux
+   * pages composées, où l'on veut centrer un bloc verticalement plutôt que de
+   * le laisser tomber en haut et laisser du blanc en bas.
+   */
+  placer(y: number) {
+    this.y = y
+    this.derniereLigne = y
+  }
+
+  /** Numéro de la page en cours de composition, à partir de 1. */
+  get numeroPage(): number {
+    return this.flux.length
+  }
+
   texte(
     contenu: string,
     options: {
@@ -266,6 +286,199 @@ export class DocumentPdf {
     }
   }
 
+  /**
+   * Écrit à une position exacte, sans toucher au curseur ni réserver de
+   * hauteur. Sert aux pavés posés en coordonnées absolues — pied de
+   * couverture, encart de contact — où le flux n'a pas à intervenir.
+   */
+  texteAbsolu(
+    contenu: string,
+    x: number,
+    y: number,
+    options: { taille?: number; police?: Police; couleur?: Couleur } = {}
+  ) {
+    const taille = options.taille ?? 10
+    const police = options.police ?? "normale"
+    const [r, v, b] = options.couleur ?? [0.15, 0.19, 0.24]
+    const octets = versWinAnsi(contenu)
+    const chaine = octets.map((o) => String.fromCharCode(o)).join("")
+    this.derniereLigne = y
+    this.ecrire(
+      `BT /${police === "grasse" ? "F2" : "F1"} ${taille} Tf ` +
+        `${r} ${v} ${b} rg 1 0 0 1 ${x.toFixed(2)} ${y.toFixed(2)} Tm (${chaine}) Tj ET`
+    )
+  }
+
+  /** Largeur qu'occupera un texte. Sert à centrer sans tâtonner. */
+  largeurTexte(contenu: string, taille = 10, police: Police = "normale") {
+    return mesurer(contenu, taille, police)
+  }
+
+  /**
+   * Texte centré dans la colonne courante. Le centrage se calcule ligne par
+   * ligne : un paragraphe de deux lignes centre chacune d'elles, et non le
+   * bloc entier aligné à gauche.
+   */
+  texteCentre(
+    contenu: string,
+    options: {
+      taille?: number
+      police?: Police
+      couleur?: Couleur
+      interligne?: number
+      largeur?: number
+    } = {}
+  ) {
+    const taille = options.taille ?? 10
+    const police = options.police ?? "normale"
+    const [r, v, b] = options.couleur ?? [0.15, 0.19, 0.24]
+    const interligne = options.interligne ?? taille * 1.45
+    const largeur = options.largeur ?? this.largeurBloc
+
+    for (const ligne of decouper(contenu, largeur, taille, police)) {
+      this.reserver(interligne)
+      this.y -= interligne
+      this.derniereLigne = this.y
+      const x = this.margeGauche + (this.largeurBloc - mesurer(ligne, taille, police)) / 2
+      const octets = versWinAnsi(ligne)
+      const chaine = octets.map((o) => String.fromCharCode(o)).join("")
+      this.ecrire(
+        `BT /${police === "grasse" ? "F2" : "F1"} ${taille} Tf ` +
+          `${r} ${v} ${b} rg 1 0 0 1 ${x.toFixed(2)} ${this.y.toFixed(2)} Tm (${chaine}) Tj ET`
+      )
+    }
+  }
+
+  /**
+   * Anneau de score. L'arc est approché par une polyligne épaisse à bouts
+   * ronds — une soixantaine de segments suffisent pour que l'œil n'y voie
+   * qu'un cercle, et cela évite d'avoir à poser des courbes de Bézier à angle
+   * quelconque. La note s'écrit au centre.
+   */
+  anneau(
+    note: number | null,
+    couleur: Couleur,
+    options: { rayon?: number; epaisseur?: number; piste?: Couleur; texte?: Couleur; legende?: string } = {}
+  ) {
+    const rayon = options.rayon ?? 44
+    const epaisseur = options.epaisseur ?? 7
+    const piste = options.piste ?? [0.89, 0.87, 0.84]
+    const encre = options.texte ?? [0.043, 0.09, 0.149]
+    const hauteur = rayon * 2 + epaisseur + (options.legende ? 16 : 0)
+
+    this.reserverBloc(hauteur + 12)
+    this.y -= 6
+    const cx = this.margeGauche + this.largeurBloc / 2
+    const cy = this.y - rayon
+    this.y -= rayon * 2 + epaisseur
+
+    const arc = (depuis: number, jusqua: number, [r, v, b]: Couleur) => {
+      if (jusqua <= depuis) return
+      const pas = Math.max(2, Math.ceil((jusqua - depuis) / 0.06))
+      const points: string[] = []
+      for (let i = 0; i <= pas; i++) {
+        const a = depuis + ((jusqua - depuis) * i) / pas
+        /* On part du haut et on tourne dans le sens horaire, comme une jauge. */
+        const x = cx + rayon * Math.sin(a)
+        const y = cy + rayon * Math.cos(a)
+        points.push(`${x.toFixed(2)} ${y.toFixed(2)} ${i === 0 ? "m" : "l"}`)
+      }
+      this.ecrire(
+        `q ${r} ${v} ${b} RG ${epaisseur.toFixed(2)} w 1 J 1 j ${points.join(" ")} S Q`
+      )
+    }
+
+    arc(0, Math.PI * 2, piste)
+    if (note !== null) arc(0, Math.PI * 2 * (Math.max(0, Math.min(100, note)) / 100), couleur)
+
+    /* La note, posée au centre optique de l'anneau. */
+    const valeur = note === null ? "—" : String(note)
+    const taille = note === null ? 20 : 30
+    const largeurValeur = mesurer(valeur, taille, "grasse")
+    const octets = versWinAnsi(valeur)
+    const chaine = octets.map((o) => String.fromCharCode(o)).join("")
+    const [er, ev, eb] = encre
+    this.ecrire(
+      `BT /F2 ${taille} Tf ${er} ${ev} ${eb} rg 1 0 0 1 ` +
+        `${(cx - largeurValeur / 2).toFixed(2)} ${(cy - taille * 0.34).toFixed(2)} Tm (${chaine}) Tj ET`
+    )
+
+    if (options.legende) {
+      this.espace(12)
+      this.texteCentre(options.legende.toUpperCase(), { taille: 7.5, police: "grasse", couleur: [0.42, 0.46, 0.5] })
+    }
+  }
+
+  /**
+   * Ligne de note : libellé à gauche, valeur à droite, barre dessous. Les
+   * trois vont ensemble et ne peuvent pas se séparer entre deux pages, ce qui
+   * évitait de retrouver une barre orpheline en haut de page.
+   */
+  ligneNote(
+    libelle: string,
+    note: number | null,
+    couleur: Couleur,
+    options: { appoint?: string; encre?: Couleur; piste?: Couleur } = {}
+  ) {
+    this.reserverBloc(34)
+    this.texte(libelle, { taille: 9.5, police: "grasse", couleur: options.encre ?? [0.15, 0.19, 0.24] })
+    this.texteDroite(note === null ? "non mesuré" : `${note}/100`, {
+      taille: 9.5,
+      police: "grasse",
+      couleur: note === null ? [0.42, 0.46, 0.5] : couleur,
+    })
+    /* Assez d'air pour dégager les jambages du libellé au-dessus de la barre. */
+    this.espace(9)
+    const y = this.y
+    this.rectangle(this.margeGauche, y, this.largeurBloc, 5, options.piste ?? [0.89, 0.87, 0.84])
+    if (note !== null) {
+      this.rectangle(
+        this.margeGauche,
+        y,
+        (this.largeurBloc * Math.max(0, Math.min(100, note))) / 100,
+        5,
+        couleur
+      )
+    }
+    this.espace(8)
+    if (options.appoint) {
+      this.texte(options.appoint, { taille: 8, couleur: [0.42, 0.46, 0.5] })
+    }
+  }
+
+  /** Image centrée dans la colonne courante, au lieu d'être collée à gauche. */
+  imageJpegCentree(dataUri: string, largeurVoulue: number, ratio: number) {
+    const largeur = Math.min(largeurVoulue, this.largeurBloc)
+    const decalage = (this.largeurBloc - largeur) / 2
+    const gardeMarge = this.margeGauche
+    const gardeLargeur = this.largeurBloc
+    this.margeGauche = gardeMarge + decalage
+    this.largeurBloc = largeur
+    const pose = this.imageJpeg(dataUri, largeur, ratio)
+    this.margeGauche = gardeMarge
+    this.largeurBloc = gardeLargeur
+    return pose
+  }
+
+  /** Pastille colorée : un mot, sur un fond teinté. Retourne sa largeur. */
+  pastille(texte: string, fond: Couleur, encre: Couleur, x?: number): number {
+    const taille = 7.5
+    const largeurTexte = mesurer(texte, taille, "grasse")
+    const largeur = largeurTexte + 14
+    const gauche = x ?? this.margeGauche
+    this.reserver(16)
+    this.y -= 13
+    this.rectangle(gauche, this.y - 3.5, largeur, 15, fond)
+    const [r, v, b] = encre
+    const octets = versWinAnsi(texte)
+    const chaine = octets.map((o) => String.fromCharCode(o)).join("")
+    this.ecrire(
+      `BT /F2 ${taille} Tf ${r} ${v} ${b} rg 1 0 0 1 ${(gauche + 7).toFixed(2)} ${this.y.toFixed(2)} Tm (${chaine}) Tj ET`
+    )
+    this.derniereLigne = this.y
+    return largeur
+  }
+
   /** Barre de score : le remplissage est proportionnel à la note. */
   barre(note: number, couleur: Couleur) {
     this.reserver(18)
@@ -285,7 +498,11 @@ export class DocumentPdf {
    * Pose une image JPEG à la position courante et avance d'autant.
    * `largeurVoulue` est en points ; la hauteur suit le rapport d'origine.
    */
-  imageJpeg(dataUri: string, largeurVoulue: number, ratio: number) {
+  imageJpeg(
+    dataUri: string,
+    largeurVoulue: number,
+    ratio: number
+  ): { x: number; y: number; largeur: number; hauteur: number } | null {
     const b64 = dataUri.includes(",") ? dataUri.split(",", 2)[1] : dataUri
     const bin = atob(b64)
     const octets = new Uint8Array(bin.length)
@@ -298,7 +515,7 @@ export class DocumentPdf {
 
     /* Le XObject a besoin des dimensions réelles du fichier, pas de l'affichage. */
     const taille = dimensionsJpeg(octets)
-    if (!taille) return
+    if (!taille) return null
 
     const nom = `Im${this.images.length + 1}`
     this.images.push({
@@ -311,6 +528,31 @@ export class DocumentPdf {
     this.ecrire(
       `q ${largeur.toFixed(2)} 0 0 ${hauteur.toFixed(2)} ${this.margeGauche.toFixed(2)} ${this.y.toFixed(2)} cm /${nom} Do Q`
     )
+    return { x: this.margeGauche, y: this.y, largeur, hauteur }
+  }
+
+  /** Cadre non rempli — sert à cerner une zone sur une capture. */
+  cadre(x: number, y: number, largeur: number, hauteur: number, couleur: Couleur, epaisseur = 1.4) {
+    const [r, v, b] = couleur
+    this.ecrire(
+      `q ${r} ${v} ${b} RG ${epaisseur} w ${x.toFixed(2)} ${y.toFixed(2)} ` +
+        `${largeur.toFixed(2)} ${hauteur.toFixed(2)} re S Q`
+    )
+  }
+
+  /** Petit carré numéroté, posé en coordonnées absolues sur une image. */
+  numero(n: number, x: number, y: number, fond: Couleur, encre: Couleur) {
+    const cote = 12
+    this.rectangle(x, y, cote, cote, fond)
+    const [r, v, b] = encre
+    const etiquette = String(n)
+    const largeur = mesurer(etiquette, 7.5, "grasse")
+    const octets = versWinAnsi(etiquette)
+    const chaine = octets.map((o) => String.fromCharCode(o)).join("")
+    this.ecrire(
+      `BT /F2 7.5 Tf ${r} ${v} ${b} rg 1 0 0 1 ` +
+        `${(x + (cote - largeur) / 2).toFixed(2)} ${(y + 3.4).toFixed(2)} Tm (${chaine}) Tj ET`
+    )
   }
 
   /** Rend cliquable la dernière ligne écrite. */
@@ -322,10 +564,16 @@ export class DocumentPdf {
     })
   }
 
-  /** Numérote chaque page en pied. Appeler juste avant `versOctets`. */
-  paginer(mention: string) {
+  /**
+   * Numérote chaque page en pied. Appeler juste avant `versOctets`.
+   * `sauter` laisse des pages sans pied — typiquement la couverture, où le
+   * texte gris viendrait se poser sur un aplat sombre et chevaucher le pavé
+   * de contact.
+   */
+  paginer(mention: string, sauter: number[] = []) {
     const total = this.flux.length
     for (let i = 0; i < total; i++) {
+      if (sauter.includes(i + 1)) continue
       const texte = `${mention}    ${i + 1} / ${total}`
       const octets = versWinAnsi(texte)
       const chaine = octets.map((o) => String.fromCharCode(o)).join("")

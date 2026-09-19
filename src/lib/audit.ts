@@ -72,6 +72,55 @@ export const DIMENSIONS: Record<
 /* -------------------------------------------------------------------------- */
 
 /** Zone repérée dans la page, en pixels CSS depuis le haut du document. */
+/*
+  Trois périmètres. Le visiteur choisit ce qu'il veut faire regarder, et tout
+  s'y adapte : les catégories demandées à Google, les dimensions notées, les
+  constats retenus, la pondération de la note et la recommandation finale.
+
+  « Complet » conserve exactement la pondération d'origine. Les deux autres
+  renormalisent sur leurs seules dimensions : retirer la performance ne doit
+  pas faire tomber la note, juste sortir du calcul.
+*/
+export type Perimetre = "visuel" | "technique" | "complet"
+
+export const PERIMETRES: Record<
+  Perimetre,
+  {
+    libelle: string
+    resume: string
+    /** Ce que la personne y gagne, dit sans jargon. */
+    promesse: string
+    dimensions: DimensionId[]
+    /** Catégories Lighthouse à demander. La performance fournit aussi la capture. */
+    categories: string[]
+  }
+> = {
+  visuel: {
+    libelle: "Le visuel",
+    resume: "Ce qu'un visiteur voit et comprend en arrivant",
+    promesse:
+      "Lisibilité des textes, netteté des images, stabilité de la page, clarté des liens et des boutons.",
+    dimensions: ["apparence", "parcours"],
+    categories: ["accessibility", "performance"],
+  },
+  technique: {
+    libelle: "La technique",
+    resume: "Ce que Google et le navigateur mesurent sous le capot",
+    promesse:
+      "Vitesse d'affichage, référencement technique, bonnes pratiques du web.",
+    dimensions: ["performance", "referencement", "pratiques"],
+    categories: ["performance", "seo", "best-practices"],
+  },
+  complet: {
+    libelle: "Les deux",
+    resume: "Le visuel et la technique, avec la pondération complète",
+    promesse:
+      "L'analyse entière : ce que voient vos visiteurs et ce que mesure Google, en une seule note.",
+    dimensions: ["apparence", "parcours", "performance", "referencement", "pratiques"],
+    categories: ["performance", "seo", "accessibility", "best-practices"],
+  },
+}
+
 export type Zone = { top: number; left: number; width: number; height: number }
 
 export type Constat = {
@@ -395,6 +444,8 @@ export type Capture = {
 export type RapportPage = {
   url: string
   appareil: Strategy
+  /** Ce qui a été demandé : le rapport ne contient rien d'autre. */
+  perimetre: Perimetre
   capture: Capture | null
   pellicule: { instant: number; data: string }[]
   dimensions: NoteDimension[]
@@ -536,7 +587,12 @@ function dimensionsJPEG(data: string): { largeur: number; hauteur: number } | nu
   return null
 }
 
-function lireRapport(charge: ChargePSI, appareil: Strategy, urlDemandee: string): RapportPage {
+function lireRapport(
+  charge: ChargePSI,
+  appareil: Strategy,
+  urlDemandee: string,
+  perimetre: Perimetre
+): RapportPage {
   const lh = charge?.lighthouseResult ?? {}
   const audits: Record<string, AuditBrut> = lh.audits ?? {}
   const categories = lh.categories ?? {}
@@ -560,8 +616,11 @@ function lireRapport(charge: ChargePSI, appareil: Strategy, urlDemandee: string)
     .map((v) => ({ instant: v.timing, data: v.data }))
 
   /* ---- Constats --------------------------------------------------------- */
+  const retenues = PERIMETRES[perimetre].dimensions
   const constats: Constat[] = []
   for (const [cle, modele] of Object.entries(MODELES)) {
+    /* Hors périmètre : la personne n'a pas demandé ce regard-là. */
+    if (!retenues.includes(modele.dimension)) continue
     const audit = audits[cle]
     if (!audit) continue
     const score = audit.score
@@ -614,7 +673,7 @@ function lireRapport(charge: ChargePSI, appareil: Strategy, urlDemandee: string)
         : null,
   }
 
-  const dimensions: NoteDimension[] = (Object.keys(DIMENSIONS) as DimensionId[]).map((id) => ({
+  const dimensions: NoteDimension[] = retenues.map((id) => ({
     id,
     libelle: DIMENSIONS[id].libelle,
     poids: DIMENSIONS[id].poids,
@@ -623,14 +682,20 @@ function lireRapport(charge: ChargePSI, appareil: Strategy, urlDemandee: string)
   }))
 
   /*
-    Note globale : moyenne pondérée des seules dimensions mesurées, ramenée à
-    leur poids cumulé. Sans « apparence », qui pèse la moitié, on n'affiche
-    aucune note globale plutôt qu'un chiffre trompeur.
+    Note globale : moyenne pondérée des seules dimensions du périmètre qui ont
+    pu être mesurées, ramenée à leur poids cumulé. En « complet », c'est la
+    pondération d'origine à l'identique ; sur un périmètre restreint, les poids
+    se renormalisent entre eux — sortir la performance ne doit pas faire tomber
+    la note, seulement sortir du calcul.
+
+    Une dimension majeure absente empêche toute note : la moitié du barème
+    manquerait, et le chiffre serait trompeur.
   */
+  const majeure = retenues[0]
   const mesurees = dimensions.filter((d) => d.note !== null)
   const poidsCumule = mesurees.reduce((s, d) => s + d.poids, 0)
   const note =
-    brutes.apparence === null || poidsCumule === 0
+    brutes[majeure] === null || poidsCumule === 0
       ? null
       : Math.round(mesurees.reduce((s, d) => s + (d.note as number) * d.poids, 0) / poidsCumule)
 
@@ -651,6 +716,7 @@ function lireRapport(charge: ChargePSI, appareil: Strategy, urlDemandee: string)
   return {
     url,
     appareil,
+    perimetre,
     capture,
     pellicule,
     dimensions,
@@ -690,9 +756,19 @@ export class AuditError extends Error {
   }
 }
 
-export async function runAudit(url: string, strategy: Strategy, signal?: AbortSignal): Promise<RapportPage> {
+export async function runAudit(
+  url: string,
+  strategy: Strategy,
+  signal?: AbortSignal,
+  perimetre: Perimetre = "complet"
+): Promise<RapportPage> {
   const params = new URLSearchParams({ url, strategy })
-  for (const category of ["performance", "seo", "accessibility", "best-practices"]) {
+  /*
+    Seules les catégories utiles au périmètre sont demandées. La performance
+    figure partout : c'est elle qui fournit la capture d'écran et la géométrie
+    des éléments, dont le regard visuel a besoin.
+  */
+  for (const category of PERIMETRES[perimetre].categories) {
     params.append("category", category)
   }
   if (PAGESPEED_KEY) params.set("key", PAGESPEED_KEY)
@@ -734,5 +810,5 @@ export async function runAudit(url: string, strategy: Strategy, signal?: AbortSi
     throw new AuditError("L'analyse n'a pas abouti pour cette adresse.", true)
   }
 
-  return lireRapport(await response.json(), strategy, url)
+  return lireRapport(await response.json(), strategy, url, perimetre)
 }
