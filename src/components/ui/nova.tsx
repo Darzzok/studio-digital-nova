@@ -90,9 +90,7 @@ function CardIndex({
       <span
         className={cn(
           "font-heading text-small leading-none tabular-nums transition-colors duration-500 ease-nova",
-          onInk
-            ? "text-on-ink-soft group-hover:text-accent"
-            : "text-text-muted group-hover:text-accent-strong"
+          onInk ? "text-on-ink-soft group-hover:text-on-ink" : "text-text-muted group-hover:text-text"
         )}
       >
         {value}
@@ -104,9 +102,18 @@ function CardIndex({
           onInk ? "bg-border-ink" : "bg-border"
         )}
       />
+      {/*
+        Le segment qui s'allonge au survol était terracotta : une ligne orange
+        en haut de chaque carte, répétée des dizaines de fois sur une page.
+        Le mouvement reste, la couleur passe à l'encre — le terracotta est
+        gardé pour ce qui appelle une action.
+      */}
       <span
         aria-hidden
-        className="h-px w-0 bg-accent transition-[width] duration-700 ease-editorial group-hover:w-6"
+        className={cn(
+          "h-px w-0 transition-[width] duration-700 ease-editorial group-hover:w-6",
+          onInk ? "bg-on-ink-soft" : "bg-border-strong"
+        )}
       />
     </div>
   )

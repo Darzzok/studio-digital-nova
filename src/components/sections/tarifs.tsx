@@ -197,7 +197,7 @@ function Tarifs() {
                   <span
                     className={cn(
                       "font-heading text-small leading-none transition-colors duration-500 ease-nova delay-75",
-                      plan.featured ? "text-accent" : "text-text-muted group-hover:text-accent-strong"
+                      plan.featured ? "text-on-ink-soft" : "text-text-muted group-hover:text-text"
                     )}
                   >
                     {TIERS[index]}
@@ -206,14 +206,23 @@ function Tarifs() {
                     {PLANS.map((_, segment) => (
                       <span
                         key={segment}
+                        /*
+                          Le palier atteint se lit à l'encre, plus au
+                          terracotta : trois barres orange posées sur le bord
+                          haut de chaque carte tiraient l'œil avant le prix,
+                          alors qu'elles ne sont qu'un repère de gamme.
+                        */
                         className={cn(
                           "h-px flex-1 transition-colors duration-500 ease-nova",
                           segment <= index
-                            ? "bg-accent"
+                            ? plan.featured
+                              ? "bg-on-ink-soft"
+                              : "bg-border-strong"
                             : cn(
                                 plan.featured ? "bg-border-ink" : "bg-border",
                                 // Le palier suivant se devine au survol.
-                                segment === index + 1 && "group-hover:bg-accent/40"
+                                segment === index + 1 &&
+                                  (plan.featured ? "group-hover:bg-border-ink" : "group-hover:bg-border-strong/50")
                               )
                         )}
                       />

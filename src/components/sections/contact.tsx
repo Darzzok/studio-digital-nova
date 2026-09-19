@@ -59,10 +59,40 @@ const STEP_CONTENT = [
   { title: "Parlez-moi de votre projet.", subtitle: "Décrivez votre projet en quelques lignes." },
 ]
 
+/*
+  Portée et contenu repris tels quels de la grille publique affichée dans la
+  section Tarifs. Une carte qui n'annonce qu'un nom et un prix ne permet pas
+  de choisir : il faut savoir ce qu'on prend.
+*/
 const OFFERS = [
-  { id: "essentiel", name: "Essentiel", price: "690 €", icon: Rocket, className: CHIP.mineral },
-  { id: "pro", name: "Pro", price: "990 €", icon: Sparkles, badge: "Le plus choisi", className: CHIP.terracotta },
-  { id: "premium", name: "Premium", price: "À partir de 1 200 €", icon: Crown, className: CHIP.ink },
+  {
+    id: "essentiel",
+    name: "Essentiel",
+    price: "690 €",
+    scope: "One page",
+    resume: "Une page optimisée, design personnalisé, livraison en 5 jours.",
+    icon: Rocket,
+    className: CHIP.mineral,
+  },
+  {
+    id: "pro",
+    name: "Pro",
+    price: "990 €",
+    scope: "Site vitrine",
+    resume: "Jusqu'à 5 pages, optimisation SEO incluse, livraison en 10 jours.",
+    icon: Sparkles,
+    badge: "Le plus choisi",
+    className: CHIP.terracotta,
+  },
+  {
+    id: "premium",
+    name: "Premium",
+    price: "À partir de 1 200 €",
+    scope: "Sur mesure",
+    resume: "Fonctionnalités sur mesure, accompagnement dédié, optimisation avancée.",
+    icon: Crown,
+    className: CHIP.ink,
+  },
 ] as const
 
 const NEEDS = [
@@ -258,86 +288,154 @@ function StepBlock({ title, subtitle, children }: { title: string; subtitle: str
   )
 }
 
-function StepOffer({ value, onSelect }: { value: OfferId | null; onSelect: (id: OfferId) => void }) {
+/*
+  Les cartes d'offre. Sur téléphone elles se lisent en ligne — pastille,
+  intitulé, prix — parce qu'empilées en colonne elles occupaient chacune un
+  tiers d'écran pour trois mots. À partir de 640 px elles reprennent leur
+  disposition verticale, en trois colonnes.
+
+  Le filet terracotta posé sur le bord haut de la carte choisie a disparu : la
+  sélection se lit à la bordure encre, au fond teinté et à la pastille cochée,
+  qui glisse d'une carte à l'autre.
+*/
+function StepOffer({
+  value,
+  onSelect,
+  reduce,
+}: {
+  value: OfferId | null
+  onSelect: (id: OfferId) => void
+  reduce: boolean
+}) {
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
       {OFFERS.map((offer) => {
         const selected = value === offer.id
         return (
-          <div key={offer.id} className="relative">
-            {"badge" in offer && offer.badge && (
-              <div className="absolute -top-3 left-1/2 z-10 -translate-x-1/2">
-                <Badge variant="accent" className="whitespace-nowrap border-accent bg-accent text-ink">
-                  <Icon icon={Sparkles} className="size-3" />
-                  {offer.badge}
-                </Badge>
-              </div>
-            )}
-            <button type="button" onClick={() => onSelect(offer.id)} className="group block w-full text-left">
-              <Card
-                padding="sm"
-                interactive
-                accent={selected ? "top" : "none"}
+          <button
+            key={offer.id}
+            type="button"
+            onClick={() => onSelect(offer.id)}
+            aria-pressed={selected}
+            className="group block w-full rounded-xl text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/35"
+          >
+            <Card
+              padding="none"
+              interactive
+              className={cn(
+                "relative flex h-full items-center gap-4 p-4 text-left",
+                "sm:flex-col sm:items-center sm:gap-3 sm:p-6 sm:pt-7 sm:text-center",
+                selected ? "border-ink bg-secondary shadow-md" : "border-border"
+              )}
+            >
+              {/* La bague de sélection glisse d'une carte à l'autre. */}
+              {selected && !reduce && (
+                <motion.span
+                  layoutId="devis-offre-choisie"
+                  aria-hidden
+                  className="pointer-events-none absolute inset-0 rounded-xl border-2 border-ink"
+                  transition={{ duration: 0.34, ease: EASE_NOVA }}
+                />
+              )}
+
+              <span
                 className={cn(
-                  "relative flex h-full flex-col items-center gap-3 overflow-hidden text-center",
-                  selected && "border-ink shadow-md"
+                  "relative flex size-11 shrink-0 items-center justify-center rounded-md transition-transform duration-300 ease-nova group-hover:-translate-y-0.5",
+                  selected ? "border border-ink bg-ink text-paper" : offer.className
                 )}
               >
+                <Icon icon={offer.icon} className="size-5" />
+              </span>
+
+              {/*
+                Le prix vit DANS le bloc de texte, et non dans une colonne à
+                droite : « À partir de 1 200 € » ne rentrait pas à côté de
+                « Premium » sur un écran de 375 px, et les deux se marchaient
+                dessus. Ici, il passe simplement à la ligne.
+              */}
+              <div className="relative min-w-0 flex-1 sm:w-full sm:flex-none">
+                {"badge" in offer && offer.badge && (
+                  <span className="mb-1.5 inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-accent px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.08em] text-ink">
+                    <Icon icon={Sparkles} className="size-2.5" />
+                    {offer.badge}
+                  </span>
+                )}
+                <p className="font-heading text-h3 leading-none text-text">{offer.name}</p>
+                <p className="mt-1.5 text-eyebrow uppercase text-text-muted">{offer.scope}</p>
+                {/* Le détail n'a la place de respirer qu'à partir de 640 px. */}
+                <p className="mt-2.5 hidden text-small text-text-secondary sm:block">{offer.resume}</p>
+                <p className="mt-2 font-heading text-body text-text sm:mt-3">{offer.price}</p>
+              </div>
+
+              <div className="relative flex shrink-0 items-center sm:absolute sm:right-4 sm:top-4">
                 <span
                   className={cn(
-                    "relative flex size-10 shrink-0 items-center justify-center rounded-md group-hover:-translate-y-0.5",
+                    "flex size-6 shrink-0 items-center justify-center rounded-full border transition-colors duration-300 ease-nova",
                     selected
-                      ? "border border-ink bg-ink text-paper transition-colors duration-500 ease-nova"
-                      : offer.className
+                      ? "border-ink bg-ink text-paper"
+                      : "border-border-strong text-transparent group-hover:border-ink"
                   )}
                 >
-                  <Icon icon={offer.icon} className="size-4" />
+                  <AnimatePresence initial={false}>
+                    {selected && (
+                      <motion.span
+                        key="coche"
+                        initial={reduce ? false : { scale: 0, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={reduce ? undefined : { scale: 0, opacity: 0 }}
+                        transition={{ type: "spring", stiffness: 320, damping: 20 }}
+                      >
+                        <Icon icon={Check} className="size-3.5" />
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
                 </span>
-                <p className="relative font-heading text-h3 leading-none text-text">{offer.name}</p>
-                <p className="relative whitespace-nowrap font-heading text-body text-text-secondary">{offer.price}</p>
-                <AnimatePresence>
-                  {selected && (
-                    <motion.span
-                      initial={{ scale: 0, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      exit={{ scale: 0, opacity: 0 }}
-                      transition={{ type: "spring", stiffness: 300, damping: 18 }}
-                      className="relative flex size-6 items-center justify-center rounded-full bg-accent text-accent-foreground"
-                    >
-                      <Icon icon={Check} className="size-4" />
-                    </motion.span>
-                  )}
-                </AnimatePresence>
-              </Card>
-            </button>
-          </div>
+              </div>
+            </Card>
+          </button>
         )
       })}
     </div>
   )
 }
 
-function StepNeeds({ value, onToggle }: { value: NeedId[]; onToggle: (id: NeedId) => void }) {
+/*
+  Les besoins : cases à cocher déguisées. Deux colonnes dès 640 px, une seule
+  en dessous, et une zone tactile qui couvre toute la ligne.
+*/
+function StepNeeds({
+  value,
+  onToggle,
+  reduce,
+}: {
+  value: NeedId[]
+  onToggle: (id: NeedId) => void
+  reduce: boolean
+}) {
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
       {NEEDS.map((need) => {
         const selected = value.includes(need.id)
         return (
-          <button key={need.id} type="button" onClick={() => onToggle(need.id)} className="group text-left">
+          <button
+            key={need.id}
+            type="button"
+            onClick={() => onToggle(need.id)}
+            aria-pressed={selected}
+            className="group rounded-xl text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/35"
+          >
             <Card
               padding="none"
               interactive
               className={cn(
-                "flex items-center gap-3 p-4 text-left",
-                selected && "border-ink bg-secondary"
+                "flex h-full items-center gap-3 p-4 text-left",
+                selected ? "border-ink bg-secondary" : "border-border"
               )}
             >
               <span
                 className={cn(
-                  "flex size-9 shrink-0 items-center justify-center rounded-md group-hover:-translate-y-0.5",
-                  selected
-                    ? "border border-ink bg-ink text-paper transition-colors duration-500 ease-nova"
-                    : need.className
+                  "flex size-9 shrink-0 items-center justify-center rounded-md transition-transform duration-300 ease-nova group-hover:-translate-y-0.5",
+                  selected ? "border border-ink bg-ink text-paper" : need.className
                 )}
               >
                 <Icon icon={need.icon} className="size-4" />
@@ -345,11 +443,25 @@ function StepNeeds({ value, onToggle }: { value: NeedId[]; onToggle: (id: NeedId
               <p className="flex-1 text-small font-medium text-text">{need.label}</p>
               <span
                 className={cn(
-                  "flex size-5 shrink-0 items-center justify-center rounded-full border",
-                  selected ? "border-accent bg-accent text-accent-foreground" : "border-border-strong"
+                  "flex size-5 shrink-0 items-center justify-center rounded-full border transition-colors duration-300 ease-nova",
+                  selected
+                    ? "border-ink bg-ink text-paper"
+                    : "border-border-strong group-hover:border-ink"
                 )}
               >
-                {selected && <Icon icon={Check} className="size-3" />}
+                <AnimatePresence initial={false}>
+                  {selected && (
+                    <motion.span
+                      key="coche"
+                      initial={reduce ? false : { scale: 0, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      exit={reduce ? undefined : { scale: 0, opacity: 0 }}
+                      transition={{ type: "spring", stiffness: 320, damping: 20 }}
+                    >
+                      <Icon icon={Check} className="size-3" />
+                    </motion.span>
+                  )}
+                </AnimatePresence>
               </span>
             </Card>
           </button>
@@ -769,13 +881,13 @@ function Contact() {
                       >
                         {step === 0 && (
                           <StepBlock title={STEP_CONTENT[0].title} subtitle={STEP_CONTENT[0].subtitle}>
-                            <StepOffer value={data.offer} onSelect={selectOffer} />
+                            <StepOffer value={data.offer} onSelect={selectOffer} reduce={reduce} />
                           </StepBlock>
                         )}
 
                         {step === 1 && (
                           <StepBlock title={STEP_CONTENT[1].title} subtitle={STEP_CONTENT[1].subtitle}>
-                            <StepNeeds value={data.needs} onToggle={toggleNeed} />
+                            <StepNeeds value={data.needs} onToggle={toggleNeed} reduce={reduce} />
                             <AnimatePresence>
                               {data.needs.length > 0 && (
                                 <motion.div
