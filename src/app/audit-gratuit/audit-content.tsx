@@ -1339,50 +1339,24 @@ function Resultats({
 /* -------------------------------------------------------------------------- */
 
 /*
-  Relevé complet, en texte brut : c'est ce que reçoit Studio Digital Nova.
-  Tout y est — notes par dimension, chaque constat avec sa preuve, sa
-  conséquence et la correction, les temps mesurés — pour pouvoir répondre sans
-  avoir à relancer l'analyse.
+  Ce que reçoit Studio Digital Nova. Condensé : de quoi rappeler la personne
+  et chiffrer sans rien ouvrir d'autre.
+
+  L'ancienne version déroulait chaque constat avec sa conséquence et sa
+  correction — six mille caractères qu'il fallait parcourir pour retrouver un
+  numéro de téléphone. Ici, un point tient sur une ligne, et le prix proposé
+  est annoncé avant la liste.
 */
-function resumerRapport(r: RapportPage | null, appareil: string): string {
-  if (!r) return `${appareil} : analyse non aboutie.`
+function notesCourtes(r: RapportPage): string {
+  return r.dimensions
+    .map((d) => `${d.libelle.toLowerCase()} ${d.note === null ? "n.m." : d.note}`)
+    .join(" · ")
+}
 
-  const lignes: string[] = []
-  lignes.push(`${appareil} — ${r.url}`)
-  lignes.push(`Périmètre : ${PERIMETRES[r.perimetre].libelle} — ${PERIMETRES[r.perimetre].resume}`)
-  lignes.push(
-    `Note globale : ${r.note === null ? "bilan partiel, non calculée" : `${r.note}/100`}`
-  )
-  lignes.push("")
-  lignes.push("Notes par dimension")
-  for (const d of r.dimensions) {
-    lignes.push(
-      `  ${d.libelle} (${Math.round(d.poids * 100)} %) : ${d.note === null ? "non mesuré" : `${d.note}/100`}`
-    )
-  }
-
-  lignes.push("")
-  if (r.constats.length === 0) {
-    lignes.push("Constats : aucun au-dessus du seuil.")
-  } else {
-    lignes.push(`Constats (${r.constats.length}), du plus grave au moins grave`)
-    r.constats.forEach((c, i) => {
-      lignes.push("")
-      lignes.push(`  ${i + 1}. [${c.priorite}] ${c.constat}`)
-      lignes.push(`     Relevé      : ${c.preuve}`)
-      lignes.push(`     Conséquence : ${c.consequence}`)
-      lignes.push(`     Correction  : ${c.recommandation}`)
-      lignes.push(`     Nature      : ${c.nature} · confiance ${c.confiance}${c.zone ? " · situé sur la capture" : ""}`)
-    })
-  }
-
-  if (r.vitals.length) {
-    lignes.push("")
-    lignes.push("Temps mesurés")
-    for (const v of r.vitals) lignes.push(`  ${v.libelle} : ${v.valeur} (${v.verdict})`)
-  }
-
-  return lignes.join("\n")
+function ligneConstat(c: Constat): string {
+  const etiquette = { haute: "PRIORITAIRE", moyenne: "à corriger", basse: "à surveiller" }[c.priorite]
+  const appareil = c.appareil === "mobile" ? "mobile" : "ordinateur"
+  return `  [${etiquette}] ${c.constat} — ${c.preuve} (${appareil})`
 }
 
 /** Domaine seul : un sujet court et lisible passe mieux les filtres. */
@@ -1429,55 +1403,59 @@ async function signaler(
   rapports: Partial<Record<Strategy, RapportPage>>,
   echec: string | null
 ): Promise<boolean> {
-  const base = rapports.mobile ?? rapports.desktop ?? null
+  /* L'ordinateur mène, comme dans le rapport PDF. */
+  const principal = rapports.desktop ?? rapports.mobile ?? null
+  const autre = rapports.desktop ? rapports.mobile ?? null : null
+  const tous = [rapports.desktop, rapports.mobile]
+    .filter((r): r is RapportPage => Boolean(r))
+    .flatMap((r) => r.constats)
+  const rang = { haute: 0, moyenne: 1, basse: 2 } as const
+  tous.sort((a, b) => rang[a.priorite] - rang[b.priorite])
+  const prioritaires = tous.filter((c) => c.priorite === "haute").length
 
-  const audit = echec
-    ? [
-        "L'ANALYSE N'A PAS ABOUTI",
-        `  Motif : ${echec}`,
-        "",
-        "  Les coordonnées restent valables — à rappeler.",
-      ].join("\n")
-    : [
-        "SYNTHÈSE",
-        `  Note globale : ${base?.note == null ? "non calculée (bilan partiel)" : `${base.note}/100`}`,
-        `  Constats     : ${base?.constats.length ?? 0}`,
-        "",
-        "────────────────────────────────────────",
-        "",
-        resumerRapport(rapports.mobile ?? null, "VERSION MOBILE"),
-        "",
-        "────────────────────────────────────────",
-        "",
-        resumerRapport(rapports.desktop ?? null, "VERSION ORDINATEUR"),
-      ].join("\n")
+  const note = (r: RapportPage | null) =>
+    r === null ? "—" : r.note === null ? "bilan partiel" : `${r.note}/100`
 
-  const suite = suiteProposee(base, base?.perimetre ?? "complet")
+  const suite = suiteProposee(principal, principal?.perimetre ?? "complet")
+
+  const bloc = (titre: string, lignes: (string | null)[]) =>
+    [titre, ...lignes.filter((l): l is string => Boolean(l))].join("\n")
 
   const corps = [
-    "COORDONNÉES",
-    `  Prénom    : ${contact.prenom || "non renseigné"}`,
-    `  Email     : ${contact.email}`,
-    `  Téléphone : ${contact.telephone}`,
-    `  Site      : ${url}`,
-    `  Reçu le   : ${new Date().toLocaleString("fr-FR")}`,
+    bloc("CLIENT", [
+      `  ${contact.prenom || "prénom non renseigné"} — ${contact.telephone} — ${contact.email}`,
+      `  Site  : ${url}`,
+      `  Reçu  : ${new Date().toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })}`,
+    ]),
     "",
-    "────────────────────────────────────────",
+    echec
+      ? bloc("ANALYSE", [`  Elle n'a pas abouti : ${echec}`, "  Les coordonnées restent valables — à rappeler."])
+      : bloc("RÉSULTAT", [
+          `  Périmètre  : ${PERIMETRES[principal?.perimetre ?? "complet"].libelle} — ${PERIMETRES[principal?.perimetre ?? "complet"].resume}`,
+          `  Note       : ${note(principal)}${autre ? ` sur ordinateur, ${note(autre)} sur mobile` : ""}`,
+          `  Relevé     : ${tous.length} point${tous.length > 1 ? "s" : ""}, dont ${prioritaires} prioritaire${prioritaires > 1 ? "s" : ""}`,
+          principal ? `  Dimensions : ${notesCourtes(principal)}` : null,
+        ]),
     "",
-    audit,
+    bloc("À LUI PROPOSER", [
+      `  ${suite.titre}`,
+      suite.formule ? `  Carte mise en avant : ${suite.formule.nom} — ${suite.formule.prix}` : null,
+      suite.prestations.length ? `  Prestations : ${suite.prestations.map((pr) => pr.nom).join(", ")}` : null,
+      `  Repère prix : ${suite.reperePrix}`,
+    ]),
+    ...(echec || tous.length === 0
+      ? []
+      : ["", bloc("LES POINTS, DU PLUS GRAVE AU MOINS GRAVE", tous.map(ligneConstat))]),
     "",
-    "────────────────────────────────────────",
-    "",
-    "PISTE COMMERCIALE (celle affichée dans son rapport)",
-    `  ${suite.phrase}`,
-    ...suite.prestations.map((pr) => `  · ${pr.nom}${pr.prix ? ` — ${pr.prix}` : ""}`),
-    "",
+    "————",
     "Le rapport s'est ouvert sur la page et le PDF est à sa main.",
     "Aucun mail ne lui a été envoyé.",
   ].join("\n")
 
+  const resume = echec ? "analyse non aboutie" : note(principal)
+
   return transmettre({
-    subject: `Audit ${contact.prenom || contact.email} — ${domaineCourt(url)}`,
+    subject: `Audit ${contact.prenom || contact.email} — ${domaineCourt(url)} — ${resume}`,
     from_name: contact.prenom || contact.email,
     name: contact.prenom || "Non renseigné",
     /* Répondre au message répond directement au visiteur. */

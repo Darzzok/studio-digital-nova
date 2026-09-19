@@ -6,12 +6,13 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Dialog } from "@base-ui/react/dialog"
 import { motion, useMotionValueEvent, useReducedMotion, useScroll } from "framer-motion"
-import { ArrowRight, Gauge, Menu, X } from "lucide-react"
+import { ArrowRight, Gauge, Mail, Menu, X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Container } from "@/components/ui/container"
 import { Icon } from "@/components/ui/icon"
 import { useIsMobile } from "@/hooks/use-is-mobile"
+import { siteConfig } from "@/lib/site"
 import { cn } from "@/lib/utils"
 
 /*
@@ -311,62 +312,93 @@ function Header() {
             "data-[starting-style]:opacity-0 data-[ending-style]:opacity-0"
           )}
         />
+        {/*
+          Tiroir sur fond bleu nuit, comme le pied de page : le menu ferme le
+          site sur la couleur de la marque au lieu d'ouvrir un panneau blanc de
+          plus. L'audit gratuit y est promu en carte — c'est la page qui
+          transforme, elle ne peut pas être une ligne de liste parmi dix.
+        */}
         <Dialog.Popup
           className={cn(
-            "fixed inset-y-0 right-0 z-[60] flex w-full max-w-xs flex-col gap-2 border-l border-border bg-background p-6 outline-none sm:max-w-sm",
+            "fixed inset-y-0 right-0 z-[60] flex w-full max-w-xs flex-col border-l border-border-ink bg-surface-ink text-on-ink outline-none sm:max-w-sm",
             "transition-transform duration-300 ease-editorial",
             "data-[starting-style]:translate-x-full data-[ending-style]:translate-x-full"
           )}
         >
-          <div className="mb-6 flex items-center justify-between">
-            {/* Le tiroir est sur fond clair : version sombre du logo. */}
+          <div className="flex items-center justify-between px-6 pt-6">
+            {/* Le tiroir est sur fond sombre : version claire du logo. */}
             <Image
-              src={LOGO_SOMBRE}
+              src={LOGO_CLAIR}
               alt="Studio Digital Nova"
-              width={847}
-              height={218}
+              width={467}
+              height={129}
               className="h-8 w-auto"
             />
             <Dialog.Close
               aria-label="Fermer le menu"
-              className="flex size-11 items-center justify-center rounded-md text-text-secondary transition-colors duration-200 ease-nova hover:bg-secondary hover:text-accent-strong"
+              className="flex size-11 items-center justify-center rounded-md text-on-ink-soft transition-colors duration-200 ease-nova hover:bg-white/10 hover:text-on-ink"
             >
               <Icon icon={X} className="size-5" />
             </Dialog.Close>
           </div>
 
-          {/* Le tiroir défile si le contenu dépasse ; les deux boutons restent en pied. */}
-          <div className="-mr-2 min-h-0 flex-1 overflow-y-auto pr-2">
-            <nav className="flex flex-col">
+          {/* Le tiroir défile si le contenu dépasse ; le devis reste en pied. */}
+          <div className="-mr-2 mt-6 min-h-0 flex-1 overflow-y-auto pl-6 pr-8">
+            <Link
+              href="/audit-gratuit/"
+              onClick={() => setMobileOpen(false)}
+              className="group flex items-center gap-4 rounded-xl border border-accent/45 bg-accent/12 p-4 outline-none transition-[border-color,background-color] duration-300 ease-nova hover:border-accent hover:bg-accent/20 focus-visible:ring-3 focus-visible:ring-ring/35"
+            >
+              <span className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-accent text-ink">
+                <Icon icon={Gauge} className="size-5" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block font-heading text-body text-on-ink">Audit gratuit</span>
+                <span className="block text-small text-on-ink-soft">
+                  Votre site noté en une minute
+                </span>
+              </span>
+              <Icon
+                icon={ArrowRight}
+                className="size-4 shrink-0 text-accent transition-transform duration-200 ease-nova group-hover:translate-x-0.5"
+              />
+            </Link>
+
+            <nav className="mt-7 flex flex-col">
               {NAV_ITEMS.map((item) => (
                 <a
                   key={item.label}
                   href={item.href}
                   onClick={() => setMobileOpen(false)}
-                  className="group flex items-center justify-between border-b border-border py-3.5 text-body font-medium text-text transition-colors duration-200 ease-nova hover:text-accent-strong"
+                  className="group flex min-h-[52px] items-center justify-between border-b border-border-ink text-lead text-on-ink transition-colors duration-200 ease-nova hover:text-accent"
                 >
                   {item.label}
                   <Icon
                     icon={ArrowRight}
-                    className="size-3.5 -translate-x-1 text-text-muted opacity-0 transition-all duration-200 ease-nova group-hover:translate-x-0 group-hover:text-accent group-hover:opacity-100"
+                    className="size-4 shrink-0 text-on-ink-soft/60 transition-[transform,color] duration-200 ease-nova group-hover:translate-x-0.5 group-hover:text-accent"
                   />
                 </a>
               ))}
             </nav>
 
+            {/*
+              Prestations et secteurs en pastilles : deux colonnes de liens
+              faisaient une seconde liste sous la première, et le tiroir
+              donnait l'impression de ne jamais finir.
+            */}
             {[
               { titre: "Prestations", liens: PRESTATIONS },
               { titre: "Secteurs", liens: SECTEURS },
             ].map((groupe) => (
-              <div key={groupe.titre} className="mt-7">
-                <p className="text-eyebrow uppercase text-text-muted">{groupe.titre}</p>
-                <ul className="mt-3 grid grid-cols-2 gap-x-3">
+              <div key={groupe.titre} className="mt-8">
+                <p className="text-eyebrow uppercase text-on-ink-soft">{groupe.titre}</p>
+                <ul className="mt-3 flex flex-wrap gap-2">
                   {groupe.liens.map((lien) => (
                     <li key={lien.href}>
                       <Link
                         href={lien.href}
                         onClick={() => setMobileOpen(false)}
-                        className="flex min-h-11 items-center text-small text-text-secondary transition-colors duration-200 ease-nova hover:text-accent-strong"
+                        className="flex min-h-9 items-center rounded-full border border-border-ink px-3.5 text-small text-on-ink-soft transition-[color,border-color,background-color] duration-200 ease-nova hover:border-accent hover:bg-accent/12 hover:text-on-ink"
                       >
                         {lien.label}
                       </Link>
@@ -375,28 +407,29 @@ function Header() {
                 </ul>
               </div>
             ))}
+
+            <div className="mt-8 border-t border-border-ink pt-6">
+              <a
+                href={`mailto:${siteConfig.author.email}`}
+                className="flex min-h-11 items-center gap-2.5 text-small text-on-ink-soft transition-colors duration-200 ease-nova hover:text-accent"
+              >
+                <Icon icon={Mail} className="size-4 shrink-0" />
+                {siteConfig.author.email}
+              </a>
+            </div>
           </div>
 
-          <Link
-            href="/audit-gratuit/"
-            onClick={() => setMobileOpen(false)}
-            className="group mt-6 shrink-0 pt-6"
-          >
-            <Button variant="outline" className="w-full">
-              <Icon icon={Gauge} />
-              Audit gratuit
-            </Button>
-          </Link>
-
-          <Link href="/#contact" onClick={() => setMobileOpen(false)} className="group mt-3 shrink-0">
-            <Button variant="primary" className="w-full">
-              Demander un devis
-              <Icon
-                icon={ArrowRight}
-                className="transition-transform duration-200 ease-nova group-hover:translate-x-0.5"
-              />
-            </Button>
-          </Link>
+          <div className="shrink-0 border-t border-border-ink p-6">
+            <Link href="/#contact" onClick={() => setMobileOpen(false)} className="group">
+              <Button variant="primary" className="w-full bg-paper text-ink hover:bg-accent hover:text-ink">
+                Demander un devis
+                <Icon
+                  icon={ArrowRight}
+                  className="transition-transform duration-200 ease-nova group-hover:translate-x-0.5"
+                />
+              </Button>
+            </Link>
+          </div>
         </Dialog.Popup>
       </Dialog.Portal>
     </Dialog.Root>

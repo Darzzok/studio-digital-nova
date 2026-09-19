@@ -97,29 +97,61 @@ function APropos() {
             <Heading variant="h2">Bonjour, moi c&apos;est Geoffrey.</Heading>
           </motion.div>
 
-          <motion.p
-            className="measure mt-6 text-body text-text-secondary"
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, amount: 0.4 }}
-            variants={floatIn(0.22, { y: 40 })}
-          >
-            Développeur web indépendant, j&apos;accompagne les{" "}
-            <strong className="font-semibold text-text">
-              TPE, auto-entrepreneurs, artisans et commerçants
-            </strong>{" "}
-            dans la création de leur présence en ligne. Quel que soit votre corps de métier, mon
-            objectif est simple : concevoir un{" "}
-            <strong className="font-semibold text-text">site sur mesure, fluide et performant</strong>,
-            qui valorise votre savoir-faire et attire de nouveaux clients. Fort de plusieurs
-            années d&apos;expérience dans la création de sites vitrines et multi-pages, je connais
-            parfaitement les enjeux des petites et moyennes entreprises. Travailler avec moi,
-            c&apos;est bénéficier d&apos;<strong className="font-semibold text-text">un interlocuteur unique</strong>,
-            à l&apos;écoute et réactif, qui vous guide pas à pas de l&apos;idée initiale
-            jusqu&apos;à la mise en ligne. Chaque projet est pensé pour s&apos;adapter à vos
-            besoins réels, sans complexité inutile. Vous obtenez un outil professionnel, efficace
-            et prêt à soutenir le développement de votre activité.
-          </motion.p>
+          {/*
+            Le même texte, au mot près, mais en trois paragraphes au lieu d'un.
+            Cent soixante-dix mots d'un bloc font un pavé sur un téléphone :
+            on ne sait pas où on en est. Coupé aux respirations naturelles du
+            propos — qui j'accompagne, comment je travaille, ce que vous
+            obtenez — il se lit d'un trait. Le premier paragraphe est un cran
+            plus grand : il pose la voix, les deux suivants la prolongent.
+          */}
+          <div className="measure mt-6 flex flex-col gap-5">
+            <motion.p
+              className="text-lead text-text-secondary"
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, amount: 0.3 }}
+              variants={floatIn(0.22, { y: 40 })}
+            >
+              Développeur web indépendant, j&apos;accompagne les{" "}
+              <strong className="font-semibold text-text">
+                TPE, auto-entrepreneurs, artisans et commerçants
+              </strong>{" "}
+              dans la création de leur présence en ligne. Quel que soit votre corps de métier, mon
+              objectif est simple : concevoir un{" "}
+              <strong className="font-semibold text-text">
+                site sur mesure, fluide et performant
+              </strong>
+              , qui valorise votre savoir-faire et attire de nouveaux clients.
+            </motion.p>
+
+            <motion.p
+              className="text-body text-text-secondary"
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, amount: 0.3 }}
+              variants={floatIn(0.3, { y: 40 })}
+            >
+              Fort de plusieurs années d&apos;expérience dans la création de sites vitrines et
+              multi-pages, je connais parfaitement les enjeux des petites et moyennes entreprises.
+              Travailler avec moi, c&apos;est bénéficier d&apos;
+              <strong className="font-semibold text-text">un interlocuteur unique</strong>, à
+              l&apos;écoute et réactif, qui vous guide pas à pas de l&apos;idée initiale
+              jusqu&apos;à la mise en ligne.
+            </motion.p>
+
+            <motion.p
+              className="text-body text-text-secondary"
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, amount: 0.3 }}
+              variants={floatIn(0.38, { y: 40 })}
+            >
+              Chaque projet est pensé pour s&apos;adapter à vos besoins réels, sans complexité
+              inutile. Vous obtenez un outil professionnel, efficace et prêt à soutenir le
+              développement de votre activité.
+            </motion.p>
+          </div>
 
           <div className="mx-auto mt-8 grid w-full max-w-md grid-cols-2 gap-x-4 gap-y-5">
             {STRENGTHS.map((strength, index) => (
