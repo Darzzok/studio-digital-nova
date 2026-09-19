@@ -1,13 +1,17 @@
 /* ==========================================================================
    RAPPORT D'AUDIT AU FORMAT PDF
    ==========================================================================
-   Met en page le rapport complet. Aucune donnée n'est recalculée ici : tout
-   vient tel quel du moteur (`lib/audit.ts`). Ce fichier ne fait que mettre en
-   forme ce qui a déjà été mesuré.
+   Même source que le web et le mail : le rapport produit par `lib/audit.ts`.
+   Aucun score n'est recalculé ici, aucun constat n'est reformulé — ce fichier
+   ne fait que mettre en page.
+
+   Le document est un vrai PDF : texte sélectionnable, capture intégrée en
+   JPEG, adresses cliquables, pages numérotées. Ce n'est pas une capture de la
+   page web exportée.
    ========================================================================== */
 
-import { BAREME, CATEGORY_MEANING, type AuditReport } from "@/lib/audit"
-import { DocumentPdf, MARGE_PDF, PAGE_PDF, type Couleur } from "@/lib/pdf"
+import { type Constat, type RapportPage, type Strategy } from "@/lib/audit"
+import { DocumentPdf, PAGE_PDF, type Couleur } from "@/lib/pdf"
 import { siteConfig } from "@/lib/site"
 
 const ENCRE: Couleur = [0.043, 0.09, 0.149]
@@ -17,279 +21,258 @@ const MINERAL: Couleur = [0.286, 0.396, 0.478]
 const VERT: Couleur = [0.267, 0.384, 0.314]
 const AMBRE: Couleur = [0.569, 0.388, 0.141]
 
-function tonNote(note: number): Couleur {
-  if (note >= 75) return VERT
-  if (note >= 45) return AMBRE
-  return TERRACOTTA
-}
+const ton = (note: number): Couleur => (note >= 75 ? VERT : note >= 45 ? AMBRE : TERRACOTTA)
 
-const LIBELLE_SEVERITE: Record<string, string> = {
-  critique: "Critique",
-  important: "Important",
-  mineur: "À surveiller",
-}
+const LIBELLE_PRIORITE = { haute: "Prioritaire", moyenne: "À corriger", basse: "À surveiller" }
+const LIBELLE_NATURE = { mesure: "Mesuré", appreciation: "Apprécié", non_verifie: "Non vérifié" }
+const LIBELLE_APPAREIL: Record<Strategy, string> = { mobile: "Mobile", desktop: "Ordinateur" }
 
 export type InfosRapport = {
   url: string
   prenom: string
-  mobile: AuditReport | null
-  desktop: AuditReport | null
+  mobile: RapportPage | null
+  desktop: RapportPage | null
 }
 
-/** Construit le PDF complet et le renvoie sous forme de Blob. */
+/** Bloc « constat → preuve → conséquence → correction », jamais coupé en deux. */
+function bloc(doc: DocumentPdf, c: Constat, rang?: number) {
+  /* On réserve la hauteur complète : un constat ne se coupe pas en deux pages. */
+  const hauteur =
+    10 +
+    doc.mesurerHauteur(c.constat, 11.5, "grasse", doc.largeurUtile - 96) +
+    doc.mesurerHauteur(`Relevé : ${c.preuve}`, 9) +
+    doc.mesurerHauteur(c.consequence, 9.5) +
+    doc.mesurerHauteur(`À faire : ${c.recommandation}`, 9.5) +
+    6
+  doc.reserverBloc(hauteur)
+
+  doc.espace(10)
+  doc.texte(`${rang !== undefined ? `${String(rang).padStart(2, "0")}  ` : ""}${c.constat}`, {
+    taille: 11.5,
+    police: "grasse",
+    couleur: ENCRE,
+    largeur: doc.largeurUtile - 96,
+  })
+  doc.texteDroite(
+    `${LIBELLE_PRIORITE[c.priorite]} · ${LIBELLE_NATURE[c.nature]}`,
+    {
+      taille: 8,
+      police: "grasse",
+      couleur: c.priorite === "haute" ? TERRACOTTA : c.priorite === "moyenne" ? AMBRE : MINERAL,
+    }
+  )
+  doc.espace(2)
+  doc.texte(`Relevé : ${c.preuve}  ·  ${LIBELLE_APPAREIL[c.appareil]}`, { taille: 9, couleur: MINERAL })
+  doc.texte(c.consequence, { taille: 9.5, couleur: GRIS })
+  doc.texte(`À faire : ${c.recommandation}`, { taille: 9.5, couleur: ENCRE })
+}
+
 export function construireRapport({ url, prenom, mobile, desktop }: InfosRapport): Blob {
   const doc = new DocumentPdf()
   const principal = mobile ?? desktop
   if (!principal) throw new Error("Aucun rapport à mettre en page.")
 
-  const date = new Date().toLocaleDateString("fr-FR", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  })
+  const date = new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })
 
-  /* ---- Bandeau ------------------------------------------------------------ */
-  doc.rectangle(0, PAGE_PDF.hauteur - 168, PAGE_PDF.largeur, 168, ENCRE)
-  doc.espace(22)
+  /* ---- Couverture, compacte ---------------------------------------------- */
+  doc.rectangle(0, PAGE_PDF.hauteur - 150, PAGE_PDF.largeur, 150, ENCRE)
+  doc.espace(26)
   doc.texte("STUDIO DIGITAL NOVA", { taille: 8, police: "grasse", couleur: [1, 1, 1] })
-  doc.texte("Audit de votre site", { taille: 24, police: "grasse", couleur: [1, 1, 1] })
-  doc.texte(url, { taille: 10, couleur: [0.75, 0.78, 0.81] })
+  doc.texte("Audit de votre site", { taille: 23, police: "grasse", couleur: [1, 1, 1] })
+  doc.texte(url, { taille: 10, couleur: [0.78, 0.81, 0.84] })
   doc.texte(`Analyse du ${date}`, { taille: 9, couleur: [0.62, 0.66, 0.7] })
-  doc.espace(42)
+  doc.espace(38)
 
   if (prenom) {
     doc.texte(`Bonjour ${prenom},`, { taille: 11, police: "grasse", couleur: ENCRE })
     doc.texte(
-      "Voici le relevé complet de ce que j'ai mesuré sur votre page. Chaque point est classé " +
-        "par ordre de gravité, avec sa conséquence concrète pour vos visiteurs.",
+      "Voici ce que l'analyse a relevé sur votre page, classé par ordre de priorité. " +
+        "Chaque point indique ce qui a été mesuré, ce que cela peut coûter, et quoi faire.",
       { taille: 10, couleur: GRIS }
     )
-    doc.espace(14)
+    doc.espace(12)
   }
 
-  /* ---- Note globale ------------------------------------------------------- */
-  doc.texte("NOTE GLOBALE", { taille: 8, police: "grasse", couleur: GRIS })
+  /* ---- Synthèse ----------------------------------------------------------- */
+  doc.texte("SYNTHÈSE", { taille: 8, police: "grasse", couleur: GRIS })
   doc.espace(4)
-  doc.texte(`${principal.overall} / 100`, {
-    taille: 34,
-    police: "grasse",
-    couleur: tonNote(principal.overall),
-  })
-  doc.espace(6)
-  doc.barre(principal.overall, tonNote(principal.overall))
-  doc.espace(12)
-  doc.texte(
-    `Mesure brute pondérée : ${principal.overallRaw} / 100. La note ci-dessus applique ensuite ` +
-      "le barème d'exigence détaillé en fin de rapport. Elle est plus sévère que celle de Google, " +
-      "volontairement : Google note la conformité technique, moi je note un site livrable.",
-    { taille: 9, couleur: GRIS }
-  )
-  doc.espace(8)
-  doc.filet()
-
-  /* ---- Dimensions --------------------------------------------------------- */
-  doc.espace(10)
-  doc.texte("LE DÉTAIL PAR DIMENSION", { taille: 8, police: "grasse", couleur: GRIS })
-  doc.espace(6)
-
-  const dimensions: { label: string; note: number | null; sens: string }[] = [
-    {
-      label: "Confort visuel",
-      note: principal.visual.score,
-      sens: "Lisibilité, stabilité de la mise en page, netteté des images, confort au doigt.",
-    },
-    ...principal.categories.map((c) => ({
-      label: CATEGORY_MEANING[c.id]?.label ?? c.label,
-      note: c.score,
-      sens: CATEGORY_MEANING[c.id]?.meaning ?? "",
-    })),
-  ]
-
-  for (const dimension of dimensions) {
+  if (principal.note === null) {
+    doc.texte("Bilan partiel", { taille: 28, police: "grasse", couleur: MINERAL })
     doc.espace(6)
-    doc.texte(dimension.label, { taille: 11, police: "grasse", couleur: ENCRE })
-    doc.texteDroite(dimension.note === null ? "non mesuré" : `${dimension.note} / 100`, {
-      taille: 11,
-      police: "grasse",
-      couleur: dimension.note === null ? GRIS : tonNote(dimension.note),
-    })
-    if (dimension.note !== null) doc.barre(dimension.note, tonNote(dimension.note))
-    if (dimension.sens) doc.texte(dimension.sens, { taille: 9, couleur: GRIS })
-  }
-
-  /* ---- Confort visuel, signal par signal ---------------------------------- */
-  if (principal.visual.signals.length) {
-    doc.nouvellePage()
-    doc.texte("CE QUI PÈSE SUR LE CONFORT VISUEL", { taille: 8, police: "grasse", couleur: GRIS })
-    doc.espace(4)
     doc.texte(
-      "Classé du plus dégradé au moins dégradé. C'est la dimension qui pèse le plus lourd " +
-        "dans la note : un visiteur juge ce qu'il voit avant de lire quoi que ce soit.",
-      { taille: 9, couleur: GRIS }
-    )
-    doc.espace(8)
-    for (const signal of principal.visual.signals) {
-      const note = Math.round(signal.score * 100)
-      doc.espace(6)
-      doc.texte(signal.label, { taille: 10, police: "grasse", couleur: ENCRE, largeur: doc.largeurUtile - 70 })
-      doc.texteDroite(`${note} / 100`, { taille: 10, police: "grasse", couleur: tonNote(note) })
-      doc.texte(signal.detail, { taille: 9, couleur: GRIS })
-    }
-  }
-
-  /* ---- Ressenti ----------------------------------------------------------- */
-  if (principal.vitals.length) {
-    doc.espace(16)
-    doc.filet()
-    doc.espace(10)
-    doc.texte("CE QUE RESSENT VOTRE VISITEUR", { taille: 8, police: "grasse", couleur: GRIS })
-    doc.espace(6)
-    for (const vital of principal.vitals) {
-      doc.texte(vital.label, { taille: 10, police: "grasse", couleur: ENCRE })
-      doc.texteDroite(vital.value, {
-        taille: 10,
-        police: "grasse",
-        couleur:
-          vital.verdict === "good" ? VERT : vital.verdict === "average" ? AMBRE : TERRACOTTA,
-      })
-      doc.texte(vital.hint, { taille: 9, couleur: GRIS })
-      doc.espace(4)
-    }
-  }
-
-  /* ---- Problèmes ---------------------------------------------------------- */
-  doc.nouvellePage()
-  doc.texte("CE QU'IL FAUT CORRIGER", { taille: 8, police: "grasse", couleur: GRIS })
-  doc.espace(4)
-
-  if (principal.issues.length === 0) {
-    doc.texte(
-      "Aucun défaut majeur détecté sur cette page parmi les points que je contrôle. " +
-        "C'est rare, et bon signe.",
-      { taille: 10, couleur: ENCRE }
+      "Une dimension majeure n'a pas pu être mesurée sur cette page. Aucune note globale " +
+        "n'est affichée : elle serait trompeuse. Les constats ci-dessous restent valables.",
+      { taille: 9.5, couleur: GRIS }
     )
   } else {
+    doc.texte(`${principal.note} / 100`, { taille: 32, police: "grasse", couleur: ton(principal.note) })
+    doc.espace(6)
+    doc.barre(principal.note, ton(principal.note))
+    doc.espace(10)
     doc.texte(
-      `${principal.issues.length} point${principal.issues.length > 1 ? "s" : ""} relevé` +
-        `${principal.issues.length > 1 ? "s" : ""}, du plus grave au moins grave.`,
+      "Moyenne pondérée des dimensions réellement mesurées, ramenée à leur poids cumulé. " +
+        "Une dimension non mesurable sort du calcul au lieu de compter zéro.",
       { taille: 9, couleur: GRIS }
     )
-    doc.espace(8)
-    principal.issues.forEach((issue, index) => {
-      const ton =
-        issue.severity === "critique" ? TERRACOTTA : issue.severity === "important" ? AMBRE : MINERAL
-      doc.espace(8)
-      doc.texte(`${String(index + 1).padStart(2, "0")}  ${issue.title}`, {
-        taille: 11,
-        police: "grasse",
-        couleur: ENCRE,
-        largeur: doc.largeurUtile - 80,
-      })
-      doc.texteDroite(LIBELLE_SEVERITE[issue.severity] ?? issue.severity, {
-        taille: 8,
-        police: "grasse",
-        couleur: ton,
-      })
-      doc.texte(issue.impact, { taille: 9.5, couleur: GRIS })
+  }
+  doc.espace(8)
+  doc.filet()
+
+  /* ---- Notes par dimension ------------------------------------------------ */
+  doc.espace(10)
+  doc.texte("LE DÉTAIL PAR DIMENSION", { taille: 8, police: "grasse", couleur: GRIS })
+  for (const d of principal.dimensions) {
+    doc.espace(7)
+    doc.texte(`${d.libelle}  (${Math.round(d.poids * 100)} %)`, {
+      taille: 11,
+      police: "grasse",
+      couleur: ENCRE,
     })
+    doc.texteDroite(d.note === null ? "non mesuré" : `${d.note} / 100`, {
+      taille: 11,
+      police: "grasse",
+      couleur: d.note === null ? GRIS : ton(d.note),
+    })
+    if (d.note !== null) doc.barre(d.note, ton(d.note))
+    doc.texte(d.sens, { taille: 9, couleur: GRIS })
   }
 
-  /* ---- Comparaison mobile / ordinateur ------------------------------------ */
-  if (mobile && desktop) {
-    doc.espace(16)
-    doc.filet()
-    doc.espace(10)
-    doc.texte("MOBILE ET ORDINATEUR", { taille: 8, police: "grasse", couleur: GRIS })
-    doc.espace(6)
-    doc.texte("Sur téléphone", { taille: 10, police: "grasse", couleur: ENCRE })
-    doc.texteDroite(`${mobile.overall} / 100`, {
-      taille: 10,
+  /* ---- Analyse visuelle, par appareil ------------------------------------- */
+  for (const r of [mobile, desktop].filter((x): x is RapportPage => Boolean(x))) {
+    doc.nouvellePage()
+    doc.texte(`ANALYSE VISUELLE — ${LIBELLE_APPAREIL[r.appareil].toUpperCase()}`, {
+      taille: 8,
       police: "grasse",
-      couleur: tonNote(mobile.overall),
-    })
-    doc.texte("Sur ordinateur", { taille: 10, police: "grasse", couleur: ENCRE })
-    doc.texteDroite(`${desktop.overall} / 100`, {
-      taille: 10,
-      police: "grasse",
-      couleur: tonNote(desktop.overall),
+      couleur: GRIS,
     })
     doc.espace(4)
-    doc.texte(
-      "La note retenue est celle du mobile : c'est là que se joue la majorité des visites, " +
-        "et c'est la version la plus exigeante à tenir.",
-      { taille: 9, couleur: GRIS }
-    )
+    doc.texte(r.url, { taille: 9, couleur: MINERAL })
+
+    if (r.capture) {
+      doc.espace(6)
+      doc.imageJpeg(r.capture.data, r.appareil === "mobile" ? 190 : 340, r.capture.largeur / r.capture.hauteur)
+      doc.texte(
+        "Premier écran, tel que Google l'a affiché. Les éléments situés plus bas dans la page " +
+          "ne figurent pas sur cette image.",
+        { taille: 8.5, couleur: GRIS }
+      )
+    } else {
+      doc.espace(6)
+      doc.texte("Aucune capture n'a pu être obtenue pour cette page.", { taille: 9.5, couleur: GRIS })
+    }
+
+    const visuels = r.constats.filter((c) => c.dimension === "apparence")
+    if (visuels.length) {
+      doc.espace(12)
+      doc.texte("Ce qui pèse sur l'apparence", { taille: 10, police: "grasse", couleur: ENCRE })
+      visuels.forEach((c) => bloc(doc, c))
+    } else {
+      doc.espace(12)
+      doc.texte("Aucun défaut d'apparence relevé au-dessus du seuil sur cette page.", {
+        taille: 9.5,
+        couleur: GRIS,
+      })
+    }
   }
 
-  /* ---- Barème ------------------------------------------------------------- */
+  /* ---- Parcours et confiance ---------------------------------------------- */
+  const parcours = principal.constats.filter((c) => c.dimension === "parcours")
   doc.nouvellePage()
-  doc.texte("COMMENT CETTE NOTE EST CALCULÉE", { taille: 8, police: "grasse", couleur: GRIS })
-  doc.espace(6)
-  doc.texte(
-    "Rien n'est inventé et rien n'est arrondi en votre défaveur. La mesure vient de l'API " +
-      "Google PageSpeed Insights, la même que celle de pagespeed.web.dev : vous pouvez recouper " +
-      "à tout moment.",
-    { taille: 10, couleur: ENCRE }
-  )
-  doc.espace(8)
-  doc.texte("1. Pondération des dimensions", { taille: 10, police: "grasse", couleur: ENCRE })
-  doc.texte(
-    "Confort visuel 50 %, vitesse 25 %, référencement 15 %, bonnes pratiques 10 %. " +
-      "Le visuel domine parce que c'est ce qui décide un visiteur avant toute lecture.",
-    { taille: 9.5, couleur: GRIS }
-  )
-  doc.espace(8)
-  doc.texte("2. Barème d'exigence", { taille: 10, police: "grasse", couleur: ENCRE })
-  doc.texte(
-    "La courbe de Google est indulgente : un site tout juste correct y décroche facilement 70. " +
-      "J'applique ensuite le barème ci-dessous, celui que j'exige d'un site que je livre.",
-    { taille: 9.5, couleur: GRIS }
-  )
-  doc.espace(8)
-
-  const colonne = doc.largeurUtile / 2
-  doc.texte("Mesure brute", { taille: 9, police: "grasse", couleur: GRIS })
-  doc.texteDroite("Note retenue", { taille: 9, police: "grasse", couleur: GRIS })
-  doc.filet()
-  for (const palier of [...BAREME].reverse()) {
-    doc.espace(2)
-    doc.texte(`${palier.brut} / 100`, { taille: 10, couleur: ENCRE, largeur: colonne })
-    doc.texteDroite(`${palier.note} / 100`, { taille: 10, police: "grasse", couleur: ENCRE })
+  doc.texte("PARCOURS ET CONFIANCE", { taille: 8, police: "grasse", couleur: GRIS })
+  doc.espace(4)
+  if (parcours.length) {
+    doc.texte(
+      "Ce qui gêne un visiteur — ou Google — dans sa navigation vers vous.",
+      { taille: 9.5, couleur: GRIS }
+    )
+    parcours.forEach((c) => bloc(doc, c))
+  } else {
+    doc.texte("Rien à signaler sur ce point pour cette page.", { taille: 9.5, couleur: GRIS })
   }
-  doc.espace(10)
-  doc.texte(
-    "Entre deux paliers, la note est interpolée. La fonction est croissante : un meilleur site " +
-      "obtient toujours une meilleure note.",
-    { taille: 9, couleur: GRIS }
-  )
 
-  /* ---- Périmètre et contact ----------------------------------------------- */
+  /* ---- Résultats techniques ----------------------------------------------- */
   doc.espace(16)
   doc.filet()
   doc.espace(10)
-  doc.texte("CE QUE CE RAPPORT NE COUVRE PAS", { taille: 8, police: "grasse", couleur: GRIS })
+  doc.texte("RÉSULTATS TECHNIQUES", { taille: 8, police: "grasse", couleur: GRIS })
+  doc.espace(4)
+  const technique = principal.constats.filter(
+    (c) => c.dimension === "performance" || c.dimension === "referencement" || c.dimension === "pratiques"
+  )
+  if (technique.length) technique.forEach((c) => bloc(doc, c))
+  else doc.texte("Aucun défaut technique relevé au-dessus du seuil.", { taille: 9.5, couleur: GRIS })
+
+  if (principal.vitals.length) {
+    doc.espace(14)
+    doc.texte("Ce que ressent votre visiteur", { taille: 10, police: "grasse", couleur: ENCRE })
+    doc.espace(4)
+    for (const v of principal.vitals) {
+      doc.texte(v.libelle, { taille: 10, couleur: ENCRE })
+      doc.texteDroite(v.valeur, {
+        taille: 10,
+        police: "grasse",
+        couleur: v.verdict === "bon" ? VERT : v.verdict === "moyen" ? AMBRE : v.verdict === "faible" ? TERRACOTTA : GRIS,
+      })
+      doc.texte(v.aide, { taille: 8.5, couleur: GRIS })
+      doc.espace(3)
+    }
+  }
+
+  /* ---- Plan d'action ------------------------------------------------------ */
+  doc.nouvellePage()
+  doc.texte("PLAN D'ACTION", { taille: 8, police: "grasse", couleur: GRIS })
+  doc.espace(4)
+  const ordonnes = [...principal.constats].sort(
+    (a, b) => ({ haute: 0, moyenne: 1, basse: 2 })[a.priorite] - ({ haute: 0, moyenne: 1, basse: 2 })[b.priorite]
+  )
+  if (ordonnes.length) {
+    doc.texte("Dans cet ordre : le plus rentable d'abord.", { taille: 9.5, couleur: GRIS })
+    doc.espace(6)
+    ordonnes.forEach((c, i) => {
+      doc.espace(5)
+      doc.texte(`${i + 1}.  ${c.recommandation}`, { taille: 10, couleur: ENCRE })
+      doc.texte(`    ${c.constat} — ${LIBELLE_PRIORITE[c.priorite].toLowerCase()}`, {
+        taille: 8.5,
+        couleur: GRIS,
+      })
+    })
+  } else {
+    doc.texte("Aucune correction prioritaire n'a été relevée sur cette page.", { taille: 10, couleur: ENCRE })
+  }
+
+  /* ---- Ce qui n'a pas été vérifié ----------------------------------------- */
+  doc.espace(16)
+  doc.filet()
+  doc.espace(10)
+  doc.texte("CE QUE CETTE ANALYSE N'A PAS VÉRIFIÉ", { taille: 8, police: "grasse", couleur: GRIS })
   doc.espace(4)
   doc.texte(
-    "Cette analyse porte sur une seule page, mesurée automatiquement. Elle ne juge ni votre " +
-      "contenu, ni votre positionnement, ni la structure de votre site, ni vos concurrents. " +
-      "Un audit complet couvre tout cela — et c'est là que se trouvent souvent les vraies " +
-      "occasions manquées.",
-    { taille: 9.5, couleur: GRIS }
-  )
-  doc.espace(14)
-  doc.texte("Parlons-en", { taille: 13, police: "grasse", couleur: ENCRE })
-  doc.texte(
-    "Je reprends votre site page par page et je vous dis quoi corriger en premier, " +
-      "et ce que ça vaut. Réponse sous 24 heures, sans engagement.",
+    "Une analyse automatique mesure ce qui est mesurable. Les points suivants demandent un " +
+      "œil humain : ils ne sont ni notés, ni comptés dans le bilan.",
     { taille: 9.5, couleur: GRIS }
   )
   doc.espace(4)
-  doc.texte(siteConfig.author.email, {
-    taille: 10,
-    police: "grasse",
-    couleur: TERRACOTTA,
-  })
+  for (const p of principal.nonVerifies) {
+    doc.texte(`—  ${p}`, { taille: 9.5, couleur: GRIS })
+  }
+
+  /* ---- Accompagnement ------------------------------------------------------ */
+  doc.espace(18)
+  doc.filet()
+  doc.espace(12)
+  doc.texte("Parlons-en", { taille: 14, police: "grasse", couleur: ENCRE })
+  doc.texte(
+    "Je reprends votre site page par page et je vous dis quoi corriger en premier, et ce que " +
+      "ça vaut. Réponse sous 24 heures, sans engagement.",
+    { taille: 9.5, couleur: GRIS }
+  )
+  doc.espace(4)
+  doc.texte(siteConfig.author.email, { taille: 10.5, police: "grasse", couleur: TERRACOTTA })
+  doc.lienSurDerniereLigne(`mailto:${siteConfig.author.email}`, 180)
   doc.texte(siteConfig.url, { taille: 9.5, couleur: MINERAL })
+  doc.lienSurDerniereLigne(siteConfig.url, 150)
+
+  doc.paginer(`Audit ${url} — Studio Digital Nova`)
 
   return new Blob([doc.versOctets() as unknown as BlobPart], { type: "application/pdf" })
 }
@@ -303,8 +286,5 @@ export function telechargerRapport(blob: Blob, url: string) {
   document.body.appendChild(lien)
   lien.click()
   document.body.removeChild(lien)
-  // Le révoquer tout de suite annulerait le téléchargement dans Safari.
   setTimeout(() => URL.revokeObjectURL(lien.href), 30_000)
 }
-
-export { MARGE_PDF }

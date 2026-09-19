@@ -1,501 +1,664 @@
 /* ==========================================================================
    MOTEUR D'AUDIT
    ==========================================================================
-   Le site est un export statique : aucun serveur ne peut analyser l'URL du
-   visiteur. On s'appuie donc sur l'API PageSpeed Insights de Google, appelée
-   directement depuis le navigateur — elle autorise le CORS.
+   Source unique de vérité pour le web, le mail et le PDF.
 
-   Deux conséquences assumées :
+   Deux principes, tenus partout dans ce fichier :
 
-   · La clé API est publique (elle part dans le bundle). Elle doit être
-     restreinte au domaine dans la Google Cloud Console — c'est la protection
-     prévue pour ce cas. Sans clé, le quota anonyme partagé de Google est
-     saturé en permanence et l'API répond 429.
+   1. On ne présente jamais une déduction comme une mesure. Chaque constat
+      porte sa `nature` — mesuré, apprécié, ou non vérifié — et son niveau de
+      confiance. Ce qui n'est pas observable depuis l'API est déclaré comme
+      tel plutôt que deviné.
 
-   · L'analyse porte sur UNE page, celle dont l'URL est saisie. C'est dit
-     explicitement au visiteur : on ne prétend pas auditer un site entier.
+   2. Aucun abaissement artificiel. La note est la moyenne pondérée des
+      dimensions réellement mesurées, renormalisée. Une dimension absente ne
+      vaut pas zéro : elle sort du calcul et le rapport devient partiel.
+
+   Limite assumée de l'architecture statique : pas de navigateur headless,
+   donc pas d'accès au DOM ni au CSS des sites audités. Tout ce qui suit est
+   dérivé de ce que Lighthouse expose via l'API PageSpeed.
    ========================================================================== */
 
 const PSI_ENDPOINT = "https://www.googleapis.com/pagespeedonline/v5/runPagespeed"
 
-/** Injectée au build. Absente ⇒ l'interface bascule sur le formulaire seul. */
 export const PAGESPEED_KEY = process.env.NEXT_PUBLIC_PAGESPEED_API_KEY ?? ""
 
 export type Strategy = "mobile" | "desktop"
 
-export type CategoryScore = {
-  id: "performance" | "seo" | "accessibility" | "best-practices"
-  label: string
-  /** 0 à 100, ou null si Lighthouse n'a pas pu conclure. */
-  score: number | null
-  /** Ce que ça veut dire pour l'activité du visiteur, pas pour un développeur. */
-  meaning: string
-}
-
-export type VitalMetric = {
-  id: string
-  label: string
-  value: string
-  /** Interprétation Lighthouse : bon / à améliorer / insuffisant. */
-  verdict: "good" | "average" | "poor" | "unknown"
-  hint: string
-}
-
-export type AuditIssue = {
-  id: string
-  title: string
-  /** La conséquence concrète, formulée pour un dirigeant de TPE. */
-  impact: string
-  severity: "critique" | "important" | "mineur"
-}
-
-/** Un critère mesurable de confort visuel, extrait de Lighthouse. */
-export type VisualSignal = {
-  id: string
-  label: string
-  /** 0 à 1. */
-  score: number
-  detail: string
-}
-
-export type AuditReport = {
-  strategy: Strategy
-  finalUrl: string
-  categories: CategoryScore[]
-  vitals: VitalMetric[]
-  issues: AuditIssue[]
-  /** Capture de la page telle que Google l'a vue, en data URI. */
-  screenshot: string | null
-  /** Pellicule du chargement : la page à intervalles réguliers. */
-  filmstrip: { timing: number; data: string }[]
-  /** Note de confort visuel, agrégée des signaux mesurables. */
-  visual: { score: number | null; signals: VisualSignal[] }
-  /**
-   * Note finale : moyenne pondérée des mesures réelles, puis barème
-   * d'exigence (voir `BAREME`). Ce n'est PAS un score Google — Google note
-   * avec une courbe indulgente. Le brut reste affiché à côté, dans
-   * `overallRaw`, pour que le visiteur puisse recouper.
-   */
-  overall: number
-  /** La même moyenne pondérée, avant application du barème. */
-  overallRaw: number
-}
-
-/*
-  Pondération de la note globale. Assumée, et affichée au visiteur : ce qui
-  décide un visiteur, c'est d'abord ce qu'il voit et ressent. Le confort visuel
-  domine donc, la vitesse suit, la propreté technique compte pour peu.
-*/
-const WEIGHTS = { visual: 0.5, performance: 0.25, seo: 0.15, "best-practices": 0.1 } as const
-
 /* -------------------------------------------------------------------------- */
-/* Barème                                                                      */
+/* Dimensions et pondération                                                   */
 /* -------------------------------------------------------------------------- */
-/*
-  Google note avec une courbe indulgente : un site tout juste correct y décroche
-  facilement 70. Ce barème note selon l'exigence appliquée à un site livré —
-  au-dessous de 95 sur la mesure brute, il reste du travail, et la note le dit.
 
-  Trois règles, pour que ce soit défendable :
-    1. la note ne sort JAMAIS d'ailleurs que de la mesure réelle ;
-    2. la fonction est monotone — un meilleur site obtient toujours une
-       meilleure note, jamais l'inverse ;
-    3. la table est publiée sur la page d'audit et reprise dans le PDF.
-*/
-export const BAREME: { brut: number; note: number }[] = [
-  { brut: 0, note: 0 },
-  { brut: 30, note: 8 },
-  { brut: 50, note: 20 },
-  { brut: 70, note: 40 },
-  { brut: 80, note: 55 },
-  { brut: 90, note: 75 },
-  { brut: 95, note: 90 },
-  { brut: 100, note: 100 },
-]
+export type DimensionId =
+  | "apparence"
+  | "parcours"
+  | "performance"
+  | "referencement"
+  | "pratiques"
 
-/**
- * Applique le barème d'exigence à une mesure brute (0-100).
- * Interpolation linéaire entre les paliers publiés ci-dessus.
- */
-export function appliquerBareme(brut: number): number {
-  const valeur = Math.max(0, Math.min(100, brut))
-  for (let i = 1; i < BAREME.length; i++) {
-    const bas = BAREME[i - 1]
-    const haut = BAREME[i]
-    if (valeur <= haut.brut) {
-      const part = (valeur - bas.brut) / (haut.brut - bas.brut)
-      return Math.round(bas.note + part * (haut.note - bas.note))
-    }
-  }
-  return 100
-}
-
-/* -------------------------------------------------------------------------- */
-/* Dictionnaire des problèmes                                                  */
-/* -------------------------------------------------------------------------- */
-/*
-  Lighthouse renvoie une centaine d'audits nommés pour des développeurs. On
-  n'en retient qu'une sélection — ceux qu'un dirigeant peut comprendre et qui
-  correspondent à une prestation réelle — et on les reformule en conséquence
-  business plutôt qu'en cause technique.
-*/
-
-const ISSUE_LIBRARY: Record<string, { title: string; impact: string; severity: AuditIssue["severity"] }> = {
-  viewport: {
-    title: "Le site n'est pas adapté aux mobiles",
-    impact:
-      "Plus de la moitié de vos visiteurs arrivent depuis un téléphone. Google pénalise directement les sites non responsives.",
-    severity: "critique",
+export const DIMENSIONS: Record<
+  DimensionId,
+  { libelle: string; poids: number; sens: string }
+> = {
+  apparence: {
+    libelle: "Apparence et lisibilité",
+    poids: 0.5,
+    sens: "Ce qu'un visiteur voit et ressent : lisibilité des textes, stabilité de la page, netteté des images, confort au doigt.",
   },
-  "is-on-https": {
-    title: "Le site n'est pas en HTTPS",
-    impact:
-      "Les navigateurs affichent « Non sécurisé » à côté de votre adresse. C'est le premier signal de méfiance pour un visiteur.",
-    severity: "critique",
+  parcours: {
+    libelle: "Parcours et contact",
+    poids: 0.2,
+    sens: "La facilité à comprendre où cliquer et à vous joindre.",
   },
-  "server-response-time": {
-    title: "Le serveur répond lentement",
-    impact:
-      "Avant même d'afficher quoi que ce soit, votre visiteur attend. C'est souvent le signe d'un hébergement sous-dimensionné.",
-    severity: "critique",
-  },
-  "largest-contentful-paint-element": {
-    title: "L'élément principal met du temps à s'afficher",
-    impact:
-      "Le premier grand visuel ou titre tarde à apparaître. Google mesure précisément ce délai et s'en sert pour classer votre site.",
-    severity: "important",
-  },
-  "modern-image-formats": {
-    title: "Les images sont dans un format dépassé",
-    impact:
-      "Converties en WebP ou AVIF, vos images pèseraient souvent trois fois moins, pour une qualité identique.",
-    severity: "important",
-  },
-  "uses-optimized-images": {
-    title: "Les images ne sont pas compressées",
-    impact: "Chaque image trop lourde ralentit la page et consomme le forfait mobile de vos visiteurs.",
-    severity: "important",
-  },
-  "uses-responsive-images": {
-    title: "Les images sont servies trop grandes",
-    impact:
-      "Un téléphone télécharge des images prévues pour un grand écran. C'est du poids inutile sur la connexion la plus lente.",
-    severity: "important",
-  },
-  "render-blocking-resources": {
-    title: "Des fichiers bloquent l'affichage",
-    impact:
-      "Le navigateur doit tout télécharger avant de montrer la moindre ligne. La page reste blanche pendant ce temps.",
-    severity: "important",
-  },
-  "unused-css-rules": {
-    title: "Du code de style inutilisé est chargé",
-    impact: "Votre visiteur télécharge des feuilles de style dont la page ne se sert jamais.",
-    severity: "mineur",
-  },
-  "unused-javascript": {
-    title: "Du code JavaScript inutilisé est chargé",
-    impact:
-      "Souvent le symptôme d'un thème ou d'extensions qui embarquent bien plus que nécessaire.",
-    severity: "important",
-  },
-  "uses-text-compression": {
-    title: "Les fichiers texte ne sont pas compressés",
-    impact: "Une simple option d'hébergement diviserait leur poids par trois. Réglage rapide, gain immédiat.",
-    severity: "mineur",
-  },
-  "total-byte-weight": {
-    title: "La page est très lourde",
-    impact: "En 4G ou dans une zone mal couverte, une page lourde fait fuir avant même de s'afficher.",
-    severity: "important",
-  },
-  "document-title": {
-    title: "Le titre de la page est absent ou mal formé",
-    impact:
-      "C'est la ligne bleue cliquable dans Google. Sans titre pertinent, vous perdez des clics même bien positionné.",
-    severity: "critique",
-  },
-  "meta-description": {
-    title: "La description pour Google est manquante",
-    impact:
-      "C'est le texte affiché sous votre titre dans les résultats. Absent, Google improvise — souvent mal.",
-    severity: "important",
-  },
-  "http-status-code": {
-    title: "La page renvoie un code d'erreur",
-    impact: "Google ne peut pas l'indexer correctement. Elle risque de disparaître des résultats.",
-    severity: "critique",
-  },
-  "is-crawlable": {
-    title: "La page est bloquée à l'indexation",
-    impact:
-      "Une consigne empêche Google de référencer cette page. C'est souvent un oubli laissé après une mise en ligne.",
-    severity: "critique",
-  },
-  "link-text": {
-    title: "Des liens sans libellé explicite",
-    impact:
-      "Les « cliquez ici » n'apprennent rien à Google sur la page de destination, et compliquent la navigation au lecteur d'écran.",
-    severity: "mineur",
-  },
-  "crawlable-anchors": {
-    title: "Des liens que Google ne peut pas suivre",
-    impact: "Certaines de vos pages risquent de rester invisibles faute de lien exploitable vers elles.",
-    severity: "important",
-  },
-  "image-alt": {
-    title: "Des images sans texte alternatif",
-    impact:
-      "Google ne comprend pas ce qu'elles montrent, et les personnes malvoyantes n'y ont pas accès. Vous perdez la recherche d'images.",
-    severity: "important",
-  },
-  "color-contrast": {
-    title: "Contrastes de couleur insuffisants",
-    impact:
-      "Certains textes sont difficiles à lire, en particulier au soleil sur un téléphone ou pour un visiteur presbyte.",
-    severity: "important",
-  },
-  "heading-order": {
-    title: "La hiérarchie des titres est incohérente",
-    impact:
-      "Google se sert de la structure des titres pour comprendre votre page. Désordonnée, elle brouille votre message.",
-    severity: "mineur",
-  },
-  "html-has-lang": {
-    title: "La langue de la page n'est pas déclarée",
-    impact:
-      "Les moteurs et les lecteurs d'écran doivent deviner. Un attribut manquant, corrigé en une ligne.",
-    severity: "mineur",
-  },
-  label: {
-    title: "Des champs de formulaire sans étiquette",
-    impact: "Vos formulaires sont pénibles à remplir, en particulier au téléphone. Autant de demandes perdues.",
-    severity: "important",
-  },
-  "errors-in-console": {
-    title: "Des erreurs JavaScript en arrière-plan",
-    impact:
-      "Signe que quelque chose casse sans prévenir — parfois un formulaire ou un bouton qui ne répond plus.",
-    severity: "important",
-  },
-  "target-size": {
-    title: "Des zones cliquables trop petites",
-    impact: "Au doigt, on rate le bouton. C'est une cause fréquente d'abandon sur mobile.",
-    severity: "mineur",
-  },
-}
-
-/** Exposé pour que la page puisse annoncer ce qui sera analysé, avant de
-    lancer l'audit. Aucune autre modification du moteur. */
-export const CATEGORY_MEANING: Record<CategoryScore["id"], { label: string; meaning: string }> = {
   performance: {
-    label: "Performance",
-    meaning: "La vitesse d'affichage. C'est le premier facteur d'abandon avant même la lecture.",
+    libelle: "Performance",
+    poids: 0.15,
+    sens: "La vitesse d'affichage réelle, mesurée en laboratoire.",
   },
-  seo: {
-    label: "Référencement",
-    meaning: "Les bases techniques que Google attend pour comprendre et classer votre page.",
+  referencement: {
+    libelle: "Référencement technique",
+    poids: 0.1,
+    sens: "Les bases que Google attend pour comprendre et classer la page.",
   },
-  accessibility: {
-    label: "Accessibilité",
-    meaning: "La lisibilité pour tous vos visiteurs, y compris au soleil, en grand âge ou en situation de handicap.",
-  },
-  "best-practices": {
-    label: "Bonnes pratiques",
-    meaning: "La sécurité et la propreté technique du site — ce qui inspire confiance ou non.",
+  pratiques: {
+    libelle: "Bonnes pratiques",
+    poids: 0.05,
+    sens: "Ce qui est publiquement observable : HTTPS, erreurs console, ressources en échec.",
   },
 }
 
 /* -------------------------------------------------------------------------- */
-/* Confort visuel                                                              */
+/* Constats                                                                    */
 /* -------------------------------------------------------------------------- */
-/*
-  Lighthouse ne juge pas l'esthétique — aucune API ne le fait. Mais il mesure
-  précisément ce qui rend une page désagréable à l'œil : le texte illisible,
-  les couleurs trop pâles, la mise en page qui saute, les images déformées,
-  les boutons qu'on rate au doigt. Agrégés, ces signaux disent honnêtement si
-  un site est pénible à regarder.
 
-  Le poids est réparti sur les seuls signaux réellement renvoyés : Lighthouse
-  omet ceux qui ne s'appliquent pas à la page.
+/** Zone repérée dans la page, en pixels CSS depuis le haut du document. */
+export type Zone = { top: number; left: number; width: number; height: number }
+
+export type Constat = {
+  id: string
+  dimension: DimensionId
+  /** URL réellement analysée. */
+  page: string
+  appareil: Strategy
+  constat: string
+  /** La mesure ou l'élément qui fonde le constat. */
+  preuve: string
+  consequence: string
+  recommandation: string
+  priorite: "haute" | "moyenne" | "basse"
+  /**
+   * `mesure` — valeur relevée par Lighthouse.
+   * `appreciation` — lecture argumentée d'une mesure, pas la mesure elle-même.
+   * `non_verifie` — point que cette analyse ne peut pas trancher.
+   */
+  nature: "mesure" | "appreciation" | "non_verifie"
+  confiance: "elevee" | "moyenne" | "faible"
+  /** Présente seulement si la position est fiable ET tombe dans la capture. */
+  zone?: Zone
+}
+
+/*
+  Dictionnaire des constats. La clé est l'identifiant d'audit Lighthouse.
+  `seuil` : en dessous de ce score l'audit produit un constat.
+
+  Les libellés sont écrits pour un dirigeant de TPE, jamais pour un
+  développeur, et la conséquence reste prudente — « peut », « risque de » —
+  parce qu'aucune de ces mesures ne prouve une perte de clients.
 */
-const VISUAL_LIBRARY: Record<string, { label: string; weight: number; detail: string }> = {
-  "cumulative-layout-shift": {
-    label: "Stabilité de la mise en page",
-    weight: 0.3,
-    detail: "Les blocs qui se déplacent pendant le chargement — la cause des clics à côté.",
-  },
+type ModeleConstat = {
+  dimension: DimensionId
+  constat: string
+  preuve: (details: DetailsAudit) => string
+  consequence: string
+  recommandation: string
+  priorite: Constat["priorite"]
+  nature: Constat["nature"]
+  confiance: Constat["confiance"]
+}
+
+type DetailsAudit = {
+  displayValue?: string
+  score: number | null
+  nbElements: number
+}
+
+const nb = (d: DetailsAudit, singulier: string, pluriel?: string) =>
+  d.nbElements > 0
+    ? `${d.nbElements} ${d.nbElements > 1 ? (pluriel ?? singulier + "s") : singulier}`
+    : (d.displayValue ?? "relevé par la mesure")
+
+export const MODELES: Record<string, ModeleConstat> = {
   "color-contrast": {
-    label: "Lisibilité des textes",
-    weight: 0.25,
-    detail: "Des couleurs trop proches rendent le texte pénible, surtout au soleil sur un téléphone.",
-  },
-  "target-size": {
-    label: "Confort au doigt",
-    weight: 0.15,
-    detail: "Des boutons trop petits ou trop serrés, qu'on rate une fois sur deux.",
-  },
-  "unsized-images": {
-    label: "Images sans dimensions",
-    weight: 0.12,
-    detail: "Le navigateur ignore la place à réserver : la page sursaute quand elles arrivent.",
-  },
-  "image-size-responsive": {
-    label: "Netteté des images",
-    weight: 0.1,
-    detail: "Des images affichées plus grandes que leur définition réelle paraissent floues.",
-  },
-  "image-aspect-ratio": {
-    label: "Proportions des images",
-    weight: 0.08,
-    detail: "Des visuels étirés ou écrasés par rapport à leurs proportions d'origine.",
+    dimension: "apparence",
+    constat: "Des textes manquent de contraste avec leur fond",
+    preuve: (d) => `${nb(d, "élément concerné", "éléments concernés")}`,
+    consequence:
+      "Ces textes deviennent difficiles à lire au soleil, sur un écran bon marché ou après cinquante ans.",
+    recommandation:
+      "Assombrir la couleur du texte ou éclaircir le fond jusqu'à atteindre un rapport de 4,5:1.",
+    priorite: "haute",
+    nature: "mesure",
+    confiance: "elevee",
   },
   "font-size": {
-    label: "Taille du texte sur mobile",
-    weight: 0.1,
-    detail: "Un texte trop petit oblige à zoomer pour lire. Google le signale comme un défaut.",
+    dimension: "apparence",
+    constat: "Des textes sont trop petits sur mobile",
+    preuve: (d) => d.displayValue ?? "relevé sur la version mobile",
+    consequence: "Le visiteur doit zoomer pour lire, ce qui décourage la lecture.",
+    recommandation: "Passer le texte courant à 16 px minimum sur mobile.",
+    priorite: "haute",
+    nature: "mesure",
+    confiance: "elevee",
+  },
+  "unsized-images": {
+    dimension: "apparence",
+    constat: "Des images n'ont pas de dimensions déclarées",
+    preuve: (d) => nb(d, "image concernée", "images concernées"),
+    consequence:
+      "La page saute pendant le chargement : on clique à côté de ce qu'on visait.",
+    recommandation:
+      "Déclarer largeur et hauteur sur chaque image pour que la place soit réservée d'avance.",
+    priorite: "haute",
+    nature: "mesure",
+    confiance: "elevee",
+  },
+  "image-size-responsive": {
+    dimension: "apparence",
+    constat: "Des images sont affichées dans une définition insuffisante",
+    preuve: (d) => nb(d, "image concernée", "images concernées"),
+    consequence: "Les visuels paraissent flous, ce qui dégrade l'impression de sérieux.",
+    recommandation: "Fournir une image au moins aussi large que la place qu'elle occupe.",
+    priorite: "moyenne",
+    nature: "mesure",
+    confiance: "elevee",
+  },
+  "image-aspect-ratio": {
+    dimension: "apparence",
+    constat: "Des images sont déformées",
+    preuve: (d) => nb(d, "image concernée", "images concernées"),
+    consequence: "Une photo étirée se remarque immédiatement et fait amateur.",
+    recommandation: "Respecter le rapport largeur/hauteur d'origine, ou recadrer proprement.",
+    priorite: "haute",
+    nature: "mesure",
+    confiance: "elevee",
+  },
+  "target-size": {
+    dimension: "apparence",
+    constat: "Des zones cliquables sont trop petites pour un doigt",
+    preuve: (d) => nb(d, "élément concerné", "éléments concernés"),
+    consequence: "Sur mobile, on rate le bouton. C'est une cause fréquente d'abandon.",
+    recommandation: "Porter chaque zone tactile à 44 × 44 px minimum.",
+    priorite: "moyenne",
+    nature: "mesure",
+    confiance: "elevee",
+  },
+  "meta-viewport": {
+    dimension: "apparence",
+    constat: "Le zoom est bloqué sur mobile",
+    preuve: () => "attribut user-scalable détecté",
+    consequence: "Un visiteur qui a besoin d'agrandir ne peut pas. C'est bloquant pour lui.",
+    recommandation: "Retirer la restriction de zoom dans la balise viewport.",
+    priorite: "haute",
+    nature: "mesure",
+    confiance: "elevee",
+  },
+  "layout-shifts": {
+    dimension: "apparence",
+    constat: "La mise en page bouge pendant le chargement",
+    preuve: (d) => nb(d, "déplacement relevé", "déplacements relevés"),
+    consequence: "Le contenu se déplace sous les yeux du visiteur pendant qu'il lit.",
+    recommandation:
+      "Réserver la place des images, des bannières et des polices avant leur arrivée.",
+    priorite: "haute",
+    nature: "mesure",
+    confiance: "elevee",
+  },
+  "link-name": {
+    dimension: "parcours",
+    constat: "Des liens n'ont pas de libellé compréhensible",
+    preuve: (d) => nb(d, "lien concerné", "liens concernés"),
+    consequence:
+      "Ni Google ni un lecteur d'écran ne savent où ils mènent. Le visiteur non plus, parfois.",
+    recommandation: "Donner à chaque lien un texte qui dit sa destination.",
+    priorite: "moyenne",
+    nature: "mesure",
+    confiance: "elevee",
+  },
+  "button-name": {
+    dimension: "parcours",
+    constat: "Des boutons n'ont pas de nom accessible",
+    preuve: (d) => nb(d, "bouton concerné", "boutons concernés"),
+    consequence: "Un bouton sans nom est inutilisable au clavier et par lecteur d'écran.",
+    recommandation: "Ajouter un libellé visible ou un aria-label explicite.",
+    priorite: "moyenne",
+    nature: "mesure",
+    confiance: "elevee",
+  },
+  "crawlable-anchors": {
+    dimension: "parcours",
+    constat: "Des liens ne sont pas suivables par Google",
+    preuve: (d) => nb(d, "lien concerné", "liens concernés"),
+    consequence: "Les pages derrière ces liens risquent de ne jamais être indexées.",
+    recommandation: "Utiliser de vrais liens avec une adresse, plutôt qu'un clic en JavaScript.",
+    priorite: "moyenne",
+    nature: "mesure",
+    confiance: "elevee",
+  },
+  "image-alt": {
+    dimension: "parcours",
+    constat: "Des images n'ont pas de texte alternatif",
+    preuve: (d) => nb(d, "image concernée", "images concernées"),
+    consequence:
+      "Google ne comprend pas ces visuels, et ils sont invisibles pour un lecteur d'écran.",
+    recommandation: "Décrire chaque image utile en une courte phrase.",
+    priorite: "moyenne",
+    nature: "mesure",
+    confiance: "elevee",
+  },
+  "document-title": {
+    dimension: "referencement",
+    constat: "Le titre de la page est absent ou mal formé",
+    preuve: () => "balise title manquante ou vide",
+    consequence: "C'est la ligne bleue affichée par Google. Sans elle, la page est mal présentée.",
+    recommandation: "Écrire un titre unique de 50 à 60 caractères pour cette page.",
+    priorite: "haute",
+    nature: "mesure",
+    confiance: "elevee",
+  },
+  "meta-description": {
+    dimension: "referencement",
+    constat: "La description pour Google est manquante",
+    preuve: () => "balise meta description absente",
+    consequence: "Google compose lui-même le résumé affiché, souvent maladroitement.",
+    recommandation: "Écrire une description de 150 caractères par page.",
+    priorite: "moyenne",
+    nature: "mesure",
+    confiance: "elevee",
+  },
+  "http-status-code": {
+    dimension: "referencement",
+    constat: "La page renvoie un code d'erreur",
+    preuve: () => "statut HTTP non valide",
+    consequence: "Google ne peut pas indexer cette page.",
+    recommandation: "Corriger la réponse du serveur.",
+    priorite: "haute",
+    nature: "mesure",
+    confiance: "elevee",
+  },
+  "is-crawlable": {
+    dimension: "referencement",
+    constat: "La page est bloquée à l'indexation",
+    preuve: () => "directive noindex ou blocage robots détecté",
+    consequence: "Elle n'apparaîtra jamais dans les résultats de recherche.",
+    recommandation: "Retirer la directive de blocage si la page doit être visible.",
+    priorite: "haute",
+    nature: "mesure",
+    confiance: "elevee",
+  },
+  "hreflang": {
+    dimension: "referencement",
+    constat: "Les déclarations de langue sont incorrectes",
+    preuve: () => "hreflang mal formé",
+    consequence: "Google peut servir la mauvaise version linguistique.",
+    recommandation: "Corriger les codes de langue déclarés.",
+    priorite: "basse",
+    nature: "mesure",
+    confiance: "moyenne",
+  },
+  "is-on-https": {
+    dimension: "pratiques",
+    constat: "Le site n'est pas entièrement en HTTPS",
+    preuve: () => "ressources chargées en HTTP détectées",
+    consequence: "Le navigateur affiche « Non sécurisé » à côté de votre adresse.",
+    recommandation: "Servir toutes les ressources en HTTPS.",
+    priorite: "haute",
+    nature: "mesure",
+    confiance: "elevee",
+  },
+  "errors-in-console": {
+    dimension: "pratiques",
+    constat: "Des erreurs JavaScript se produisent en arrière-plan",
+    preuve: (d) => nb(d, "erreur relevée", "erreurs relevées"),
+    consequence: "Une fonctionnalité peut être cassée sans que cela se voie.",
+    recommandation: "Ouvrir la console du navigateur et corriger les erreurs signalées.",
+    priorite: "moyenne",
+    nature: "mesure",
+    confiance: "elevee",
   },
 }
 
 /* -------------------------------------------------------------------------- */
-/* Extraction                                                                  */
+/* Notation                                                                    */
 /* -------------------------------------------------------------------------- */
+/*
+  Les jeux d'audits qui alimentent chaque note sont DISJOINTS de la catégorie
+  Performance de Lighthouse. Sans cela, un même défaut — un saut de mise en
+  page, par exemple — serait compté deux fois : une fois dans « apparence »,
+  une fois dans « performance ». Le brief l'interdit explicitement.
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
+  Conséquence : `layout-shifts` produit bien un constat visible dans
+  « apparence », mais ne pèse pas sur sa note. Un constat n'est pas une
+  pénalité.
+*/
+const AUDITS_APPARENCE = [
+  "color-contrast",
+  "font-size",
+  "unsized-images",
+  "image-size-responsive",
+  "image-aspect-ratio",
+  "target-size",
+  "meta-viewport",
+] as const
 
-function verdictFromScore(score: number | null | undefined): VitalMetric["verdict"] {
-  if (score === null || score === undefined) return "unknown"
-  if (score >= 0.9) return "good"
-  if (score >= 0.5) return "average"
-  return "poor"
+const AUDITS_PARCOURS = ["link-name", "button-name", "crawlable-anchors", "image-alt"] as const
+
+/** Moyenne des audits réellement présents. `null` si aucun n'est disponible. */
+function moyenneAudits(audits: Record<string, AuditBrut>, cles: readonly string[]): number | null {
+  const notes = cles
+    .map((c) => audits?.[c]?.score)
+    .filter((s): s is number => typeof s === "number")
+  if (notes.length === 0) return null
+  return Math.round((notes.reduce((a, b) => a + b, 0) / notes.length) * 100)
 }
 
-const VITALS: { id: string; label: string; hint: string }[] = [
+export type NoteDimension = {
+  id: DimensionId
+  libelle: string
+  poids: number
+  sens: string
+  /** `null` = non mesurable sur cette page. Ne compte pas comme zéro. */
+  note: number | null
+}
+
+/* -------------------------------------------------------------------------- */
+/* Rapport                                                                     */
+/* -------------------------------------------------------------------------- */
+
+export type Vital = {
+  id: string
+  libelle: string
+  valeur: string
+  aide: string
+  verdict: "bon" | "moyen" | "faible" | "inconnu"
+}
+
+export type Capture = {
+  /** Data URI JPEG. */
+  data: string
+  /** Dimensions de l'image en pixels. */
+  largeur: number
+  hauteur: number
+  /** Largeur de la fenêtre émulée, pour convertir les zones en coordonnées image. */
+  largeurPage: number
+}
+
+export type RapportPage = {
+  url: string
+  appareil: Strategy
+  capture: Capture | null
+  pellicule: { instant: number; data: string }[]
+  dimensions: NoteDimension[]
+  constats: Constat[]
+  vitals: Vital[]
+  /** Points que cette analyse ne peut pas trancher — affichés comme tels. */
+  nonVerifies: string[]
+  /**
+   * Moyenne pondérée des dimensions mesurées, renormalisée sur leur poids
+   * cumulé. `null` quand « apparence » manque : sans elle, la moitié de la
+   * pondération est absente et une note globale serait trompeuse.
+   */
+  note: number | null
+  /** Vrai si au moins une dimension n'a pas pu être mesurée. */
+  partiel: boolean
+}
+
+const VITALS_SUIVIS: { id: string; libelle: string; aide: string }[] = [
   {
     id: "largest-contentful-paint",
-    label: "Affichage du contenu principal",
-    hint: "Le temps avant que l'élément le plus visible apparaisse. Google vise moins de 2,5 s.",
+    libelle: "Affichage du contenu principal",
+    aide: "Au-delà de 2,5 s, le visiteur perçoit une lenteur.",
   },
   {
     id: "cumulative-layout-shift",
-    label: "Stabilité visuelle",
-    hint: "Mesure les éléments qui sautent pendant le chargement — la cause des clics à côté.",
+    libelle: "Stabilité de la mise en page",
+    aide: "Au-delà de 0,1, la page bouge visiblement pendant le chargement.",
   },
   {
     id: "total-blocking-time",
-    label: "Réactivité",
-    hint: "Le temps pendant lequel la page ne répond pas aux clics, même si elle paraît prête.",
+    libelle: "Réactivité au premier clic",
+    aide: "Au-delà de 200 ms, l'interface paraît figée.",
   },
   {
     id: "first-contentful-paint",
-    label: "Premier affichage",
-    hint: "Le moment où le visiteur voit enfin autre chose qu'une page blanche.",
+    libelle: "Premier élément affiché",
+    aide: "Le moment où l'écran cesse d'être blanc.",
   },
 ]
 
-function parseReport(payload: any, strategy: Strategy): AuditReport {
-  const lh = payload?.lighthouseResult
-  if (!lh) throw new Error("Réponse inattendue de Google.")
+function verdictDepuis(score: number | null | undefined): Vital["verdict"] {
+  if (typeof score !== "number") return "inconnu"
+  if (score >= 0.9) return "bon"
+  if (score >= 0.5) return "moyen"
+  return "faible"
+}
 
-  const categories: CategoryScore[] = (
-    ["performance", "seo", "accessibility", "best-practices"] as const
-  ).map((id) => {
-    const raw = lh.categories?.[id]?.score
-    return {
-      id,
-      label: CATEGORY_MEANING[id].label,
-      score: typeof raw === "number" ? Math.round(raw * 100) : null,
-      meaning: CATEGORY_MEANING[id].meaning,
-    }
-  })
+/*
+  Points que l'analyse automatique ne peut pas trancher. Ils sont listés tels
+  quels dans le rapport, sous « non vérifié » : mieux vaut dire qu'on ne sait
+  pas que laisser croire qu'on a regardé.
+*/
+const NON_VERIFIES = [
+  "La clarté de votre offre : sait-on en dix secondes ce que vous vendez et à qui ?",
+  "La pertinence de vos textes pour vos clients réels.",
+  "La facilité à vous joindre depuis n'importe quelle page.",
+  "La qualité de vos photos et leur cohérence entre elles.",
+  "Le contenu situé au-delà du premier écran, non capturé par l'analyse.",
+  "Ce que font vos concurrents, et ce qui vous en distingue.",
+]
 
-  const vitals: VitalMetric[] = VITALS.map(({ id, label, hint }) => {
-    const audit = lh.audits?.[id]
-    return {
-      id,
-      label,
-      value: audit?.displayValue ?? "—",
-      verdict: verdictFromScore(audit?.score),
-      hint,
-    }
-  }).filter((metric) => metric.value !== "—")
-
-  /*
-    On ne retient que les audits réellement en échec (score < 0,9) et présents
-    dans notre dictionnaire. Les critiques d'abord, puis les importants.
-  */
-  const rank = { critique: 0, important: 1, mineur: 2 } as const
-  const issues: AuditIssue[] = Object.entries(ISSUE_LIBRARY)
-    .filter(([id]) => {
-      const audit = lh.audits?.[id]
-      if (!audit) return false
-      if (audit.scoreDisplayMode === "notApplicable" || audit.scoreDisplayMode === "informative") return false
-      return typeof audit.score === "number" && audit.score < 0.9
-    })
-    .map(([id, entry]) => ({ id, ...entry }))
-    .sort((a, b) => rank[a.severity] - rank[b.severity])
-
-  /* ---- Confort visuel ---------------------------------------------------- */
-  const signals: VisualSignal[] = []
-  let visualSum = 0
-  let visualWeight = 0
-  for (const [id, entry] of Object.entries(VISUAL_LIBRARY)) {
-    const audit = lh.audits?.[id]
-    if (!audit || typeof audit.score !== "number") continue
-    if (audit.scoreDisplayMode === "notApplicable") continue
-    signals.push({ id, label: entry.label, score: audit.score, detail: entry.detail })
-    visualSum += audit.score * entry.weight
-    visualWeight += entry.weight
+/** Convertit un rectangle de page en coordonnées de la capture, si c'est fiable. */
+function zoneDansCapture(rect: RectBrut | undefined, capture: Capture | null): Zone | undefined {
+  if (!capture || !rect) return undefined
+  const { top, left, width, height } = rect
+  if (
+    typeof top !== "number" ||
+    typeof left !== "number" ||
+    typeof width !== "number" ||
+    typeof height !== "number"
+  ) {
+    return undefined
   }
-  // Les signaux les plus dégradés en premier : c'est ce qu'on veut montrer.
-  signals.sort((a, b) => a.score - b.score)
-  const visualScore = visualWeight > 0 ? Math.round((visualSum / visualWeight) * 100) : null
+  if (width <= 0 || height <= 0) return undefined
 
-  /* ---- Captures ----------------------------------------------------------- */
-  const screenshot: string | null = lh.audits?.["final-screenshot"]?.details?.data ?? null
-
-  const rawFilm: { timing?: number; data?: string }[] =
-    lh.audits?.["screenshot-thumbnails"]?.details?.items ?? []
   /*
-    Lighthouse renvoie huit vignettes. On en garde cinq réparties sur toute la
-    séquence : assez pour voir la page se construire, sans alourdir l'écran.
+    La capture ne montre que la première fenêtre. Un élément situé plus bas
+    n'y figure pas : on renvoie le constat sans repère plutôt que de dessiner
+    un rectangle au hasard.
   */
-  const keep = 5
-  const filmstrip = rawFilm
-    .filter((f): f is { timing: number; data: string } => Boolean(f?.data))
-    .filter((_, index, all) =>
-      all.length <= keep ? true : index % Math.ceil(all.length / keep) === 0
-    )
-    .slice(0, keep)
-
-  /* ---- Note pondérée ------------------------------------------------------ */
-  const byId = Object.fromEntries(categories.map((c) => [c.id, c.score]))
-  const parts: [number | null, number][] = [
-    [byId.performance ?? null, WEIGHTS.performance],
-    [visualScore, WEIGHTS.visual],
-    [byId.seo ?? null, WEIGHTS.seo],
-    [byId["best-practices"] ?? null, WEIGHTS["best-practices"]],
-  ]
-  const present = parts.filter(([value]) => value !== null) as [number, number][]
-  const totalWeight = present.reduce((sum, [, w]) => sum + w, 0)
-  /* Moyenne pondérée des mesures brutes — la valeur telle que Google la donne. */
-  const overallRaw = totalWeight
-    ? Math.round(present.reduce((sum, [v, w]) => sum + v * w, 0) / totalWeight)
-    : 0
-  /* Puis le barème d'exigence, publié sur la page. Les deux sont affichés. */
-  const overall = appliquerBareme(overallRaw)
+  const echelle = capture.largeur / capture.largeurPage
+  const hauteurVisible = capture.hauteur / echelle
+  if (top >= hauteurVisible) return undefined
+  if (left >= capture.largeurPage) return undefined
 
   return {
-    strategy,
-    finalUrl: lh.finalUrl ?? lh.requestedUrl ?? "",
-    categories,
+    top: Math.max(0, top * echelle),
+    left: Math.max(0, left * echelle),
+    width: Math.min(width * echelle, capture.largeur),
+    height: Math.min(height * echelle, capture.hauteur - top * echelle),
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* Lecture de la réponse PageSpeed                                             */
+/* -------------------------------------------------------------------------- */
+/*
+  La réponse de l'API est vaste et faiblement typée. On ne décrit que ce qu'on
+  lit réellement : le reste est ignoré sans risque.
+*/
+type RectBrut = { top?: number; left?: number; width?: number; height?: number }
+type ItemAudit = { node?: { boundingRect?: RectBrut } }
+type AuditBrut = {
+  score?: number | null
+  displayValue?: string
+  details?: { items?: ItemAudit[]; data?: string }
+}
+type ChargePSI = {
+  lighthouseResult?: {
+    audits?: Record<string, AuditBrut>
+    categories?: Record<string, { score?: number | null }>
+    finalDisplayedUrl?: string
+    finalUrl?: string
+    requestedUrl?: string
+    configSettings?: { screenEmulation?: { width?: number } }
+  }
+}
+
+function dimensionsJPEG(data: string): { largeur: number; hauteur: number } | null {
+  try {
+    const b64 = data.split(",", 2)[1]
+    const bin = atob(b64)
+    for (let i = 2; i < bin.length; ) {
+      if (bin.charCodeAt(i) !== 0xff) {
+        i++
+        continue
+      }
+      const marqueur = bin.charCodeAt(i + 1)
+      if (marqueur >= 0xc0 && marqueur <= 0xc2) {
+        const hauteur = (bin.charCodeAt(i + 5) << 8) | bin.charCodeAt(i + 6)
+        const largeur = (bin.charCodeAt(i + 7) << 8) | bin.charCodeAt(i + 8)
+        return { largeur, hauteur }
+      }
+      i += 2 + ((bin.charCodeAt(i + 2) << 8) | bin.charCodeAt(i + 3))
+    }
+  } catch {
+    /* capture illisible : on s'en passe */
+  }
+  return null
+}
+
+function lireRapport(charge: ChargePSI, appareil: Strategy, urlDemandee: string): RapportPage {
+  const lh = charge?.lighthouseResult ?? {}
+  const audits: Record<string, AuditBrut> = lh.audits ?? {}
+  const categories = lh.categories ?? {}
+  const url: string = lh.finalDisplayedUrl ?? lh.finalUrl ?? lh.requestedUrl ?? urlDemandee
+
+  /* ---- Capture ---------------------------------------------------------- */
+  const brute: string | null = audits["final-screenshot"]?.details?.data ?? null
+  const dims = brute ? dimensionsJPEG(brute) : null
+  const largeurPage: number =
+    lh.configSettings?.screenEmulation?.width ?? (appareil === "mobile" ? 412 : 1350)
+  const capture: Capture | null =
+    brute && dims ? { data: brute, largeur: dims.largeur, hauteur: dims.hauteur, largeurPage } : null
+
+  /* ---- Pellicule -------------------------------------------------------- */
+  const vignettes = ((audits["screenshot-thumbnails"]?.details as { items?: { timing?: number; data?: string }[] } | undefined)?.items ?? [])
+  const garder = 5
+  const pellicule = vignettes
+    .filter((v): v is { timing: number; data: string } => Boolean(v?.data))
+    .filter((_, i, tout) => (tout.length <= garder ? true : i % Math.ceil(tout.length / garder) === 0))
+    .slice(0, garder)
+    .map((v) => ({ instant: v.timing, data: v.data }))
+
+  /* ---- Constats --------------------------------------------------------- */
+  const constats: Constat[] = []
+  for (const [cle, modele] of Object.entries(MODELES)) {
+    const audit = audits[cle]
+    if (!audit) continue
+    const score = audit.score
+    /* `null` = non applicable à cette page. Ce n'est pas un défaut. */
+    if (score === null || score === undefined || score >= 0.9) continue
+
+    const items: ItemAudit[] = audit.details?.items ?? []
+    const details: DetailsAudit = {
+      displayValue: audit.displayValue,
+      score,
+      nbElements: items.length,
+    }
+
+    /* Position : uniquement si un élément porte une géométrie exploitable. */
+    const premier = items.find((it) => it?.node?.boundingRect)
+    const zone = zoneDansCapture(premier?.node?.boundingRect, capture)
+
+    constats.push({
+      id: cle,
+      dimension: modele.dimension,
+      page: url,
+      appareil,
+      constat: modele.constat,
+      preuve: modele.preuve(details),
+      consequence: modele.consequence,
+      recommandation: modele.recommandation,
+      priorite: modele.priorite,
+      nature: modele.nature,
+      confiance: modele.confiance,
+      ...(zone ? { zone } : {}),
+    })
+  }
+
+  const rang = { haute: 0, moyenne: 1, basse: 2 } as const
+  constats.sort((a, b) => rang[a.priorite] - rang[b.priorite])
+
+  /* ---- Notes par dimension ---------------------------------------------- */
+  const brutes: Record<DimensionId, number | null> = {
+    apparence: moyenneAudits(audits, AUDITS_APPARENCE),
+    parcours: moyenneAudits(audits, AUDITS_PARCOURS),
+    performance:
+      typeof categories.performance?.score === "number"
+        ? Math.round(categories.performance.score * 100)
+        : null,
+    referencement:
+      typeof categories.seo?.score === "number" ? Math.round(categories.seo.score * 100) : null,
+    pratiques:
+      typeof categories["best-practices"]?.score === "number"
+        ? Math.round(categories["best-practices"].score * 100)
+        : null,
+  }
+
+  const dimensions: NoteDimension[] = (Object.keys(DIMENSIONS) as DimensionId[]).map((id) => ({
+    id,
+    libelle: DIMENSIONS[id].libelle,
+    poids: DIMENSIONS[id].poids,
+    sens: DIMENSIONS[id].sens,
+    note: brutes[id],
+  }))
+
+  /*
+    Note globale : moyenne pondérée des seules dimensions mesurées, ramenée à
+    leur poids cumulé. Sans « apparence », qui pèse la moitié, on n'affiche
+    aucune note globale plutôt qu'un chiffre trompeur.
+  */
+  const mesurees = dimensions.filter((d) => d.note !== null)
+  const poidsCumule = mesurees.reduce((s, d) => s + d.poids, 0)
+  const note =
+    brutes.apparence === null || poidsCumule === 0
+      ? null
+      : Math.round(mesurees.reduce((s, d) => s + (d.note as number) * d.poids, 0) / poidsCumule)
+
+  /* ---- Ressenti --------------------------------------------------------- */
+  const vitals: Vital[] = VITALS_SUIVIS.filter((v) => audits[v.id]).map((v) => ({
+    id: v.id,
+    libelle: v.libelle,
+    valeur: audits[v.id].displayValue ?? "—",
+    aide: v.aide,
+    verdict: verdictDepuis(audits[v.id].score),
+  }))
+
+  const nonVerifies = [...NON_VERIFIES]
+  if (!capture) {
+    nonVerifies.unshift("L'aspect visuel de la page : aucune capture n'a pu être obtenue.")
+  }
+
+  return {
+    url,
+    appareil,
+    capture,
+    pellicule,
+    dimensions,
+    constats,
     vitals,
-    issues,
-    screenshot,
-    filmstrip,
-    visual: { score: visualScore, signals },
-    overall,
-    overallRaw,
+    nonVerifies,
+    note,
+    partiel: mesurees.length < dimensions.length,
   }
 }
 
@@ -503,7 +666,6 @@ function parseReport(payload: any, strategy: Strategy): AuditReport {
 /* Appel                                                                       */
 /* -------------------------------------------------------------------------- */
 
-/** Complète une saisie du type « monsite.fr » en URL absolue valide. */
 export function normalizeUrl(input: string): string | null {
   const trimmed = input.trim()
   if (!trimmed) return null
@@ -528,7 +690,7 @@ export class AuditError extends Error {
   }
 }
 
-export async function runAudit(url: string, strategy: Strategy, signal?: AbortSignal): Promise<AuditReport> {
+export async function runAudit(url: string, strategy: Strategy, signal?: AbortSignal): Promise<RapportPage> {
   const params = new URLSearchParams({ url, strategy })
   for (const category of ["performance", "seo", "accessibility", "best-practices"]) {
     params.append("category", category)
@@ -572,5 +734,5 @@ export async function runAudit(url: string, strategy: Strategy, signal?: AbortSi
     throw new AuditError("L'analyse n'a pas abouti pour cette adresse.", true)
   }
 
-  return parseReport(await response.json(), strategy)
+  return lireRapport(await response.json(), strategy, url)
 }

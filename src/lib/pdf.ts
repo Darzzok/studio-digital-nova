@@ -79,6 +79,22 @@ function decouper(texte: string, largeur: number, taille: number, police: Police
   return lignes
 }
 
+/** Lit les dimensions d'un JPEG dans son en-tête SOF. */
+function dimensionsJpeg(o: Uint8Array): { largeur: number; hauteur: number } | null {
+  for (let i = 2; i < o.length; ) {
+    if (o[i] !== 0xff) {
+      i++
+      continue
+    }
+    const marqueur = o[i + 1]
+    if (marqueur >= 0xc0 && marqueur <= 0xc2) {
+      return { hauteur: (o[i + 5] << 8) | o[i + 6], largeur: (o[i + 7] << 8) | o[i + 8] }
+    }
+    i += 2 + ((o[i + 2] << 8) | o[i + 3])
+  }
+  return null
+}
+
 /* -------------------------------------------------------------------------- */
 /* Document                                                                    */
 /* -------------------------------------------------------------------------- */
@@ -91,6 +107,17 @@ export class DocumentPdf {
   private y = A4.hauteur - MARGE
   /* Ligne de base de la dernière ligne écrite : `texteDroite` s'y raccroche. */
   private derniereLigne = A4.hauteur - MARGE
+  /* Images JPEG à intégrer, indexées par page. */
+  private images: {
+    page: number
+    nom: string
+    octets: Uint8Array
+    /* Dimensions intrinsèques du JPEG, exigées par le XObject. */
+    largeurPx: number
+    hauteurPx: number
+  }[] = []
+  /* Liens cliquables, par page. */
+  private liens: { page: number; rect: [number, number, number, number]; url: string }[] = []
   readonly largeurUtile = A4.largeur - MARGE * 2
 
   constructor() {
@@ -118,6 +145,21 @@ export class DocumentPdf {
 
   espace(points: number) {
     this.y -= points
+  }
+
+  /**
+   * Garantit qu'un bloc entier tiendra sur la page courante. Sans cela, un
+   * constat pouvait être coupé entre deux pages — son titre d'un côté, sa
+   * recommandation de l'autre.
+   */
+  reserverBloc(hauteur: number) {
+    if (this.y - hauteur < MARGE + 26) this.nouvellePage()
+  }
+
+  /** Hauteur qu'occupera un texte, sans l'écrire. Sert à mesurer un bloc. */
+  mesurerHauteur(contenu: string, taille = 10, police: Police = "normale", largeur?: number) {
+    const lignes = decouper(contenu, largeur ?? this.largeurUtile, taille, police)
+    return lignes.length * taille * 1.45
   }
 
   get position(): number {
@@ -197,53 +239,167 @@ export class DocumentPdf {
     this.rectangle(MARGE, this.y, (this.largeurUtile * Math.max(0, Math.min(100, note))) / 100, 5, couleur)
   }
 
+  /**
+   * Pose une image JPEG à la position courante et avance d'autant.
+   * `largeurVoulue` est en points ; la hauteur suit le rapport d'origine.
+   */
+  imageJpeg(dataUri: string, largeurVoulue: number, ratio: number) {
+    const b64 = dataUri.includes(",") ? dataUri.split(",", 2)[1] : dataUri
+    const bin = atob(b64)
+    const octets = new Uint8Array(bin.length)
+    for (let i = 0; i < bin.length; i++) octets[i] = bin.charCodeAt(i)
+
+    const largeur = Math.min(largeurVoulue, this.largeurUtile)
+    const hauteur = largeur / ratio
+    this.reserver(hauteur + 10)
+    this.y -= hauteur + 6
+
+    /* Le XObject a besoin des dimensions réelles du fichier, pas de l'affichage. */
+    const taille = dimensionsJpeg(octets)
+    if (!taille) return
+
+    const nom = `Im${this.images.length + 1}`
+    this.images.push({
+      page: this.flux.length - 1,
+      nom,
+      octets,
+      largeurPx: taille.largeur,
+      hauteurPx: taille.hauteur,
+    })
+    this.ecrire(
+      `q ${largeur.toFixed(2)} 0 0 ${hauteur.toFixed(2)} ${MARGE.toFixed(2)} ${this.y.toFixed(2)} cm /${nom} Do Q`
+    )
+  }
+
+  /** Rend cliquable la dernière ligne écrite. */
+  lienSurDerniereLigne(url: string, largeur: number) {
+    this.liens.push({
+      page: this.flux.length - 1,
+      rect: [MARGE, this.derniereLigne - 3, MARGE + largeur, this.derniereLigne + 11],
+      url,
+    })
+  }
+
+  /** Numérote chaque page en pied. Appeler juste avant `versOctets`. */
+  paginer(mention: string) {
+    const total = this.flux.length
+    for (let i = 0; i < total; i++) {
+      const texte = `${mention}    ${i + 1} / ${total}`
+      const octets = versWinAnsi(texte)
+      const chaine = octets.map((o) => String.fromCharCode(o)).join("")
+      this.flux[i] +=
+        `\nBT /F1 8 Tf 0.55 0.58 0.62 rg 1 0 0 1 ${MARGE} ${(MARGE - 16).toFixed(2)} Tm (${chaine}) Tj ET`
+    }
+  }
+
   /** Assemble le fichier. Retourne les octets prêts à être téléchargés. */
   versOctets(): Uint8Array {
-    const objets: string[] = []
     const nbPages = this.flux.length
-    // 1 catalogue, 2 pages, 3..3+n-1 pages, puis contenus, puis 2 polices
-    const idPage = (i: number) => 3 + i
+    /*
+      Les objets sont numérotés dans l'ordre où ils sont poussés. On garde un
+      corps binaire à part pour les images : leur flux ne peut pas transiter
+      par une chaîne UTF-16 sans être abîmé.
+    */
+    const objets: { tete: string; binaire?: Uint8Array }[] = []
+    const pousser = (tete: string, binaire?: Uint8Array) => objets.push({ tete, binaire }) 
+
+    pousser(`<< /Type /Catalog /Pages 2 0 R >>`) // 1
+    pousser("") // 2 — l'arbre des pages, complété plus bas
+
+    const idPage: number[] = []
+    for (let i = 0; i < nbPages; i++) idPage.push(3 + i)
     const idContenu = (i: number) => 3 + nbPages + i
     const idFont1 = 3 + nbPages * 2
     const idFont2 = idFont1 + 1
+    let prochain = idFont2 + 1
 
-    objets.push(`<< /Type /Catalog /Pages 2 0 R >>`)
-    objets.push(
-      `<< /Type /Pages /Count ${nbPages} /Kids [${Array.from(
-        { length: nbPages },
-        (_, i) => `${idPage(i)} 0 R`
-      ).join(" ")}] >>`
-    )
+    /* Images : un XObject par image, rattaché à sa page. */
+    const idImage = new Map<string, number>()
+    for (const img of this.images) {
+      idImage.set(img.nom, prochain++)
+    }
+    /* Liens : une annotation par lien. */
+    const idLien = this.liens.map(() => prochain++)
+
     for (let i = 0; i < nbPages; i++) {
-      objets.push(
+      const imagesPage = this.images.filter((im) => im.page === i)
+      const ressourcesImage = imagesPage.length
+        ? ` /XObject << ${imagesPage.map((im) => `/${im.nom} ${idImage.get(im.nom)} 0 R`).join(" ")} >>`
+        : ""
+      const annots = this.liens
+        .map((l, k) => (l.page === i ? `${idLien[k]} 0 R` : null))
+        .filter(Boolean)
+      const champAnnots = annots.length ? ` /Annots [${annots.join(" ")}]` : ""
+      pousser(
         `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${A4.largeur} ${A4.hauteur}] ` +
-          `/Resources << /Font << /F1 ${idFont1} 0 R /F2 ${idFont2} 0 R >> >> ` +
-          `/Contents ${idContenu(i)} 0 R >>`
+          `/Resources << /Font << /F1 ${idFont1} 0 R /F2 ${idFont2} 0 R >>${ressourcesImage} >> ` +
+          `/Contents ${idContenu(i)} 0 R${champAnnots} >>`
       )
     }
     for (let i = 0; i < nbPages; i++) {
       const contenu = this.flux[i]
-      objets.push(`<< /Length ${contenu.length} >>\nstream${contenu}\nendstream`)
+      pousser(`<< /Length ${contenu.length} >>\nstream${contenu}\nendstream`)
     }
-    objets.push(`<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>`)
-    objets.push(`<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>`)
+    pousser(`<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>`)
+    pousser(`<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>`)
 
-    let pdf = "%PDF-1.4\n"
+    for (const img of this.images) {
+      pousser(
+        `<< /Type /XObject /Subtype /Image /Width ${img.largeurPx} /Height ${img.hauteurPx} ` +
+          `/ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${img.octets.length} >>`,
+        img.octets
+      )
+    }
+    for (const l of this.liens) {
+      const [x1, y1, x2, y2] = l.rect
+      pousser(
+        `<< /Type /Annot /Subtype /Link /Border [0 0 0] ` +
+          `/Rect [${x1.toFixed(2)} ${y1.toFixed(2)} ${x2.toFixed(2)} ${y2.toFixed(2)}] ` +
+          `/A << /S /URI /URI (${l.url}) >> >>`
+      )
+    }
+
+    objets[1].tete =
+      `<< /Type /Pages /Count ${nbPages} /Kids [${idPage.map((n) => `${n} 0 R`).join(" ")}] >>`
+
+    /* Assemblage en octets : les flux binaires interdisent de tout concaténer. */
+    const morceaux: Uint8Array[] = []
+    const enc = (txt: string) => {
+      const u = new Uint8Array(txt.length)
+      for (let i = 0; i < txt.length; i++) u[i] = txt.charCodeAt(i) & 0xff
+      return u
+    }
+    let position = 0
+    const ajouter = (u: Uint8Array) => {
+      morceaux.push(u)
+      position += u.length
+    }
+
+    ajouter(enc("%PDF-1.4\n"))
     const decalages: number[] = []
-    objets.forEach((corps, index) => {
-      decalages.push(pdf.length)
-      pdf += `${index + 1} 0 obj\n${corps}\nendobj\n`
+    objets.forEach((o, index) => {
+      decalages.push(position)
+      if (o.binaire) {
+        ajouter(enc(`${index + 1} 0 obj\n${o.tete}\nstream\n`))
+        ajouter(o.binaire)
+        ajouter(enc("\nendstream\nendobj\n"))
+      } else {
+        ajouter(enc(`${index + 1} 0 obj\n${o.tete}\nendobj\n`))
+      }
     })
-    const debutXref = pdf.length
-    pdf += `xref\n0 ${objets.length + 1}\n0000000000 65535 f \n`
-    for (const decalage of decalages) {
-      pdf += `${String(decalage).padStart(10, "0")} 00000 n \n`
-    }
-    pdf += `trailer\n<< /Size ${objets.length + 1} /Root 1 0 R >>\nstartxref\n${debutXref}\n%%EOF`
+    const debutXref = position
+    let fin = `xref\n0 ${objets.length + 1}\n0000000000 65535 f \n`
+    for (const d of decalages) fin += `${String(d).padStart(10, "0")} 00000 n \n`
+    fin += `trailer\n<< /Size ${objets.length + 1} /Root 1 0 R >>\nstartxref\n${debutXref}\n%%EOF`
+    ajouter(enc(fin))
 
-    // Latin-1 octet par octet : les chaînes ont déjà été converties en WinAnsi.
-    const octets = new Uint8Array(pdf.length)
-    for (let i = 0; i < pdf.length; i++) octets[i] = pdf.charCodeAt(i) & 0xff
+    const total = morceaux.reduce((s, m) => s + m.length, 0)
+    const octets = new Uint8Array(total)
+    let curseur = 0
+    for (const m of morceaux) {
+      octets.set(m, curseur)
+      curseur += m.length
+    }
     return octets
   }
 }

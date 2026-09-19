@@ -1,31 +1,26 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import Link from "next/link"
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion"
 import {
-  AnimatePresence,
-  motion,
-  useMotionValue,
-  useReducedMotion,
-  useSpring,
-} from "framer-motion"
-import {
-  Accessibility,
   ArrowRight,
   Check,
   CircleAlert,
-  Eye,
   Download,
+  Eye,
   Gauge,
-  Home,
   Link2,
+  Loader2,
   Lock,
   Mail,
   Monitor,
   RotateCcw,
   Search,
+  Send,
   ShieldCheck,
   Smartphone,
+  X,
 } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
@@ -39,16 +34,15 @@ import { PageHero } from "@/components/ui/page-hero"
 import { Section } from "@/components/ui/section"
 import {
   AuditError,
-  BAREME,
-  CATEGORY_MEANING,
+  DIMENSIONS,
   PAGESPEED_KEY,
   normalizeUrl,
   runAudit,
-  type AuditReport,
+  type Constat,
+  type RapportPage,
   type Strategy,
 } from "@/lib/audit"
 import { EASE_NOVA, useFloatIn } from "@/lib/motion"
-import { siteConfig } from "@/lib/site"
 import { cn } from "@/lib/utils"
 
 import { QUESTIONS_AUDIT } from "./questions"
@@ -56,180 +50,391 @@ import { QUESTIONS_AUDIT } from "./questions"
 const WEB3FORMS_ACCESS_KEY = "37757408-4a45-44eb-afc1-20d7ae50d224"
 const WEB3FORMS_ENDPOINT = "https://api.web3forms.com/submit"
 
-/*
-  Les cinq dimensions annoncées avant l'audit. Quatre viennent directement du
-  moteur (CATEGORY_MEANING) ; la cinquième est le confort visuel, que le moteur
-  calcule aussi. Rien n'est inventé ici — c'est exactement ce qui sera mesuré.
-*/
-/*
-  Le confort visuel ouvre la liste et occupe toute la largeur : il pèse la
-  moitié de la note, autant que ça se voie. Les quatre autres suivent en 2 × 2,
-  ce qui évite la case vide que laissait une grille de trois colonnes.
+/* ==========================================================================
+   PAGE D'AUDIT
+   ==========================================================================
+   Parcours court : une adresse, une analyse, un bilan. Trois écrans se
+   succèdent au même endroit — saisie, progression, résultats — pour que le
+   visiteur ne perde jamais le fil.
 
-  `poids` reprend WEIGHTS (lib/audit.ts). L'accessibilité est mesurée et
-  affichée mais n'entre pas dans la note globale : c'est dit tel quel.
-*/
-const DIMENSION_PHARE = {
-  id: "visual",
-  label: "Confort visuel",
-  meaning:
-    "Lisibilité, stabilité de la mise en page, netteté des images, confort au doigt. C'est ce qu'un visiteur juge avant d'avoir lu une seule ligne — et c'est la moitié de la note.",
-  icon: Eye,
-  poids: "50 % de la note",
-} as const
+   Tout ce qui est affiché vient du moteur (`lib/audit.ts`). Cette page ne
+   recalcule rien et n'ajoute aucun chiffre : elle met en forme des constats
+   déjà qualifiés — mesurés, appréciés, ou non vérifiés.
+   ========================================================================== */
 
-const DIMENSIONS = [
-  { id: "performance", ...CATEGORY_MEANING.performance, chip: CHIP.terracotta, icon: Gauge, poids: "25 %" },
-  { id: "seo", ...CATEGORY_MEANING.seo, chip: CHIP.mineral, icon: Search, poids: "15 %" },
-  {
-    id: "best-practices",
-    ...CATEGORY_MEANING["best-practices"],
-    chip: CHIP.ochre,
-    icon: ShieldCheck,
-    poids: "10 %",
-  },
-  {
-    id: "accessibility",
-    ...CATEGORY_MEANING.accessibility,
-    chip: CHIP.sage,
-    icon: Accessibility,
-    poids: "mesurée à part",
-  },
-] as const
+type Phase = "saisie" | "analyse" | "resultat" | "erreur"
 
-/* Les trois étapes du parcours, telles qu'elles se déroulent réellement. */
-const ETAPES = [
-  {
-    titre: "Vous collez votre adresse",
-    texte:
-      "Pas de compte, pas d'extension, rien à installer. L'analyse part directement de votre navigateur.",
-    chip: CHIP.ink,
-    icon: Link2,
-  },
-  {
-    titre: "Je mesure sur mobile et sur ordinateur",
-    texte:
-      "Deux analyses en parallèle via l'API Google PageSpeed Insights, la même que pagespeed.web.dev. Comptez trente secondes.",
-    chip: CHIP.mineral,
-    icon: Gauge,
-  },
-  {
-    titre: "Vous recevez la note et le rapport",
-    texte:
-      "La note et le point le plus grave s'affichent tout de suite. Le rapport complet et son PDF se débloquent avec vos coordonnées.",
-    chip: CHIP.terracotta,
-    icon: Download,
-  },
-] as const
+/** Les étapes réellement suivies. Aucune n'avance sans un fait observable. */
+type EtapeId = "connexion" | "mobile" | "ordinateur" | "bilan"
+type EtatEtape = "attente" | "cours" | "termine" | "indisponible"
 
-/* Doit rester synchrone avec WEIGHTS dans lib/audit.ts. */
-const PONDERATION = [
-  { label: "Confort visuel — ce que voit et ressent votre visiteur", poids: 50 },
-  { label: "Vitesse d'affichage", poids: 25 },
-  { label: "Bases du référencement", poids: 15 },
-  { label: "Bonnes pratiques et sécurité", poids: 10 },
-] as const
-
-/*
-  Quatre défauts pris tels quels dans le dictionnaire du moteur
-  (ISSUE_LIBRARY) : ce sont réellement des points détectés par l'analyse, pas
-  une liste d'arguments commerciaux.
-*/
-const DEFAUTS_COURANTS = [
-  {
-    titre: "Des images trop lourdes",
-    effet:
-      "Format dépassé, compression absente, dimensions bien supérieures à l'affichage réel. C'est le premier poste de lenteur sur un site vitrine.",
-    remede: "Conversion en WebP, compression et dimensionnement au pixel près.",
-  },
-  {
-    titre: "Une mise en page qui bouge au chargement",
-    effet:
-      "Le contenu saute pendant que la page se construit. Le visiteur clique à côté, et repart agacé sans savoir pourquoi.",
-    remede: "Réservation des espaces à l'avance, pour que rien ne se déplace.",
-  },
-  {
-    titre: "Des contrastes insuffisants",
-    effet:
-      "Du gris clair sur blanc : élégant sur votre écran, illisible au soleil ou pour un œil de plus de cinquante ans.",
-    remede: "Un système de couleurs vérifié au ratio de contraste, sur chaque texte.",
-  },
-  {
-    titre: "Un titre et une description absents",
-    effet:
-      "C'est la ligne que Google affiche dans ses résultats. Sans elle, votre page est présentée n'importe comment — ou pas du tout.",
-    remede: "Un titre et une description écrits page par page, sous les limites d'affichage.",
-  },
-] as const
-
-
-type TrackState = "pending" | "running" | "done" | "failed"
-
-const TRACKS: { id: Strategy; label: string; icon: typeof Smartphone }[] = [
-  { id: "mobile", label: "Mobile", icon: Smartphone },
-  { id: "desktop", label: "Ordinateur", icon: Monitor },
+const ETAPES: { id: EtapeId; libelle: string }[] = [
+  { id: "connexion", libelle: "Connexion à votre site" },
+  { id: "mobile", libelle: "Analyse de la version mobile" },
+  { id: "ordinateur", libelle: "Analyse de la version ordinateur" },
+  { id: "bilan", libelle: "Préparation du bilan" },
 ]
 
-/* L'analyse dure 20 à 40 s. On raconte ce qui se passe plutôt que de faire attendre. */
-const PROGRESS_STEPS = [
-  "Connexion à votre site…",
-  "Mesure du temps de chargement…",
-  "Analyse des bases de référencement…",
-  "Vérification de l'accessibilité…",
-  "Contrôle de la sécurité et des bonnes pratiques…",
-  "Rédaction du bilan…",
-]
+const TON_NOTE = (note: number) =>
+  note >= 75
+    ? { texte: "text-success", trait: "var(--color-success)", pastille: CHIP.sage }
+    : note >= 45
+      ? { texte: "text-warning", trait: "var(--color-warning)", pastille: CHIP.ochre }
+      : { texte: "text-accent-strong", trait: "var(--color-accent)", pastille: CHIP.terracotta }
 
-/* -------------------------------------------------------------------------- */
-/* Affichage d'un score                                                        */
-/* -------------------------------------------------------------------------- */
-
-function scoreTone(score: number | null) {
-  if (score === null) return { text: "text-text-muted", stroke: "var(--color-border-strong)" }
-  if (score >= 90) return { text: "text-success", stroke: "var(--color-success)" }
-  if (score >= 50) return { text: "text-warning", stroke: "var(--color-warning)" }
-  return { text: "text-error", stroke: "var(--color-error)" }
+const LIBELLE_PRIORITE = { haute: "Prioritaire", moyenne: "À corriger", basse: "À surveiller" }
+const CHIP_PRIORITE = {
+  haute: "bg-accent/12 text-accent-strong",
+  moyenne: "bg-warning/12 text-warning",
+  basse: "bg-mineral/12 text-mineral",
+}
+const LIBELLE_NATURE = {
+  mesure: "Mesuré",
+  appreciation: "Apprécié",
+  non_verifie: "Non vérifié",
 }
 
-/** Anneau de score en SVG — le tracé se dessine à l'arrivée du résultat. */
-function ScoreRing({
-  score,
-  size = "md",
+/* -------------------------------------------------------------------------- */
+/* Anneau de note                                                              */
+/* -------------------------------------------------------------------------- */
+
+function Anneau({
+  note,
+  taille = "md",
   reduce,
 }: {
-  score: number | null
-  size?: "md" | "lg"
+  note: number | null
+  taille?: "md" | "lg"
   reduce: boolean
 }) {
-  const tone = scoreTone(score)
-  const large = size === "lg"
-
+  const ton = note === null ? null : TON_NOTE(note)
+  const px = taille === "lg" ? "size-28" : "size-16"
   return (
-    <div className={cn("relative flex shrink-0 items-center justify-center", large ? "size-40" : "size-16")}>
-      <svg viewBox="0 0 36 36" className="size-full -rotate-90">
-        <circle cx="18" cy="18" r="15.5" fill="none" stroke="var(--color-border)" strokeWidth={large ? 2 : 2.5} />
-        <motion.circle
-          cx="18"
-          cy="18"
-          r="15.5"
-          fill="none"
-          stroke={tone.stroke}
-          strokeWidth={large ? 2 : 2.5}
-          strokeLinecap="round"
-          initial={{ pathLength: 0 }}
-          animate={{ pathLength: (score ?? 0) / 100 }}
-          transition={reduce ? { duration: 0 } : { duration: 1.1, ease: EASE_NOVA }}
-        />
-      </svg>
-      <span className="absolute flex flex-col items-center leading-none">
-        <span className={cn("font-heading tabular-nums", large ? "text-display" : "text-h3", tone.text)}>
-          {score ?? "—"}
-        </span>
-        {large && (
-          <span className="mt-1 text-eyebrow uppercase text-on-ink-soft">/ 100</span>
+    <div className={cn("relative flex shrink-0 items-center justify-center", px)}>
+      <svg viewBox="0 0 36 36" className="size-full -rotate-90" aria-hidden>
+        <circle cx="18" cy="18" r="15.5" fill="none" stroke="var(--color-border)" strokeWidth="2.5" />
+        {note !== null && (
+          <motion.circle
+            cx="18"
+            cy="18"
+            r="15.5"
+            fill="none"
+            stroke={ton!.trait}
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            initial={reduce ? false : { pathLength: 0 }}
+            animate={{ pathLength: note / 100 }}
+            transition={reduce ? { duration: 0 } : { duration: 0.9, ease: EASE_NOVA }}
+          />
         )}
+      </svg>
+      <span
+        className={cn(
+          "absolute font-heading tabular-nums",
+          taille === "lg" ? "text-display" : "text-h3",
+          note === null ? "text-text-muted" : ton!.texte
+        )}
+      >
+        {note === null ? "—" : note}
       </span>
     </div>
+  )
+}
+
+/* -------------------------------------------------------------------------- */
+/* Capture annotée                                                             */
+/* -------------------------------------------------------------------------- */
+/*
+  Les repères ne sont dessinés que pour les constats dont le moteur a jugé la
+  position fiable — c'est-à-dire ceux dont l'élément tombe réellement dans la
+  fenêtre capturée. Un constat sans `zone` apparaît dans la liste, jamais sur
+  l'image : inventer un rectangle serait pire que ne rien montrer.
+*/
+function CaptureAnnotee({
+  rapport,
+  actif,
+  onChoisir,
+}: {
+  rapport: RapportPage
+  actif: string | null
+  onChoisir: (id: string | null) => void
+}) {
+  const capture = rapport.capture
+  const reperes = rapport.constats.filter((c) => c.zone)
+
+  if (!capture) {
+    return (
+      <Card padding="md" className="text-left">
+        <p className="text-eyebrow uppercase text-text-muted">Capture indisponible</p>
+        <p className="mt-3 text-small text-text-secondary">
+          Google n&apos;a pas renvoyé d&apos;image pour cette page. Les constats ci-dessous
+          restent valables — ils viennent des mesures, pas de l&apos;image.
+        </p>
+      </Card>
+    )
+  }
+
+  return (
+    <figure className="text-left">
+      <div className="relative overflow-hidden rounded-lg border border-border bg-white">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={capture.data}
+          alt={`Aperçu de ${rapport.url} sur ${rapport.appareil === "mobile" ? "téléphone" : "ordinateur"}`}
+          className="block w-full"
+        />
+        {reperes.map((c, i) => {
+          const z = c.zone!
+          const estActif = actif === c.id
+          return (
+            <button
+              key={c.id}
+              type="button"
+              onClick={() => onChoisir(estActif ? null : c.id)}
+              aria-label={`Repère ${i + 1} : ${c.constat}`}
+              aria-pressed={estActif}
+              className={cn(
+                "absolute rounded-[3px] border-2 outline-none transition-[opacity,box-shadow] duration-200 ease-nova",
+                "focus-visible:ring-3 focus-visible:ring-ring/50",
+                estActif
+                  ? "border-accent opacity-100 shadow-[0_0_0_9999px_rgba(11,23,38,0.45)]"
+                  : "border-accent/70 opacity-80 hover:opacity-100"
+              )}
+              style={{
+                top: `${(z.top / capture.hauteur) * 100}%`,
+                left: `${(z.left / capture.largeur) * 100}%`,
+                width: `${(z.width / capture.largeur) * 100}%`,
+                height: `${(z.height / capture.hauteur) * 100}%`,
+              }}
+            >
+              <span className="absolute -left-px -top-px flex size-4 items-center justify-center rounded-[2px] bg-accent font-heading text-[10px] leading-none text-accent-foreground">
+                {i + 1}
+              </span>
+            </button>
+          )
+        })}
+      </div>
+      <figcaption className="mt-3 text-small text-text-muted">
+        {reperes.length > 0 ? (
+          <>
+            {reperes.length} repère{reperes.length > 1 ? "s" : ""} situé
+            {reperes.length > 1 ? "s" : ""} dans le premier écran. Les autres constats
+            concernent des éléments plus bas dans la page.
+          </>
+        ) : (
+          <>
+            Aucun constat n&apos;a pu être situé précisément dans cette capture. Ils sont
+            listés ci-dessous sans repère.
+          </>
+        )}
+      </figcaption>
+    </figure>
+  )
+}
+
+/* -------------------------------------------------------------------------- */
+/* Carte de constat                                                            */
+/* -------------------------------------------------------------------------- */
+
+function CarteConstat({
+  constat,
+  rang,
+  actif,
+  onSurvol,
+}: {
+  constat: Constat
+  rang?: number
+  actif: boolean
+  onSurvol: (id: string | null) => void
+}) {
+  return (
+    <Card
+      padding="md"
+      className={cn(
+        "text-left transition-[border-color,background-color] duration-300 ease-nova",
+        actif && "border-accent bg-accent/[0.04]"
+      )}
+    >
+      <div className="flex flex-wrap items-center gap-2.5">
+        {rang !== undefined && (
+          <span className="flex size-6 shrink-0 items-center justify-center rounded-[4px] bg-accent font-heading text-[11px] text-accent-foreground">
+            {rang}
+          </span>
+        )}
+        <span
+          className={cn(
+            "rounded-sm px-2 py-0.5 text-eyebrow uppercase",
+            CHIP_PRIORITE[constat.priorite]
+          )}
+        >
+          {LIBELLE_PRIORITE[constat.priorite]}
+        </span>
+        <span className="rounded-sm border border-border px-2 py-0.5 text-eyebrow uppercase text-text-muted">
+          {LIBELLE_NATURE[constat.nature]}
+        </span>
+        <span className="text-eyebrow uppercase text-text-muted">
+          {constat.appareil === "mobile" ? "Mobile" : "Ordinateur"}
+        </span>
+      </div>
+
+      <h4 className="mt-4 font-heading text-h3 text-text">{constat.constat}</h4>
+
+      <dl className="mt-4 flex flex-col gap-3 text-small">
+        <div>
+          <dt className="text-eyebrow uppercase text-text-muted">Ce qui a été relevé</dt>
+          <dd className="mt-1 text-text-secondary">{constat.preuve}</dd>
+        </div>
+        <div>
+          <dt className="text-eyebrow uppercase text-text-muted">Conséquence possible</dt>
+          <dd className="mt-1 text-text-secondary">{constat.consequence}</dd>
+        </div>
+        <div>
+          <dt className="text-eyebrow uppercase text-accent-strong">Ce qu&apos;il faut faire</dt>
+          <dd className="mt-1 text-text">{constat.recommandation}</dd>
+        </div>
+      </dl>
+
+      {constat.zone && (
+        <button
+          type="button"
+          onMouseEnter={() => onSurvol(constat.id)}
+          onMouseLeave={() => onSurvol(null)}
+          onFocus={() => onSurvol(constat.id)}
+          onBlur={() => onSurvol(null)}
+          onClick={() => onSurvol(actif ? null : constat.id)}
+          className="mt-5 inline-flex min-h-11 items-center gap-2 text-small font-medium text-text outline-none transition-colors duration-200 ease-nova hover:text-accent-strong focus-visible:text-accent-strong"
+        >
+          <Icon icon={Eye} className="size-4 text-accent" />
+          {actif ? "Masquer le repère" : "Situer sur la capture"}
+        </button>
+      )}
+    </Card>
+  )
+}
+
+/* -------------------------------------------------------------------------- */
+/* Écran de progression                                                        */
+/* -------------------------------------------------------------------------- */
+/*
+  La barre suit les étapes RÉELLEMENT franchies : chaque étape terminée vaut
+  une part égale du total. Aucune minuterie ne pousse le pourcentage — l'ancien
+  écran plafonnait mathématiquement à 92 % et donnait l'impression d'un
+  blocage.
+*/
+function EcranProgression({
+  url,
+  etats,
+  apercu,
+  reduce,
+  onAnnuler,
+}: {
+  url: string
+  etats: Record<EtapeId, EtatEtape>
+  apercu: string | null
+  reduce: boolean
+  onAnnuler: () => void
+}) {
+  const faites = ETAPES.filter((e) => etats[e.id] === "termine" || etats[e.id] === "indisponible")
+  const pourcent = Math.round((faites.length / ETAPES.length) * 100)
+
+  return (
+    <Card tone="ink" padding="md" role="status" aria-live="polite" className="grain-ink relative overflow-hidden lg:p-9">
+      <div className="relative flex items-center justify-center gap-3">
+        <Badge variant="ink">Analyse en cours</Badge>
+        <NovaMark aria-hidden className="size-2.5 text-accent" />
+      </div>
+
+      <p className="relative mt-6 break-words text-center text-eyebrow uppercase text-on-ink-soft">
+        {url}
+      </p>
+
+      {/* Barre liée à l'avancement réel */}
+      <div className="relative mt-6">
+        <div className="h-1 w-full overflow-hidden rounded-full bg-border-ink">
+          <motion.div
+            className="h-full rounded-full bg-accent"
+            initial={false}
+            animate={{ scaleX: pourcent / 100 }}
+            style={{ transformOrigin: "left" }}
+            transition={reduce ? { duration: 0 } : { duration: 0.5, ease: EASE_NOVA }}
+          />
+        </div>
+        <p className="mt-3 text-center font-heading text-small tabular-nums text-on-ink">
+          {pourcent} %
+        </p>
+      </div>
+
+      <ul className="card-list relative mt-8 flex flex-col gap-3">
+        {ETAPES.map((etape) => {
+          const etat = etats[etape.id]
+          return (
+            <li key={etape.id} className="flex items-center gap-3">
+              <span
+                className={cn(
+                  "flex size-6 shrink-0 items-center justify-center rounded-full border transition-colors duration-500 ease-nova",
+                  etat === "termine" && "border-accent bg-accent text-ink",
+                  etat === "indisponible" && "border-error text-error",
+                  etat === "cours" && "border-accent/60 text-accent",
+                  etat === "attente" && "border-border-ink text-on-ink-soft"
+                )}
+              >
+                {etat === "termine" ? (
+                  <Icon icon={Check} className="size-3" />
+                ) : etat === "indisponible" ? (
+                  <Icon icon={X} className="size-3" />
+                ) : etat === "cours" ? (
+                  <Icon icon={Loader2} className={cn("size-3", !reduce && "animate-spin")} />
+                ) : (
+                  <span className="size-1.5 rounded-full bg-current opacity-40" />
+                )}
+              </span>
+              <span
+                className={cn(
+                  "text-small transition-colors duration-500 ease-nova",
+                  etat === "attente" ? "text-on-ink-soft" : "text-on-ink"
+                )}
+              >
+                {etape.libelle}
+              </span>
+              {etat === "indisponible" && (
+                <span className="ml-auto text-eyebrow uppercase text-error">Indisponible</span>
+              )}
+            </li>
+          )
+        })}
+      </ul>
+
+      {/* La capture s'affiche dès qu'elle arrive, sans attendre la fin. */}
+      <AnimatePresence>
+        {apercu && (
+          <motion.div
+            className="relative mt-8"
+            initial={reduce ? false : { opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, ease: EASE_NOVA }}
+          >
+            <p className="text-eyebrow uppercase text-on-ink-soft">Première image reçue</p>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={apercu}
+              alt=""
+              className="mx-auto mt-3 w-32 rounded-md border border-border-ink bg-white"
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <div className="relative mt-8">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onAnnuler}
+          className="border-border-ink text-on-ink hover:border-accent hover:text-accent"
+        >
+          Annuler l&apos;analyse
+        </Button>
+      </div>
+    </Card>
   )
 }
 
@@ -237,244 +442,79 @@ function ScoreRing({
 /* Résultats                                                                   */
 /* -------------------------------------------------------------------------- */
 
-const VERDICT_TONE = {
-  good: "text-success",
-  average: "text-warning",
-  poor: "text-error",
-  unknown: "text-text-muted",
-} as const
-
-const SEVERITY_CHIP = {
-  critique: CHIP.terracotta,
-  important: CHIP.ochre,
-  mineur: CHIP.mineral,
-} as const
-
-/* -------------------------------------------------------------------------- */
-/* Sommaire ancré                                                              */
-/* -------------------------------------------------------------------------- */
-/*
-  Le rapport complet est long. Un sommaire collant permet de sauter d'une
-  partie à l'autre sans remonter, et de garder en vue la note pendant qu'on
-  lit le détail.
-*/
-type Ancre = { id: string; label: string }
-
-function SommaireRapport({ note, ancres }: { note: number; ancres: Ancre[] }) {
-  const [actif, setActif] = useState<string>("bilan")
-
-  useEffect(() => {
-    const cibles = ancres
-      .map((a) => document.getElementById(a.id))
-      .filter((n): n is HTMLElement => Boolean(n))
-    if (cibles.length === 0) return
-    const observateur = new IntersectionObserver(
-      (entrees) => {
-        const visible = entrees
-          .filter((e) => e.isIntersecting)
-          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0]
-        if (visible) setActif(visible.target.id)
-      },
-      { rootMargin: "-96px 0px -60% 0px" }
-    )
-    cibles.forEach((c) => observateur.observe(c))
-    return () => observateur.disconnect()
-  }, [ancres])
-
-  const ton = scoreTone(note)
-
-  return (
-    <nav
-      aria-label="Sommaire du rapport"
-      className="sticky top-[72px] z-20 -mx-4 mb-1 border-y border-border bg-surface/92 px-4 py-3 backdrop-blur-md sm:mx-0 sm:rounded-lg sm:border"
-    >
-      <div className="flex items-center gap-3">
-        <span
-          className={cn(
-            "shrink-0 rounded-md border border-border px-2.5 py-1 font-heading text-small tabular-nums",
-            ton.text
-          )}
-        >
-          {note}
-        </span>
-        <ul className="flex flex-1 gap-1 overflow-x-auto text-left [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          {ancres.map((ancre) => {
-            return (
-              <li key={ancre.id}>
-                <a
-                  href={`#${ancre.id}`}
-                  aria-current={actif === ancre.id ? "true" : undefined}
-                  className={cn(
-                    "block whitespace-nowrap rounded-md px-3 py-1.5 text-small transition-colors duration-200 ease-nova",
-                    actif === ancre.id
-                      ? "bg-ink text-paper"
-                      : "text-text-secondary hover:text-accent-strong"
-                  )}
-                >
-                  {ancre.label}
-                </a>
-              </li>
-            )
-          })}
-        </ul>
-      </div>
-    </nav>
-  )
-}
-
-/* -------------------------------------------------------------------------- */
-/* Rapport                                                                     */
-/* -------------------------------------------------------------------------- */
-
-function ReportView({
-  report,
-  other,
-  strategy,
-  onStrategy,
-  reduce,
+function Resultats({
+  rapports,
+  appareil,
+  onAppareil,
   deverrouille,
-  gate,
+  barriere,
+  reduce,
 }: {
-  report: AuditReport
-  other: AuditReport | null
-  strategy: Strategy
-  onStrategy: (s: Strategy) => void
-  reduce: boolean
-  /** Tant que c'est faux, seul l'aperçu est montré. */
+  rapports: Partial<Record<Strategy, RapportPage>>
+  appareil: Strategy
+  onAppareil: (s: Strategy) => void
   deverrouille: boolean
-  /** Le formulaire qui débloque le rapport, injecté par la page. */
-  gate: React.ReactNode
+  barriere: React.ReactNode
+  reduce: boolean
 }) {
-  const verdict =
-    report.overall >= 75
-      ? "Votre site tient la route. Quelques réglages fins suffiraient à le rendre irréprochable."
-      : report.overall >= 45
-        ? "Votre site fonctionne, mais il laisse passer des visiteurs. Les points ci-dessous sont les plus rentables à corriger."
-        : "Votre site perd des visiteurs avant même d'être lu. Les corrections ci-dessous changeraient nettement la donne."
+  const rapport = rapports[appareil] ?? rapports.mobile ?? rapports.desktop
+  const [repere, setRepere] = useState<string | null>(null)
+  if (!rapport) return null
 
-  const dimensions = [
-    ...(report.visual.score !== null
-      ? [
-          {
-            id: "visual" as const,
-            label: "Confort visuel",
-            score: report.visual.score,
-            meaning:
-              "Lisibilité, stabilité de la mise en page, netteté des images, confort au doigt.",
-          },
-        ]
-      : []),
-    ...report.categories.map((c) => ({
-      id: c.id,
-      label: c.label,
-      score: c.score,
-      meaning: CATEGORY_MEANING[c.id]?.meaning ?? "",
-    })),
-  ]
+  const lesDeux = Boolean(rapports.mobile && rapports.desktop)
+  const priorites = rapport.constats.filter((c) => c.priorite === "haute").slice(0, 3)
+  const reste = rapport.constats.filter((c) => !priorites.includes(c))
+  const bons = rapport.dimensions.filter((d) => d.note !== null && d.note >= 90)
 
-  /* En aperçu : la dimension qui pèse le plus, et rien d'autre. */
-  const dimensionsVisibles = deverrouille ? dimensions : dimensions.slice(0, 1)
-  const pireProbleme = report.issues[0] ?? null
-  const restants = Math.max(0, report.issues.length - 1)
-
-  /*
-    Le sommaire ne liste que les parties effectivement présentes : une pellicule
-    absente ou des mesures de terrain manquantes ne doivent pas produire un
-    lien qui ne mène nulle part.
-  */
-  const ancres = useMemo<Ancre[]>(
-    () =>
-      [
-        { id: "bilan", label: "Bilan" },
-        { id: "dimensions", label: "Notes" },
-        report.filmstrip.length > 1 ? { id: "chargement", label: "Chargement" } : null,
-        report.visual.signals.length > 0 ? { id: "visuel", label: "Confort visuel" } : null,
-        report.vitals.length > 0 ? { id: "ressenti", label: "Ressenti" } : null,
-        { id: "corriger", label: "À corriger" },
-        { id: "bareme", label: "Barème" },
-      ].filter((a): a is Ancre => a !== null),
-    [report.filmstrip.length, report.visual.signals.length, report.vitals.length]
-  )
+  const synthese =
+    rapport.note === null
+      ? "L'analyse est partielle : une dimension majeure n'a pas pu être mesurée sur cette page. Les constats ci-dessous restent valables."
+      : rapport.note >= 75
+        ? "Votre site tient la route. Les points ci-dessous sont des réglages fins, pas des corrections urgentes."
+        : rapport.note >= 45
+          ? "Votre site fonctionne, mais plusieurs points mesurés gênent la lecture ou la navigation."
+          : "Plusieurs défauts mesurés se cumulent sur cette page. Ce sont les plus rentables à corriger en premier."
 
   return (
     <div className="flex flex-col gap-6">
-      {deverrouille && <SommaireRapport note={report.overall} ancres={ancres} />}
-
-      {/* Bilan général */}
-      <Card id="bilan" tone="ink" padding="md" className="grain-ink relative scroll-mt-32 overflow-hidden lg:p-9">
+      {/* 1 — Synthèse */}
+      <Card tone="ink" padding="md" className="grain-ink relative overflow-hidden lg:p-9">
         <div className="relative flex items-center justify-center gap-3">
-          <Badge variant="ink">Bilan général</Badge>
+          <Badge variant="ink">Bilan</Badge>
           <NovaMark aria-hidden className="size-2.5 text-accent" />
         </div>
 
-        <div className="relative mt-8 flex flex-col gap-8 lg:flex-row lg:items-start lg:gap-10">
-          {/*
-            La capture que Google a réellement prise. C'est l'élément le plus
-            parlant du rapport : le visiteur voit son propre site tel qu'il
-            apparaît sur un téléphone, avant tout commentaire.
-          */}
-          {report.screenshot && (
-            <figure className="mx-auto shrink-0 lg:mx-0">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={report.screenshot}
-                alt={`Aperçu de ${report.finalUrl} tel que Google l'a affiché`}
-                className="w-40 rounded-md border border-border-ink bg-white sm:w-48"
-              />
-              <figcaption className="mt-3 text-eyebrow uppercase text-on-ink-soft">
-                Votre site sur mobile
-              </figcaption>
-            </figure>
-          )}
-
-          <div className="flex min-w-0 flex-1 flex-col items-center gap-7 sm:flex-row sm:gap-9">
-            <div className="flex flex-col items-center gap-3">
-              <ScoreRing score={report.overall} size="lg" reduce={reduce} />
-              <span className="text-eyebrow uppercase text-on-ink-soft">Diagnostic</span>
-            </div>
-            <div className="min-w-0">
-              <p className="text-eyebrow uppercase text-on-ink-soft">Page analysée</p>
-              <p className="mt-2 break-all font-heading text-h3 text-on-ink">{report.finalUrl}</p>
-              <p className="mt-4 text-lead text-on-ink-soft">{verdict}</p>
-            </div>
+        <div className="relative mt-8 flex flex-col items-center gap-7 sm:flex-row sm:items-start sm:gap-9">
+          <div className="flex flex-col items-center gap-2">
+            <Anneau note={rapport.note} taille="lg" reduce={reduce} />
+            <span className="text-eyebrow uppercase text-on-ink-soft">
+              {rapport.note === null ? "Bilan partiel" : "Note globale"}
+            </span>
+          </div>
+          <div className="min-w-0 text-center sm:text-left">
+            <p className="text-eyebrow uppercase text-on-ink-soft">Page analysée</p>
+            <p className="mt-2 break-all font-heading text-h3 text-on-ink">{rapport.url}</p>
+            <p className="mt-4 text-lead text-on-ink-soft">{synthese}</p>
           </div>
         </div>
 
-        {/*
-          La méthode est affichée en clair, et la mesure brute avec. Le
-          visiteur peut recouper sur pagespeed.web.dev à tout moment : autant
-          lui donner lui-même l'écart et son explication.
-        */}
-        <div className="relative mt-7 border-t border-border-ink pt-5">
-          <p className="text-small text-on-ink-soft">
-            Mesure brute pondérée :{" "}
-            <strong className="font-semibold tabular-nums text-on-ink">
-              {report.overallRaw}/100
-            </strong>
-            . La note retenue applique ensuite mon{" "}
-            <a
-              href="#bareme"
-              className="font-semibold text-accent underline underline-offset-4 hover:text-on-ink"
-            >
-              barème d&apos;exigence
-            </a>
-            , plus sévère que la courbe de Google. Pondération : confort visuel 50 %, vitesse 25 %,
-            référencement 15 %, bonnes pratiques 10 %.
-          </p>
-        </div>
+        <p className="relative mt-7 border-t border-border-ink pt-5 text-small text-on-ink-soft">
+          Pondération : {Object.values(DIMENSIONS).map((d) => `${d.libelle.toLowerCase()} ${Math.round(d.poids * 100)} %`).join(", ")}.
+          Une dimension non mesurable sort du calcul au lieu de compter zéro.
+        </p>
 
-        {other && (
-          <div className="relative mt-8 flex items-center justify-center gap-3 border-t border-border-ink pt-6">
+        {lesDeux && (
+          <div className="relative mt-7 flex items-center justify-center gap-3 border-t border-border-ink pt-6">
             <span className="text-eyebrow uppercase text-on-ink-soft">Appareil</span>
             <div className="flex gap-2">
               {(["mobile", "desktop"] as const).map((s) => (
                 <button
                   key={s}
                   type="button"
-                  onClick={() => onStrategy(s)}
+                  onClick={() => onAppareil(s)}
                   className={cn(
-                    "flex items-center gap-2 rounded-md border px-3 py-1.5 text-eyebrow uppercase outline-none transition-colors duration-200 ease-nova focus-visible:ring-3 focus-visible:ring-ring/35",
-                    strategy === s
+                    "flex min-h-11 items-center gap-2 rounded-md border px-3 text-eyebrow uppercase outline-none transition-colors duration-200 ease-nova focus-visible:ring-3 focus-visible:ring-ring/35",
+                    appareil === s
                       ? "border-accent bg-accent text-ink"
                       : "border-border-ink text-on-ink-soft hover:border-accent"
                   )}
@@ -488,288 +528,166 @@ function ReportView({
         )}
       </Card>
 
-      {/* Les notes détaillées, confort visuel en tête */}
-      <div id="dimensions" className="grid scroll-mt-32 grid-cols-1 gap-5 sm:grid-cols-2">
-        {dimensionsVisibles.map((dimension) => (
-          <Card key={dimension.id} tone="ivory" padding="md" className="group flex gap-5 text-left">
-            <ScoreRing score={dimension.score} reduce={reduce} />
-            <div className="min-w-0">
-              <h3 className="font-heading text-h3 text-text">{dimension.label}</h3>
-              <p className="mt-2 text-small text-text-secondary">{dimension.meaning}</p>
-            </div>
-          </Card>
-        ))}
-      </div>
+      {/* 2 — Les priorités */}
+      {priorites.length > 0 && (
+        <div className="flex flex-col gap-4">
+          <p className="text-eyebrow uppercase text-text-muted">
+            {priorites.length === 1 ? "La priorité" : `Les ${priorites.length} priorités`}
+          </p>
+          {priorites.map((c, i) => (
+            <CarteConstat
+              key={c.id}
+              constat={c}
+              rang={i + 1}
+              actif={repere === c.id}
+              onSurvol={setRepere}
+            />
+          ))}
+        </div>
+      )}
 
-      {/* ------------------------------------------------------------------ */}
-      {/* Aperçu : un seul problème montré, le reste derrière le formulaire   */}
-      {/* ------------------------------------------------------------------ */}
+      {/* 3 — Capture annotée */}
+      <CaptureAnnotee rapport={rapport} actif={repere} onChoisir={setRepere} />
+
+      {/* Barrière : au-delà, il faut laisser ses coordonnées */}
       {!deverrouille && (
         <>
-          {pireProbleme && (
-            <Card padding="md" accent="left">
-              <p className="text-eyebrow uppercase text-accent-strong">Le point le plus grave</p>
-              <DrawRule className="mt-4" />
-              <h3 className="mt-6 font-heading text-h3 text-text">{pireProbleme.title}</h3>
-              <p className="mt-2 text-small text-text-secondary">{pireProbleme.impact}</p>
-            </Card>
-          )}
-
-          {/*
-            Ce qui reste est annoncé en nombres réels, pris sur le rapport
-            déjà calculé. Rien n'est gonflé : si le site est propre, le
-            décompte le dit.
-          */}
           <Card tone="ivory" padding="md">
             <span className="mx-auto flex size-11 items-center justify-center rounded-md border border-border-strong text-text-secondary">
               <Icon icon={Lock} className="size-5" />
             </span>
             <h3 className="mt-5 font-heading text-h2 text-text">La suite du rapport</h3>
             <p className="measure mx-auto mt-3 text-body text-text-secondary">
-              L&apos;analyse est déjà faite et elle est complète. Voici ce qui reste à afficher :
+              L&apos;analyse est déjà faite. Voici ce qui reste à afficher :
             </p>
             <ul className="card-list mt-7 flex flex-col gap-3">
               {[
-                restants > 0
-                  ? `${restants} autre${restants > 1 ? "s" : ""} point${restants > 1 ? "s" : ""} à corriger, classé${restants > 1 ? "s" : ""} par gravité`
-                  : null,
-                dimensions.length > 1
-                  ? `Les ${dimensions.length - 1} autres notes détaillées`
-                  : null,
-                report.visual.signals.length > 0
-                  ? `Le détail du confort visuel, signal par signal (${report.visual.signals.length})`
-                  : null,
-                report.vitals.length > 0 ? "Les temps ressentis par vos visiteurs" : null,
-                report.filmstrip.length > 1
-                  ? "La pellicule du chargement, image par image"
-                  : null,
-                "Le rapport complet en PDF, à garder ou à transmettre",
+                reste.length > 0 ? `${reste.length} autre${reste.length > 1 ? "s" : ""} constat${reste.length > 1 ? "s" : ""}` : null,
+                `Le détail des ${rapport.dimensions.length} dimensions notées`,
+                rapport.vitals.length > 0 ? "Les temps ressentis par vos visiteurs" : null,
+                bons.length > 0 ? "Ce qui va bien et qu'il faut conserver" : null,
+                "Le rapport complet en PDF",
               ]
                 .filter((x): x is string => Boolean(x))
-                .map((ligne) => (
-                  <li key={ligne} className="flex items-baseline gap-3 text-small text-text-secondary">
+                .map((l) => (
+                  <li key={l} className="flex items-baseline gap-3 text-small text-text-secondary">
                     <Icon icon={Check} className="size-3 shrink-0 translate-y-0.5 text-accent" />
-                    {ligne}
+                    {l}
                   </li>
                 ))}
             </ul>
           </Card>
-
-          {gate}
+          {barriere}
         </>
       )}
 
-      {/* ------------------------------------------------------------------ */}
-      {/* Rapport complet                                                     */}
-      {/* ------------------------------------------------------------------ */}
+      {/* 4 à 6 — le reste, une fois déverrouillé */}
       {deverrouille && (
         <>
-          {/* Pellicule du chargement */}
-          {report.filmstrip.length > 1 && (
-            <Card id="chargement" padding="md" className="scroll-mt-32">
-              <p className="text-eyebrow uppercase text-text-muted">
-                Ce que voit votre visiteur pendant le chargement
-              </p>
+          {bons.length > 0 && (
+            <Card tone="ivory" padding="md">
+              <p className="text-eyebrow uppercase text-text">Ce qui va bien</p>
               <DrawRule className="mt-4" />
-              <ol className="mt-6 flex gap-3 overflow-x-auto pb-1 [justify-content:safe_center]">
-                {report.filmstrip.map((frame) => (
-                  <li key={frame.timing} className="shrink-0">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={frame.data}
-                      alt=""
-                      className="w-20 rounded-sm border border-border bg-white sm:w-24"
-                    />
-                    <p className="mt-2 text-center font-heading text-small tabular-nums text-text-muted">
-                      {(frame.timing / 1000).toFixed(1)} s
-                    </p>
+              <ul className="mt-6 flex flex-wrap justify-center gap-x-6 gap-y-3">
+                {bons.map((d) => (
+                  <li key={d.id} className="flex items-center gap-2.5 text-small text-text">
+                    <span className={cn("flex size-5 shrink-0 items-center justify-center rounded-full", CHIP.sage)}>
+                      <Icon icon={Check} className="size-3" />
+                    </span>
+                    {d.libelle}
+                    <span className="font-heading tabular-nums text-text-muted">{d.note}</span>
                   </li>
                 ))}
-              </ol>
-              <p className="mt-5 text-small text-text-secondary">
-                Chaque vignette est votre page à cet instant précis. Un écran resté blanc,
-                c&apos;est un visiteur qui attend — et souvent, qui repart.
-              </p>
-            </Card>
-          )}
-
-          {/* Détail du confort visuel */}
-          {report.visual.signals.length > 0 && (
-            <Card id="visuel" padding="md" className="scroll-mt-32">
-              <p className="text-eyebrow uppercase text-text-muted">Le détail du confort visuel</p>
-              <DrawRule className="mt-4" />
-              <ul className="card-list mt-6 flex flex-col divide-y divide-border">
-                {report.visual.signals.map((signal, index) => {
-                  const pct = Math.round(signal.score * 100)
-                  const tone = scoreTone(pct)
-                  return (
-                    <li
-                      key={signal.id}
-                      className={cn("flex items-start gap-4 py-4", index === 0 && "pt-0")}
-                    >
-                      <span
-                        className={cn("mt-0.5 shrink-0 font-heading text-body tabular-nums", tone.text)}
-                      >
-                        {pct}
-                      </span>
-                      <div className="min-w-0">
-                        <p className="text-small font-medium text-text">{signal.label}</p>
-                        <p className="mt-1 text-small text-text-muted">{signal.detail}</p>
-                      </div>
-                    </li>
-                  )
-                })}
               </ul>
             </Card>
           )}
 
-          {/* Mesures de terrain */}
-          {report.vitals.length > 0 && (
-            <Card id="ressenti" padding="md" className="scroll-mt-32">
+          {reste.length > 0 && (
+            <div className="flex flex-col gap-4">
+              <p className="text-eyebrow uppercase text-text-muted">Les autres constats</p>
+              {reste.map((c) => (
+                <CarteConstat key={c.id} constat={c} actif={repere === c.id} onSurvol={setRepere} />
+              ))}
+            </div>
+          )}
+
+          <Card padding="md">
+            <p className="text-eyebrow uppercase text-text-muted">Le détail par dimension</p>
+            <DrawRule className="mt-4" />
+            <ul className="mt-6 flex flex-col gap-5">
+              {rapport.dimensions.map((d) => (
+                <li key={d.id} className="text-left">
+                  <div className="flex items-baseline justify-between gap-4">
+                    <span className="text-small font-medium text-text">{d.libelle}</span>
+                    <span
+                      className={cn(
+                        "font-heading tabular-nums",
+                        d.note === null ? "text-text-muted" : TON_NOTE(d.note).texte
+                      )}
+                    >
+                      {d.note === null ? "non mesuré" : `${d.note} / 100`}
+                    </span>
+                  </div>
+                  <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-border">
+                    {d.note !== null && (
+                      <motion.div
+                        className="h-full rounded-full"
+                        style={{ backgroundColor: TON_NOTE(d.note).trait, transformOrigin: "left" }}
+                        initial={reduce ? false : { scaleX: 0 }}
+                        animate={{ scaleX: d.note / 100 }}
+                        transition={reduce ? { duration: 0 } : { duration: 0.6, ease: EASE_NOVA }}
+                      />
+                    )}
+                  </div>
+                  <p className="mt-2 text-small text-text-muted">
+                    {d.sens} <span className="text-text-secondary">Poids : {Math.round(d.poids * 100)} %.</span>
+                  </p>
+                </li>
+              ))}
+            </ul>
+          </Card>
+
+          {rapport.vitals.length > 0 && (
+            <Card padding="md">
               <p className="text-eyebrow uppercase text-text-muted">Ce que ressent votre visiteur</p>
               <DrawRule className="mt-4" />
               <dl className="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2">
-                {report.vitals.map((vital) => (
-                  <div key={vital.id}>
+                {rapport.vitals.map((v) => (
+                  <div key={v.id}>
                     <dt className="flex items-baseline justify-between gap-3">
-                      <span className="text-small font-medium text-text">{vital.label}</span>
+                      <span className="text-small font-medium text-text">{v.libelle}</span>
                       <span
-                        className={cn("font-heading text-body tabular-nums", VERDICT_TONE[vital.verdict])}
+                        className={cn(
+                          "font-heading tabular-nums",
+                          v.verdict === "bon" ? "text-success"
+                          : v.verdict === "moyen" ? "text-warning"
+                          : v.verdict === "faible" ? "text-error"
+                          : "text-text-muted"
+                        )}
                       >
-                        {vital.value}
+                        {v.valeur}
                       </span>
                     </dt>
-                    <dd className="mt-1.5 text-small text-text-muted">{vital.hint}</dd>
+                    <dd className="mt-1.5 text-small text-text-muted">{v.aide}</dd>
                   </div>
                 ))}
               </dl>
             </Card>
           )}
 
-          {/*
-            Les mêmes problèmes que renvoie le moteur, mais rangés par gravité :
-            ce qui coûte cher d'abord. Rien n'est ajouté ni reformulé — seul
-            l'ordre et la hiérarchie visuelle changent. Les « bons points » sont
-            déduits des catégories déjà notées 90 ou plus.
-          */}
-          <div id="corriger" className="flex scroll-mt-32 flex-col gap-5">
-            {report.issues.length > 0 ? (
-              <>
-                {(
-                  [
-                    { key: "critique", titre: "Priorité élevée", accent: true },
-                    { key: "important", titre: "À améliorer", accent: false },
-                    { key: "mineur", titre: "Détails", accent: false },
-                  ] as const
-                ).map((groupe) => {
-                  const lot = report.issues.filter((issue) => issue.severity === groupe.key)
-                  if (lot.length === 0) return null
-                  return (
-                    <Card
-                      key={groupe.key}
-                      padding="md"
-                      className={cn(groupe.accent && "border-l border-l-accent")}
-                    >
-                      <div className="flex items-center justify-center gap-3">
-                        <p className="text-eyebrow uppercase text-text">
-                          {groupe.titre}
-                          <span className="ml-2 font-heading tabular-nums text-text-muted">
-                            {lot.length}
-                          </span>
-                        </p>
-                        {groupe.accent && <Icon icon={CircleAlert} className="size-4 text-accent" />}
-                      </div>
-                      <DrawRule className="mt-4" />
-                      <ul className="card-list mt-6 flex flex-col divide-y divide-border">
-                        {lot.map((issue, index) => (
-                          <li key={issue.id} className={cn("flex gap-4 py-5", index === 0 && "pt-0")}>
-                            <span
-                              aria-hidden
-                              className="mt-1 font-heading text-small tabular-nums text-text-muted"
-                            >
-                              {String(index + 1).padStart(2, "0")}
-                            </span>
-                            <div className="min-w-0 flex-1">
-                              <div className="flex flex-wrap items-center gap-3">
-                                <h3 className="font-heading text-h3 text-text">{issue.title}</h3>
-                                <span
-                                  className={cn(
-                                    "rounded-sm px-2 py-0.5 text-eyebrow uppercase",
-                                    SEVERITY_CHIP[issue.severity]
-                                  )}
-                                >
-                                  {issue.severity}
-                                </span>
-                              </div>
-                              <p className="mt-2 text-small text-text-secondary">{issue.impact}</p>
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
-                    </Card>
-                  )
-                })}
-              </>
-            ) : (
-              <Card padding="md" className="flex items-center gap-4 text-left">
-                <span
-                  className={cn("flex size-10 shrink-0 items-center justify-center rounded-md", CHIP.sage)}
-                >
-                  <Icon icon={ShieldCheck} className="size-4" />
-                </span>
-                <p className="text-small text-text-secondary">
-                  Aucun défaut majeur détecté sur cette page parmi les points que je contrôle.
-                  C&apos;est rare — et bon signe.
-                </p>
-              </Card>
-            )}
-
-            {/* Bons points — déduits des catégories déjà notées par le moteur. */}
-            {report.categories.filter((c) => (c.score ?? 0) >= 90).length > 0 && (
-              <Card tone="ivory" padding="md">
-                <p className="text-eyebrow uppercase text-text">Ce qui va bien</p>
-                <DrawRule className="mt-4" />
-                <ul className="mt-6 flex flex-wrap justify-center gap-x-6 gap-y-3">
-                  {report.categories
-                    .filter((c) => (c.score ?? 0) >= 90)
-                    .map((c) => (
-                      <li key={c.id} className="flex items-center gap-2.5 text-small text-text">
-                        <span
-                          className={cn(
-                            "flex size-5 shrink-0 items-center justify-center rounded-full",
-                            CHIP.sage
-                          )}
-                        >
-                          <Icon icon={Check} className="size-3" />
-                        </span>
-                        {c.label}
-                        <span className="font-heading tabular-nums text-text-muted">{c.score}</span>
-                      </li>
-                    ))}
-                </ul>
-              </Card>
-            )}
-          </div>
-
-          {/* Le barème, en clair, à la fin du rapport. */}
-          <Card id="bareme" tone="ivory" padding="md" className="scroll-mt-32">
-            <p className="text-eyebrow uppercase text-text-muted">Comment cette note est calculée</p>
+          {/* Ce que l'analyse ne peut pas trancher */}
+          <Card tone="ivory" padding="md">
+            <p className="text-eyebrow uppercase text-text-muted">Ce que cette analyse n&apos;a pas vérifié</p>
             <DrawRule className="mt-4" />
             <p className="measure mx-auto mt-6 text-small text-text-secondary">
-              La mesure vient de l&apos;API Google PageSpeed Insights, la même que
-              pagespeed.web.dev. Google note avec une courbe indulgente ; j&apos;applique ensuite le
-              barème que j&apos;exige d&apos;un site que je livre. La fonction est croissante : un
-              meilleur site obtient toujours une meilleure note.
+              Une analyse automatique mesure ce qui est mesurable. Ces points-là demandent un
+              œil humain — ils ne sont ni notés, ni comptés dans le bilan.
             </p>
-            <ul className="card-list mt-7 flex flex-col gap-2">
-              {[...BAREME].reverse().map((palier) => (
-                <li
-                  key={palier.brut}
-                  className="flex items-baseline gap-6 text-small tabular-nums text-text-secondary"
-                >
-                  <span className="w-28 shrink-0">Mesure {palier.brut}</span>
-                  <Icon icon={ArrowRight} className="size-3 shrink-0 text-accent" />
-                  <span className="font-heading text-text">note {palier.note}</span>
+            <ul className="card-list mt-6 flex flex-col gap-3">
+              {rapport.nonVerifies.map((p) => (
+                <li key={p} className="flex items-baseline gap-3 text-small text-text-secondary">
+                  <Icon icon={CircleAlert} className="size-3 shrink-0 translate-y-0.5 text-mineral" />
+                  {p}
                 </li>
               ))}
             </ul>
@@ -778,27 +696,58 @@ function ReportView({
       )}
 
       <p className="text-small text-text-muted">
-        Cette analyse porte sur la page dont vous avez saisi l&apos;adresse, mesurée par Google
-        PageSpeed Insights. Un audit complet couvre l&apos;ensemble des pages, le contenu, la
-        structure du site et la concurrence.
+        Analyse réalisée par l&apos;API Google PageSpeed Insights sur {rapport.url}
+        {lesDeux ? ", en versions mobile et ordinateur" : ""}. Les mesures sont relevées en
+        laboratoire, sur une connexion simulée.
       </p>
     </div>
   )
 }
 
 /* -------------------------------------------------------------------------- */
-/* Formulaire — il débloque le rapport et déclenche le PDF                     */
+/* Relevé envoyé à Studio Digital Nova                                         */
 /* -------------------------------------------------------------------------- */
 
-function LeadForm({
+function resumerRapport(r: RapportPage | null, appareil: string): string {
+  if (!r) return `${appareil} — analyse non aboutie.`
+  const notes = r.dimensions
+    .map((d) => `${d.libelle} ${d.note === null ? "non mesuré" : d.note}`)
+    .join(" ; ")
+  const constats = r.constats.length
+    ? r.constats.map((c) => `[${c.priorite}] ${c.constat} (${c.preuve})`).join("\n    ")
+    : "aucun constat au-dessus du seuil"
+  return (
+    `${appareil} — ${r.url}\n` +
+    `  Note : ${r.note === null ? "partielle, non calculée" : `${r.note}/100`}\n` +
+    `  ${notes}\n` +
+    `  Constats (${r.constats.length}) :\n    ${constats}`
+  )
+}
+
+async function transmettre(champs: Record<string, string>): Promise<boolean> {
+  try {
+    const rep = await fetch(WEB3FORMS_ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({ access_key: WEB3FORMS_ACCESS_KEY, ...champs }),
+    })
+    return Boolean((await rep.json())?.success)
+  } catch {
+    return false
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* Barrière : coordonnées contre rapport complet                               */
+/* -------------------------------------------------------------------------- */
+
+function Barriere({
   url,
-  mobile,
-  desktop,
+  rapports,
   onDeverrouille,
 }: {
   url: string
-  mobile: AuditReport | null
-  desktop: AuditReport | null
+  rapports: Partial<Record<Strategy, RapportPage>>
   onDeverrouille: () => void
 }) {
   const [prenom, setPrenom] = useState("")
@@ -806,50 +755,36 @@ function LeadForm({
   const [telephone, setTelephone] = useState("")
   const [envoi, setEnvoi] = useState(false)
   const [erreur, setErreur] = useState<string | null>(null)
+  /* Empêche un second envoi si le visiteur clique deux fois. */
+  const dejaEnvoye = useRef(false)
 
-  const report = mobile ?? desktop
-
-  /** Construit le PDF et le remet au visiteur. Isolé pour être rejouable. */
-  const produirePdf = useCallback(
-    async (nom: string) => {
-      const { construireRapport, telechargerRapport } = await import("@/lib/audit-pdf")
-      const blob = construireRapport({ url, prenom: nom, mobile, desktop })
-      telechargerRapport(blob, url)
-    },
-    [url, mobile, desktop]
-  )
-
-  async function submit(event: React.FormEvent) {
-    event.preventDefault()
+  async function soumettre(e: React.FormEvent) {
+    e.preventDefault()
+    if (dejaEnvoye.current || envoi) return
     if (!email.trim() || !/.+@.+\..+/.test(email)) {
       setErreur("Merci d'indiquer une adresse email valide.")
       return
     }
-    /* Assez souple pour accepter les formats courants, sans bloquer personne. */
     if (telephone.replace(/\D/g, "").length < 9) {
       setErreur("Merci d'indiquer un numéro de téléphone valide.")
       return
     }
     setEnvoi(true)
     setErreur(null)
+    dejaEnvoye.current = true
 
-    /*
-      La fiche reprend le rapport tel quel : note, mesure brute, notes par
-      dimension et liste intégrale des points relevés. Rien n'est résumé ni
-      réinterprété.
-    */
     const fiche = [
       `Site analysé : ${url}`,
       `Prénom : ${prenom || "non renseigné"}`,
       `Email : ${email}`,
       `Téléphone : ${telephone}`,
       "",
-      resumerRapport(mobile, "MOBILE"),
+      resumerRapport(rapports.mobile ?? null, "MOBILE"),
       "",
-      resumerRapport(desktop, "ORDINATEUR"),
+      resumerRapport(rapports.desktop ?? null, "ORDINATEUR"),
     ].join("\n")
 
-    const transmis = await transmettreReleve({
+    const transmis = await transmettre({
       subject: `FICHE CLIENT — ${url}`,
       from_name: prenom || email,
       name: prenom || "Non renseigné",
@@ -860,11 +795,6 @@ function LeadForm({
     })
 
     if (!transmis) {
-      /*
-        L'envoi de la fiche a échoué, mais l'analyse, elle, est déjà faite. On
-        ne prend pas le visiteur en otage d'un problème réseau qui n'est pas le
-        sien : le rapport s'ouvre quand même.
-      */
       setErreur(
         "Votre fiche n'a pas pu m'être transmise, mais votre rapport est bien débloqué. " +
           "Écrivez-moi à contact@studiodigitalnova.fr si vous voulez que je le commente."
@@ -872,7 +802,11 @@ function LeadForm({
     }
 
     try {
-      await produirePdf(prenom)
+      const { construireRapport, telechargerRapport } = await import("@/lib/audit-pdf")
+      telechargerRapport(
+        construireRapport({ url, prenom, mobile: rapports.mobile ?? null, desktop: rapports.desktop ?? null }),
+        url
+      )
     } catch {
       setErreur(
         "Le PDF n'a pas pu être généré sur cet appareil. Le rapport complet reste consultable ci-dessous."
@@ -882,8 +816,6 @@ function LeadForm({
     setEnvoi(false)
     onDeverrouille()
   }
-
-  if (!report) return null
 
   return (
     <Card tone="ink" padding="md" className="grain-ink relative overflow-hidden lg:p-9">
@@ -900,51 +832,30 @@ function LeadForm({
         foulée. Je le lis de mon côté et je reviens vers vous sous 24 heures, sans engagement.
       </p>
 
-      <form onSubmit={submit} className="relative mt-8 flex flex-col gap-4 text-left">
+      <form onSubmit={soumettre} className="relative mt-8 flex flex-col gap-4 text-left">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <div className="flex flex-col gap-2">
-            <label htmlFor="audit-prenom" className="text-eyebrow uppercase text-on-ink-soft">
-              Prénom
-            </label>
-            <Input
-              id="audit-prenom"
-              autoComplete="given-name"
-              placeholder="Votre prénom"
-              value={prenom}
-              onChange={(e) => setPrenom(e.target.value)}
-              className="border-border-ink bg-white/5 text-on-ink placeholder:text-on-ink-soft"
-            />
-          </div>
-          <div className="flex flex-col gap-2">
-            <label htmlFor="audit-email" className="text-eyebrow uppercase text-on-ink-soft">
-              Email
-            </label>
-            <Input
-              id="audit-email"
-              type="email"
-              autoComplete="email"
-              placeholder="vous@exemple.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              aria-invalid={erreur ? true : undefined}
-              aria-describedby={erreur ? "audit-erreur" : undefined}
-              className="border-border-ink bg-white/5 text-on-ink placeholder:text-on-ink-soft"
-            />
-          </div>
-          <div className="flex flex-col gap-2">
-            <label htmlFor="audit-telephone" className="text-eyebrow uppercase text-on-ink-soft">
-              Téléphone
-            </label>
-            <Input
-              id="audit-telephone"
-              type="tel"
-              autoComplete="tel"
-              placeholder="06 12 34 56 78"
-              value={telephone}
-              onChange={(e) => setTelephone(e.target.value)}
-              className="border-border-ink bg-white/5 text-on-ink placeholder:text-on-ink-soft"
-            />
-          </div>
+          {[
+            { id: "prenom", libelle: "Prénom", type: "text", auto: "given-name", v: prenom, set: setPrenom, ph: "Votre prénom" },
+            { id: "email", libelle: "Email", type: "email", auto: "email", v: email, set: setEmail, ph: "vous@exemple.com" },
+            { id: "telephone", libelle: "Téléphone", type: "tel", auto: "tel", v: telephone, set: setTelephone, ph: "06 12 34 56 78" },
+          ].map((c) => (
+            <div key={c.id} className="flex flex-col gap-2">
+              <label htmlFor={`audit-${c.id}`} className="text-eyebrow uppercase text-on-ink-soft">
+                {c.libelle}
+              </label>
+              <Input
+                id={`audit-${c.id}`}
+                type={c.type}
+                autoComplete={c.auto}
+                placeholder={c.ph}
+                value={c.v}
+                onChange={(e) => c.set(e.target.value)}
+                aria-invalid={erreur ? true : undefined}
+                aria-describedby={erreur ? "audit-erreur" : undefined}
+                className="border-border-ink bg-white/5 text-on-ink placeholder:text-on-ink-soft"
+              />
+            </div>
+          ))}
         </div>
 
         {erreur && (
@@ -973,324 +884,142 @@ function LeadForm({
 }
 
 /* -------------------------------------------------------------------------- */
-/* Après le rapport — renvoi du PDF, partage, page d'accueil                   */
-/* -------------------------------------------------------------------------- */
-
-function AprèsRapport({
-  url,
-  accueil,
-  onAnalyserAccueil,
-  mobile,
-  desktop,
-}: {
-  url: string
-  /** Adresse de la page d'accueil du même site, si la page analysée n'en est pas une. */
-  accueil: string | null
-  onAnalyserAccueil: () => void
-  mobile: AuditReport | null
-  desktop: AuditReport | null
-}) {
-  const [copie, setCopie] = useState(false)
-  const [pdf, setPdf] = useState<"pret" | "encours">("pret")
-
-  async function retelecharger() {
-    setPdf("encours")
-    try {
-      const { construireRapport, telechargerRapport } = await import("@/lib/audit-pdf")
-      telechargerRapport(construireRapport({ url, prenom: "", mobile, desktop }), url)
-    } finally {
-      setPdf("pret")
-    }
-  }
-
-  async function copierLien() {
-    try {
-      await navigator.clipboard.writeText(window.location.href)
-      setCopie(true)
-      setTimeout(() => setCopie(false), 2500)
-    } catch {
-      /* Presse-papiers refusé : le lien reste dans la barre d'adresse. */
-    }
-  }
-
-  return (
-    <div className="mt-6 flex flex-col gap-5">
-      <Card padding="md">
-        <p className="text-eyebrow uppercase text-text-muted">Garder ce rapport</p>
-        <DrawRule className="mt-4" />
-        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
-          <Button type="button" variant="primary" onClick={retelecharger} disabled={pdf === "encours"}>
-            <Icon icon={Download} />
-            {pdf === "encours" ? "Génération…" : "Télécharger le PDF"}
-          </Button>
-          <Button type="button" variant="outline" onClick={copierLien}>
-            <Icon icon={copie ? Check : Link2} />
-            {copie ? "Lien copié" : "Copier le lien de l'analyse"}
-          </Button>
-        </div>
-        <p className="measure mx-auto mt-5 text-small text-text-secondary">
-          Le lien relance la même analyse à l&apos;ouverture. Pratique pour l&apos;envoyer à votre
-          développeur, votre associé ou votre agence actuelle.
-        </p>
-      </Card>
-
-      {/*
-        Une page interne ne dit pas ce que vaut la vitrine. Quand l'adresse
-        analysée n'est pas l'accueil, on propose de le mesurer aussi.
-      */}
-      {accueil && (
-        <Card tone="ivory" padding="md">
-          <span className="mx-auto flex size-11 items-center justify-center rounded-md border border-border-strong text-text-secondary">
-            <Icon icon={Home} className="size-5" />
-          </span>
-          <h3 className="mt-5 font-heading text-h3 text-text">
-            Et votre page d&apos;accueil ?
-          </h3>
-          <p className="measure mx-auto mt-3 text-small text-text-secondary">
-            Vous avez analysé une page interne. C&apos;est l&apos;accueil qui reçoit le plus de
-            visiteurs et qui décide de la première impression : il mérite sa propre mesure.
-          </p>
-          <div className="mt-6">
-            <Button type="button" variant="outline" onClick={onAnalyserAccueil}>
-              Analyser {accueil.replace(/^https?:\/\//, "")}
-              <Icon icon={ArrowRight} />
-            </Button>
-          </div>
-        </Card>
-      )}
-    </div>
-  )
-}
-
-/* -------------------------------------------------------------------------- */
-/* Envoi des relevés                                                           */
-/* -------------------------------------------------------------------------- */
-
-/** Résumé texte d'un rapport, repris tel quel du moteur. */
-function resumerRapport(r: AuditReport | null, appareil: string): string {
-  if (!r) return `${appareil} — analyse non aboutie.`
-  return (
-    `${appareil} — note ${r.overall}/100 (mesure brute ${r.overallRaw}/100) | ` +
-    `confort visuel ${r.visual.score ?? "?"} ; ` +
-    r.categories.map((c) => `${c.label} ${c.score ?? "?"}`).join(" ; ") +
-    (r.issues.length
-      ? `\n  Points relevés (${r.issues.length}) : ` +
-        r.issues.map((i) => `[${i.severity}] ${i.title}`).join(" ; ")
-      : "\n  Aucun point majeur relevé.")
-  )
-}
-
-/**
- * Transmet un relevé à contact@studiodigitalnova.fr via Web3Forms.
- * Renvoie `true` si l'envoi a abouti. Ne lève jamais : un échec réseau ne
- * doit pas interrompre le parcours du visiteur.
- */
-async function transmettreReleve(champs: Record<string, string>): Promise<boolean> {
-  try {
-    const reponse = await fetch(WEB3FORMS_ENDPOINT, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Accept: "application/json" },
-      body: JSON.stringify({ access_key: WEB3FORMS_ACCESS_KEY, ...champs }),
-    })
-    const resultat = await reponse.json()
-    return Boolean(resultat?.success)
-  } catch {
-    return false
-  }
-}
-
-/* -------------------------------------------------------------------------- */
 /* Page                                                                        */
 /* -------------------------------------------------------------------------- */
-
-type Phase = "idle" | "running" | "done" | "error"
 
 function AuditContent() {
   const reduce = Boolean(useReducedMotion())
   const floatIn = useFloatIn()
 
-  const [input, setInput] = useState("")
-  const [auditedUrl, setAuditedUrl] = useState("")
-  const [phase, setPhase] = useState<Phase>("idle")
-  const [progress, setProgress] = useState(0)
-  const [stepIndex, setStepIndex] = useState(0)
-  const [reports, setReports] = useState<Partial<Record<Strategy, AuditReport>>>({})
-  const [strategy, setStrategy] = useState<Strategy>("mobile")
-  const [focused, setFocused] = useState(false)
-  /*
-    Analyses déjà obtenues pendant la visite. Relancer la même adresse ne
-    rappelle pas l'API : le résultat s'affiche instantanément. Cela évite de
-    consommer le quota pour rien, et supprime l'attente quand quelqu'un
-    revient sur une adresse qu'il vient de tester.
-  */
-  const cache = useRef(new Map<string, Partial<Record<Strategy, AuditReport>>>())
-  /*
-    État RÉEL de chaque analyse. PageSpeed n'émet aucun signal d'avancement
-    pendant qu'il travaille : les deux seuls événements observables sont la
-    fin de la requête mobile et celle de la requête ordinateur. Ce sont donc
-    les seuls états que l'on affiche comme certains — la barre de progression,
-    elle, est annoncée comme une estimation.
-  */
-  const [tracks, setTracks] = useState<Record<Strategy, TrackState>>({
-    mobile: "pending",
-    desktop: "pending",
+  const [saisie, setSaisie] = useState("")
+  const [urlAnalysee, setUrlAnalysee] = useState("")
+  const [phase, setPhase] = useState<Phase>("saisie")
+  const [rapports, setRapports] = useState<Partial<Record<Strategy, RapportPage>>>({})
+  const [appareil, setAppareil] = useState<Strategy>("mobile")
+  const [etats, setEtats] = useState<Record<EtapeId, EtatEtape>>({
+    connexion: "attente", mobile: "attente", ordinateur: "attente", bilan: "attente",
   })
-  const [error, setError] = useState<string | null>(null)
-  /*
-    Le rapport complet n'apparaît qu'une fois les coordonnées laissées. Il se
-    reverrouille à chaque nouvelle adresse : une analyse, une fiche.
-  */
+  const [apercu, setApercu] = useState<string | null>(null)
+  const [erreur, setErreur] = useState<string | null>(null)
   const [deverrouille, setDeverrouille] = useState(false)
-  const abortRef = useRef<AbortController | null>(null)
+  const [focus, setFocus] = useState(false)
 
-  const available = Boolean(PAGESPEED_KEY)
+  const abort = useRef<AbortController | null>(null)
+  const cache = useRef(new Map<string, Partial<Record<Strategy, RapportPage>>>())
+  const disponible = Boolean(PAGESPEED_KEY)
 
-  /*
-    Le cadran suit la progression via une MotionValue ressortée : le tracé
-    avance en continu au lieu de sauter à chaque tick de l'estimation.
-  */
-  const progressMV = useMotionValue(0)
-  const smoothProgress = useSpring(progressMV, { stiffness: 55, damping: 20, mass: 0.6 })
-  useEffect(() => {
-    progressMV.set(progress / 100)
-  }, [progress, progressMV])
+  useEffect(() => () => abort.current?.abort(), [])
 
-  /* Progression estimée : l'API ne renvoie rien pendant qu'elle travaille. */
-  useEffect(() => {
-    if (phase !== "running") return
-    const id = setInterval(() => {
-      // Plancher réel : chaque analyse terminée vaut 45 points acquis.
-      const settled = Object.values(tracks).filter((t) => t === "done" || t === "failed").length
-      const floor = settled * 45
-      setProgress((p) => Math.max(floor, p >= 92 ? p : p + (92 - p) * 0.045))
-      setStepIndex((i) => Math.min(PROGRESS_STEPS.length - 1, i + (Math.random() > 0.7 ? 1 : 0)))
-    }, 400)
-    return () => clearInterval(id)
-  }, [phase, tracks])
+  const majEtape = (id: EtapeId, etat: EtatEtape) =>
+    setEtats((c) => ({ ...c, [id]: etat }))
 
-  useEffect(() => () => abortRef.current?.abort(), [])
+  const lancer = useCallback(
+    async (e?: React.FormEvent, adresseImposee?: string) => {
+      e?.preventDefault()
+      if (phase === "analyse") return
 
-  const start = useCallback(
-    async (event?: React.FormEvent, adresseImposee?: string) => {
-      event?.preventDefault()
-      const url = normalizeUrl(adresseImposee ?? input)
-      if (adresseImposee) setInput(adresseImposee)
+      const url = normalizeUrl(adresseImposee ?? saisie)
+      if (adresseImposee) setSaisie(adresseImposee)
       if (!url) {
-        setError("Cette adresse ne semble pas valide. Exemple : monentreprise.fr")
-        setPhase("error")
+        setErreur("Cette adresse ne semble pas valide. Exemple : monentreprise.fr")
+        setPhase("erreur")
         return
       }
 
-      abortRef.current?.abort()
-      const controller = new AbortController()
-      abortRef.current = controller
+      abort.current?.abort()
+      const controleur = new AbortController()
+      abort.current = controleur
 
-      setAuditedUrl(url)
-      /* Nouvelle adresse : le rapport se reverrouille. */
+      setUrlAnalysee(url)
       setDeverrouille(false)
+      setApercu(null)
+      setErreur(null)
 
-      /*
-        L'adresse est reportée dans l'URL de la page. Le visiteur peut la
-        copier et l'envoyer à son développeur ou à son associé : l'analyse
-        se relance à l'ouverture, sur la même adresse.
-      */
       if (typeof window !== "undefined") {
         const partage = new URL(window.location.href)
         partage.searchParams.set("url", url)
         window.history.replaceState(null, "", partage.toString())
       }
 
-      const dejaVu = cache.current.get(url)
-      if (dejaVu) {
-        setReports(dejaVu)
-        setStrategy(dejaVu.mobile ? "mobile" : "desktop")
-        setTracks({
-          mobile: dejaVu.mobile ? "done" : "failed",
-          desktop: dejaVu.desktop ? "done" : "failed",
-        })
-        setProgress(100)
-        setError(null)
-        setPhase("done")
+      const connu = cache.current.get(url)
+      if (connu) {
+        setRapports(connu)
+        setAppareil(connu.mobile ? "mobile" : "desktop")
+        setEtats({ connexion: "termine", mobile: connu.mobile ? "termine" : "indisponible",
+                   ordinateur: connu.desktop ? "termine" : "indisponible", bilan: "termine" })
+        setPhase("resultat")
         return
       }
 
-      setReports({})
-      setProgress(4)
-      setStepIndex(0)
-      setError(null)
-      setTracks({ mobile: "running", desktop: "running" })
-      setPhase("running")
+      setRapports({})
+      setEtats({ connexion: "cours", mobile: "attente", ordinateur: "attente", bilan: "attente" })
+      setPhase("analyse")
 
-      /*
-        Les deux appareils en parallèle. Chaque requête bascule sa propre
-        piste dès qu'elle aboutit — c'est la seule progression réellement
-        mesurable, et elle n'est pas simulée.
-      */
-      const track = (device: Strategy) =>
-        runAudit(url, device, controller.signal).then(
-          (report) => {
-            setTracks((current) => ({ ...current, [device]: "done" }))
-            return report
+      /* Chaque piste bascule sur un fait réel : sa requête a abouti, ou non. */
+      const piste = (appareilCible: Strategy, etape: EtapeId) => {
+        majEtape(etape, "cours")
+        return runAudit(url, appareilCible, controleur.signal).then(
+          (r) => {
+            majEtape("connexion", "termine")
+            majEtape(etape, "termine")
+            if (r.capture) setApercu((a) => a ?? r.capture!.data)
+            return r
           },
           (cause) => {
-            setTracks((current) => ({ ...current, [device]: "failed" }))
+            majEtape(etape, "indisponible")
             throw cause
           }
         )
+      }
 
-      const [mobile, desktop] = await Promise.allSettled([track("mobile"), track("desktop")])
+      const [m, o] = await Promise.allSettled([piste("mobile", "mobile"), piste("desktop", "ordinateur")])
+      if (controleur.signal.aborted) return
 
-      if (controller.signal.aborted) return
+      const suivant: Partial<Record<Strategy, RapportPage>> = {}
+      if (m.status === "fulfilled") suivant.mobile = m.value
+      if (o.status === "fulfilled") suivant.desktop = o.value
 
-      const next: Partial<Record<Strategy, AuditReport>> = {}
-      if (mobile.status === "fulfilled") next.mobile = mobile.value
-      if (desktop.status === "fulfilled") next.desktop = desktop.value
-
-      if (!next.mobile && !next.desktop) {
-        const reason = mobile.status === "rejected" ? mobile.reason : null
-        setError(
-          reason instanceof AuditError
-            ? reason.message
-            : "L'analyse n'a pas abouti. Vérifiez l'adresse, ou demandez-moi l'audit détaillé."
+      if (!suivant.mobile && !suivant.desktop) {
+        majEtape("connexion", "indisponible")
+        majEtape("bilan", "indisponible")
+        const raison = m.status === "rejected" ? m.reason : null
+        setErreur(
+          raison instanceof AuditError
+            ? raison.message
+            : "L'analyse n'a pas abouti pour cette adresse."
         )
-        setPhase("error")
+        setPhase("erreur")
         return
       }
 
-      cache.current.set(url, next)
-      setReports(next)
-      setStrategy(next.mobile ? "mobile" : "desktop")
-      setProgress(100)
-      setPhase("done")
+      majEtape("bilan", "termine")
+      cache.current.set(url, suivant)
+      setRapports(suivant)
+      setAppareil(suivant.mobile ? "mobile" : "desktop")
+      setPhase("resultat")
 
-      /*
-        Tout audit abouti est signalé, même si le visiteur ne laisse jamais ses
-        coordonnées : savoir quelles entreprises testent leur site a de la
-        valeur en soi. L'envoi part en arrière-plan et n'affecte rien à
-        l'écran. Le cache empêche le doublon si la même adresse est relancée.
-      */
-      void transmettreReleve({
+      void transmettre({
         subject: `Audit lancé — ${url}`,
         from_name: "Audit automatique",
         name: "Visiteur anonyme",
-        email: siteConfig.author.email,
+        email: "contact@studiodigitalnova.fr",
         site: url,
         message:
           `Un visiteur vient d'analyser ${url}. Aucune coordonnée laissée à ce stade.\n\n` +
-          `${resumerRapport(next.mobile ?? null, "MOBILE")}\n\n` +
-          `${resumerRapport(next.desktop ?? null, "ORDINATEUR")}`,
+          `${resumerRapport(suivant.mobile ?? null, "MOBILE")}\n\n` +
+          `${resumerRapport(suivant.desktop ?? null, "ORDINATEUR")}`,
       })
     },
-    [input]
+    [saisie, phase]
   )
 
-  function reset() {
-    abortRef.current?.abort()
-    setTracks({ mobile: "pending", desktop: "pending" })
-    setPhase("idle")
-    setReports({})
-    setError(null)
-    setProgress(0)
+  function reinitialiser() {
+    abort.current?.abort()
+    setPhase("saisie")
+    setRapports({})
+    setEtats({ connexion: "attente", mobile: "attente", ordinateur: "attente", bilan: "attente" })
+    setApercu(null)
+    setErreur(null)
     setDeverrouille(false)
     if (typeof window !== "undefined") {
       const propre = new URL(window.location.href)
@@ -1299,405 +1028,158 @@ function AuditContent() {
     }
   }
 
-  /*
-    Lien partagé : `?url=` relance l'analyse à l'ouverture. Une seule fois,
-    et uniquement si la clé est disponible.
-  */
+  /* Lien partagé : `?url=` relance la même analyse à l'ouverture. */
   const dejaLance = useRef(false)
   useEffect(() => {
-    if (dejaLance.current || !available) return
+    if (dejaLance.current || !disponible) return
     const partagee = new URLSearchParams(window.location.search).get("url")
     if (!partagee) return
     dejaLance.current = true
-    /*
-      Différé d'un tick : lancer l'analyse dans le corps de l'effet
-      déclencherait une cascade de rendus au montage. Ici, le premier rendu
-      est peint avant que l'analyse ne démarre.
-    */
-    const id = setTimeout(() => void start(undefined, partagee), 0)
+    const id = setTimeout(() => void lancer(undefined, partagee), 0)
     return () => clearTimeout(id)
-  }, [available, start])
+  }, [disponible, lancer])
 
-  /* Proposition d'analyser aussi la page d'accueil, quand ce n'en est pas une. */
-  const accueilDuSite = (() => {
-    try {
-      const u = new URL(auditedUrl)
-      if (u.pathname === "/" && !u.search) return null
-      return `${u.origin}/`
-    } catch {
-      return null
-    }
-  })()
-
-  const analyserAccueil = useCallback(() => {
-    if (accueilDuSite) void start(undefined, accueilDuSite)
-  }, [accueilDuSite, start])
-
-  const current = reports[strategy] ?? reports.mobile ?? reports.desktop ?? null
-  const hasBoth = Boolean(reports.mobile && reports.desktop)
+  const rapportCourant = rapports[appareil] ?? rapports.mobile ?? rapports.desktop ?? null
 
   return (
     <>
+      {/* ---- A. Premier écran ------------------------------------------- */}
       <PageHero
         eyebrow="Audit gratuit"
         icon={Gauge}
         title={
           <>
-            Votre site vous fait-il perdre des{" "}
+            Votre site donne-t-il envie de vous{" "}
             <span className="whitespace-nowrap text-[1.15em] italic leading-[0] text-accent">
-              clients
+              appeler
             </span>{" "}
             ?
           </>
         }
         lead={
           <>
-            Entrez l&apos;adresse de votre site. En moins d&apos;une minute, vous saurez ce que
-            Google mesure vraiment : la vitesse, le référencement, l&apos;accessibilité et la
-            sécurité.{" "}
+            Entrez votre adresse. J&apos;analyse ce qu&apos;un visiteur voit et ressent :
+            lisibilité, stabilité de la page, netteté des images, facilité à vous joindre.{" "}
             <strong className="font-semibold text-text">Gratuit, sans inscription.</strong>
           </>
         }
+        split
         aside={
-          <div className="mx-auto flex max-w-3xl flex-col items-center">
-          <motion.form
-            onSubmit={start}
-            className="mt-10 w-full max-w-2xl"
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, amount: 0.4 }}
-            variants={floatIn(0.32, { y: 30 })}
-          >
+          <div className="hidden lg:block">
+            <p className="text-eyebrow uppercase text-text-muted">Exemple de rapport</p>
+            <Card padding="sm" className="mt-3 text-left">
+              <div className="relative overflow-hidden rounded-md border border-border bg-background">
+                <div className="flex flex-col gap-2 p-4">
+                  <div className="h-2.5 w-2/3 rounded-full bg-text/70" />
+                  <div className="h-2 w-1/2 rounded-full bg-border" />
+                  <div className="mt-2 h-14 rounded-md" style={{ backgroundImage: "var(--gradient-ink)" }} />
+                </div>
+                <span className="absolute left-[10%] top-[16%] flex size-4 items-center justify-center rounded-[2px] bg-accent font-heading text-[10px] text-accent-foreground">
+                  1
+                </span>
+                <span
+                  aria-hidden
+                  className="absolute left-[10%] top-[16%] h-6 w-[58%] rounded-[3px] border-2 border-accent"
+                />
+              </div>
+              <p className="mt-4 text-eyebrow uppercase text-accent-strong">Constat n° 1</p>
+              <p className="mt-2 text-small text-text">Des textes manquent de contraste</p>
+              <p className="mt-1 text-small text-text-muted">
+                Difficile à lire au soleil. Assombrir le texte jusqu&apos;à 4,5:1.
+              </p>
+              <p className="mt-4 border-t border-border pt-3 text-[11px] uppercase tracking-[0.14em] text-text-muted">
+                Exemple illustratif — pas un vrai site
+              </p>
+            </Card>
+          </div>
+        }
+      >
+        <div className="w-full">
+          <form onSubmit={lancer} className="w-full">
             <div
               className={cn(
-                "relative rounded-xl border bg-surface p-2 shadow-sm",
-                "transition-[border-color,box-shadow] duration-500 ease-nova",
-                // Halo au focus : indicateur clavier explicite, pas seulement
-                // un changement de teinte de bordure.
-                focused ? "border-accent/60 shadow-md ring-3 ring-ring/25" : "border-border"
+                "relative rounded-xl border bg-surface p-2 shadow-sm transition-[border-color,box-shadow] duration-500 ease-nova",
+                focus ? "border-accent shadow-[0_0_0_4px_rgba(217,108,79,0.10)]" : "border-border-strong"
               )}
             >
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <div className="flex flex-col gap-2 sm:flex-row">
                 <div className="relative flex-1">
                   <Icon
                     icon={Search}
-                    className={cn(
-                      "pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 transition-colors duration-300 ease-nova",
-                      focused ? "text-accent" : "text-text-muted"
-                    )}
+                    className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-text-muted"
                   />
                   <Input
-                    type="text"
+                    type="url"
                     inputMode="url"
-                    aria-label="Adresse de votre site"
                     placeholder="monentreprise.fr"
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    onFocus={() => setFocused(true)}
-                    onBlur={() => setFocused(false)}
-                    disabled={phase === "running"}
-                    aria-invalid={phase === "error" ? true : undefined}
-                    aria-describedby={phase === "error" ? "audit-url-erreur" : undefined}
+                    aria-label="Adresse de votre site"
+                    value={saisie}
+                    onChange={(e) => setSaisie(e.target.value)}
+                    onFocus={() => setFocus(true)}
+                    onBlur={() => setFocus(false)}
+                    disabled={phase === "analyse"}
                     className="h-13 border-transparent bg-transparent pl-11 text-lead shadow-none focus-visible:border-transparent focus-visible:ring-0"
                   />
                 </div>
                 <Button
                   type="submit"
                   variant="primary"
-                  disabled={phase === "running" || !available}
+                  disabled={phase === "analyse" || !disponible}
                   className="h-13 shrink-0"
                 >
-                  {phase === "running" ? "Analyse en cours…" : "Analyser mon site"}
-                  {phase !== "running" && <Icon icon={ArrowRight} />}
+                  {phase === "analyse" ? "Analyse en cours…" : "Analyser mon site"}
+                  {phase !== "analyse" && <Icon icon={ArrowRight} />}
                 </Button>
               </div>
-
-              {/* Filet qui se trace au focus — le seul mouvement de l'écran. */}
-              <svg
-                aria-hidden
-                className="pointer-events-none absolute inset-x-3 -bottom-px h-px overflow-visible"
-                viewBox="0 0 100 1"
-                preserveAspectRatio="none"
-              >
-                <motion.line
-                  x1="0"
-                  y1="0.5"
-                  x2="100"
-                  y2="0.5"
-                  stroke="var(--color-accent)"
-                  strokeWidth={1}
-                  vectorEffect="non-scaling-stroke"
-                  initial={false}
-                  animate={{ pathLength: focused ? 1 : 0 }}
-                  transition={reduce ? { duration: 0 } : { duration: 0.6, ease: EASE_NOVA }}
-                />
-              </svg>
             </div>
-
-            {/*
-              Loyauté : l'adresse saisie m'est transmise, même si le visiteur
-              ne laisse pas ses coordonnées. Autant l'écrire sous le champ
-              plutôt que de le cacher dans la politique de confidentialité.
-            */}
             <p className="mt-4 text-small text-text-muted">
               L&apos;adresse analysée m&apos;est transmise pour que je puisse suivre les demandes.
-              Aucune autre donnée n&apos;est collectée tant que vous ne remplissez pas le
-              formulaire.
+              Aucune autre donnée n&apos;est collectée tant que vous ne remplissez pas le formulaire.
             </p>
-          </motion.form>
+            {!disponible && (
+              <p className="mt-3 text-small text-accent-strong">
+                L&apos;analyse automatique est momentanément indisponible. Écrivez-moi et je la
+                lance de mon côté.
+              </p>
+            )}
+          </form>
+        </div>
+      </PageHero>
 
-          {!available && (
-            <p className="mt-4 max-w-xl text-small text-text-muted">
-              L&apos;analyse automatique est momentanément indisponible. Laissez-moi votre adresse
-              plus bas : je lance l&apos;audit de mon côté et vous l&apos;envoie sous 24 h.
-            </p>
-          )}
-          </div>
-        }
-      />
-
-      {/*
-        Ce que l'audit examine — annoncé avant de lancer, pour que le visiteur
-        sache ce qu'il va obtenir. Les cinq dimensions sont celles du moteur.
-        Le bloc s'efface dès qu'une analyse démarre : il a fait son travail.
-      */}
-      <AnimatePresence>
-        {phase === "idle" && (
-          <motion.div
-            key="dimensions"
-            initial={reduce ? false : { opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={reduce ? undefined : { opacity: 0, y: -12 }}
-            transition={{ duration: 0.4, ease: EASE_NOVA }}
-          >
-            <Section className="bg-surface" spacing="default">
-              <div className="mx-auto max-w-5xl">
-                <p className="text-center text-eyebrow uppercase text-text-muted">
-                  Ce que j&apos;examine
-                </p>
-                <Heading variant="h2" className="mt-4 text-center">
-                  Cinq dimensions, une seule qui décide
-                </Heading>
-
-                <div className="mt-[var(--section-gap)] grid grid-cols-1 gap-5 sm:grid-cols-2">
-                  {/* La dimension dominante, sur toute la largeur. */}
-                  <motion.div
-                    className="sm:col-span-2"
-                    initial="hidden"
-                    whileInView="visible"
-                    viewport={{ once: true, amount: 0.25 }}
-                    variants={floatIn(0, { y: 40 }, { damping: 26, mass: 2 })}
-                  >
-                    <Card
-                      tone="ink"
-                      padding="md"
-                      className="grain-ink group relative overflow-hidden lg:p-9"
-                    >
-                      <div className="relative flex items-center justify-center gap-3">
-                        <span className="flex size-11 items-center justify-center rounded-md border border-border-ink text-accent transition-transform duration-500 ease-nova group-hover:-translate-y-0.5">
-                          <Icon icon={DIMENSION_PHARE.icon} className="size-5" />
-                        </span>
-                      </div>
-                      <p className="relative mt-5 text-eyebrow uppercase text-accent">
-                        {DIMENSION_PHARE.poids}
-                      </p>
-                      <h2 className="relative mt-3 font-heading text-h2 text-on-ink">
-                        {DIMENSION_PHARE.label}
-                      </h2>
-                      <p className="measure relative mx-auto mt-4 text-body text-on-ink-soft">
-                        {DIMENSION_PHARE.meaning}
-                      </p>
-                    </Card>
-                  </motion.div>
-
-                  {DIMENSIONS.map((dimension, index) => (
-                    <motion.div
-                      key={dimension.id}
-                      initial="hidden"
-                      whileInView="visible"
-                      viewport={{ once: true, amount: 0.3 }}
-                      variants={floatIn(0.08 + index * 0.07, { y: 40 }, { damping: 26, mass: 2 })}
-                    >
-                      <Card
-                        tone="ivory"
-                        padding="md"
-                        className="group flex h-full flex-col transition-colors duration-500 ease-nova hover:border-border-strong"
-                      >
-                        <div className="flex items-center gap-4">
-                          <span className="flex-1 text-left text-eyebrow uppercase text-text-muted">
-                            {dimension.poids}
-                          </span>
-                          <span
-                            className={cn(
-                              "flex size-9 shrink-0 items-center justify-center rounded-md group-hover:-translate-y-0.5",
-                              dimension.chip
-                            )}
-                          >
-                            <Icon icon={dimension.icon} className="size-4" />
-                          </span>
-                        </div>
-                        <h2 className="mt-5 font-heading text-h3 text-text">{dimension.label}</h2>
-                        <p className="mt-2 text-small text-text-secondary">{dimension.meaning}</p>
-                      </Card>
-                    </motion.div>
-                  ))}
-                </div>
-              </div>
-            </Section>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Déroulé de l'analyse, résultat ou erreur */}
+      {/* ---- Zone d'analyse, de résultat ou d'erreur --------------------- */}
       <Section className="bg-surface" spacing="default">
         <div className="mx-auto max-w-3xl">
-          {/*
-            Pas de `mode="wait"` ici : il attendrait la fin de l'animation de
-            sortie avant de monter l'écran suivant. Or l'analyse dure une
-            trentaine de secondes — le visiteur change souvent d'onglet, et un
-            onglet en arrière-plan suspend `requestAnimationFrame`. L'animation
-            de sortie ne se terminerait jamais et l'écran resterait bloqué sur
-            « analyse en cours ». Les écrans se croisent donc directement.
-          */}
           <AnimatePresence>
-            {phase === "running" && (
+            {phase === "analyse" && (
               <motion.div
-                key="running"
+                key="analyse"
                 initial={reduce ? false : { opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={reduce ? undefined : { opacity: 0 }}
                 transition={{ duration: 0.3, ease: EASE_NOVA }}
               >
-                <Card
-                  tone="ink"
-                  padding="md"
-                  role="status"
-                  aria-live="polite"
-                  className="grain-ink relative overflow-hidden lg:p-9"
-                >
-                  <div className="relative flex items-center justify-center gap-3">
-                    <Badge variant="ink">Analyse en cours</Badge>
-                    <NovaMark aria-hidden className="size-2.5 text-accent" />
-                  </div>
-
-                  <div className="relative mt-8 flex flex-col gap-9 sm:flex-row sm:items-center sm:gap-10">
-                    {/* Cadran de progression — estimation, annoncée comme telle. */}
-                    <div className="relative flex size-32 shrink-0 items-center justify-center">
-                      <svg viewBox="0 0 36 36" className="size-full -rotate-90">
-                        <circle
-                          cx="18"
-                          cy="18"
-                          r="15.5"
-                          fill="none"
-                          stroke="var(--color-border-ink)"
-                          strokeWidth={1.5}
-                        />
-                        <motion.circle
-                          cx="18"
-                          cy="18"
-                          r="15.5"
-                          fill="none"
-                          stroke="var(--color-accent)"
-                          strokeWidth={1.5}
-                          strokeLinecap="round"
-                          style={{ pathLength: smoothProgress }}
-                        />
-                      </svg>
-                      <span className="absolute font-heading text-h2 tabular-nums text-on-ink">
-                        {Math.round(progress)}
-                        <span className="text-h3 text-on-ink-soft">%</span>
-                      </span>
-                    </div>
-
-                    <div className="min-w-0 flex-1">
-                      <p className="break-words text-eyebrow uppercase text-on-ink-soft">Analyse de {auditedUrl}</p>
-
-                      <AnimatePresence mode="popLayout">
-                        <motion.p
-                          key={stepIndex}
-                          className="mt-3 font-heading text-h3 text-on-ink"
-                          initial={reduce ? false : { opacity: 0, y: 6 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={reduce ? undefined : { opacity: 0, y: -6 }}
-                          transition={{ duration: 0.25, ease: EASE_NOVA }}
-                        >
-                          {PROGRESS_STEPS[stepIndex]}
-                        </motion.p>
-                      </AnimatePresence>
-
-                      {/*
-                        Les deux seuls états certains : chaque appareil bascule
-                        quand sa requête aboutit réellement.
-                      */}
-                      <ul className="card-list mt-7 flex flex-col gap-3">
-                        {TRACKS.map((item) => {
-                          const state = tracks[item.id]
-                          return (
-                            <li key={item.id} className="flex items-center gap-3">
-                              <span
-                                className={cn(
-                                  "flex size-6 shrink-0 items-center justify-center rounded-full border transition-colors duration-500 ease-nova",
-                                  state === "done" && "border-accent bg-accent text-ink",
-                                  state === "failed" && "border-error text-error",
-                                  state === "running" && "border-accent/50 text-accent",
-                                  state === "pending" && "border-border-ink text-on-ink-soft"
-                                )}
-                              >
-                                {state === "done" ? (
-                                  <Icon icon={Check} className="size-3" />
-                                ) : state === "failed" ? (
-                                  <Icon icon={CircleAlert} className="size-3" />
-                                ) : state === "running" && !reduce ? (
-                                  <motion.span
-                                    className="size-1.5 rounded-full bg-accent"
-                                    animate={{ opacity: [1, 0.25, 1] }}
-                                    transition={{ duration: 1.4, repeat: Infinity, ease: EASE_NOVA }}
-                                  />
-                                ) : (
-                                  <span className="size-1.5 rounded-full bg-current opacity-40" />
-                                )}
-                              </span>
-                              <span
-                                className={cn(
-                                  "flex items-center gap-2 text-small transition-colors duration-500 ease-nova",
-                                  state === "pending" ? "text-on-ink-soft" : "text-on-ink"
-                                )}
-                              >
-                                <Icon icon={item.icon} className="size-3.5" />
-                                {item.label}
-                              </span>
-                            </li>
-                          )
-                        })}
-                      </ul>
-                    </div>
-                  </div>
-
-                  <p className="relative mt-8 border-t border-border-ink pt-5 text-small text-on-ink-soft">
-                    Google charge réellement votre page sur un appareil de test. Comptez une
-                    trentaine de secondes — c&apos;est le prix d&apos;une mesure honnête.
-                  </p>
-                </Card>
+                <EcranProgression
+                  url={urlAnalysee}
+                  etats={etats}
+                  apercu={apercu}
+                  reduce={reduce}
+                  onAnnuler={reinitialiser}
+                />
               </motion.div>
             )}
 
-            {phase === "error" && (
+            {phase === "erreur" && (
               <motion.div
-                key="error"
+                key="erreur"
                 initial={reduce ? false : { opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3, ease: EASE_NOVA }}
               >
-                <Card padding="md" className="flex flex-col items-start gap-5 text-left sm:flex-row">
-                  <span className={cn("flex size-10 shrink-0 items-center justify-center rounded-md", CHIP.terracotta)}>
-                    <Icon icon={CircleAlert} className="size-4" />
-                  </span>
-                  <div className="flex-1">
-                    <h2 className="font-heading text-h3 text-text">L&apos;analyse n&apos;a pas abouti</h2>
-                    <p id="audit-url-erreur" role="alert" className="mt-2 text-small text-text-secondary">
-                      {error}
-                    </p>
-                    <Button type="button" variant="outline" onClick={reset} className="mt-5 h-11">
+                <Card padding="md" accent="left">
+                  <p className="text-eyebrow uppercase text-accent-strong">L&apos;analyse n&apos;a pas abouti</p>
+                  <p className="measure mx-auto mt-4 text-body text-text-secondary">{erreur}</p>
+                  <div className="mt-7">
+                    <Button type="button" variant="outline" onClick={reinitialiser}>
                       <Icon icon={RotateCcw} />
                       Réessayer
                     </Button>
@@ -1706,45 +1188,39 @@ function AuditContent() {
               </motion.div>
             )}
 
-            {phase === "done" && current && (
+            {phase === "resultat" && rapportCourant && (
               <motion.div
-                key="done"
+                key="resultat"
                 initial={reduce ? false : { opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, ease: EASE_NOVA }}
               >
-                <ReportView
-                  report={current}
-                  other={hasBoth ? (reports[strategy === "mobile" ? "desktop" : "mobile"] ?? null) : null}
-                  strategy={strategy}
-                  onStrategy={setStrategy}
-                  reduce={reduce}
+                <Resultats
+                  rapports={rapports}
+                  appareil={appareil}
+                  onAppareil={setAppareil}
                   deverrouille={deverrouille}
-                  gate={
-                    <LeadForm
-                      url={auditedUrl}
-                      mobile={reports.mobile ?? null}
-                      desktop={reports.desktop ?? null}
+                  reduce={reduce}
+                  barriere={
+                    <Barriere
+                      url={urlAnalysee}
+                      rapports={rapports}
                       onDeverrouille={() => setDeverrouille(true)}
                     />
                   }
                 />
 
-                {deverrouille && (
-                  <AprèsRapport
-                    url={auditedUrl}
-                    accueil={accueilDuSite}
-                    onAnalyserAccueil={analyserAccueil}
-                    mobile={reports.mobile ?? null}
-                    desktop={reports.desktop ?? null}
-                  />
-                )}
-
-                <div className="mt-6 flex justify-center">
-                  <Button type="button" variant="outline" onClick={reset} className="h-11">
+                <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+                  <Button type="button" variant="outline" onClick={reinitialiser}>
                     <Icon icon={RotateCcw} />
                     Analyser une autre adresse
                   </Button>
+                  <Link href="/#contact" className="group">
+                    <Button variant="primary">
+                      <Icon icon={Mail} />
+                      Parler de ces corrections
+                    </Button>
+                  </Link>
                 </div>
               </motion.div>
             )}
@@ -1752,128 +1228,94 @@ function AuditContent() {
         </div>
       </Section>
 
-      {/* Comment ça marche */}
+      {/* ---- B. Trois dimensions ---------------------------------------- */}
       <Section spacing="default">
+        <div className="mx-auto max-w-4xl">
+          <p className="text-center text-eyebrow uppercase text-text-muted">Ce que j&apos;examine</p>
+          <Heading variant="h2" className="mt-4 text-center">
+            Trois questions, dans cet ordre
+          </Heading>
+
+          <div className="mt-[var(--section-gap)] grid grid-cols-1 gap-5 md:grid-cols-3">
+            {[
+              {
+                icone: Eye,
+                chip: CHIP.terracotta,
+                titre: "Apparence et lisibilité",
+                poids: "50 % de la note",
+                texte:
+                  "Les textes se lisent-ils ? La page reste-t-elle stable pendant qu'elle charge ? Les images sont-elles nettes ? Les boutons se visent-ils au doigt ?",
+              },
+              {
+                icone: Send,
+                chip: CHIP.mineral,
+                titre: "Parcours et contact",
+                poids: "20 %",
+                texte:
+                  "Les liens disent-ils où ils mènent ? Les boutons ont-ils un nom ? Google peut-il suivre la navigation jusqu'à votre page de contact ?",
+              },
+              {
+                icone: ShieldCheck,
+                chip: CHIP.ink,
+                titre: "Qualité technique",
+                poids: "30 % au total",
+                texte:
+                  "Vitesse d'affichage, bases du référencement, HTTPS et erreurs en arrière-plan. Le socle sur lequel tout le reste repose.",
+              },
+            ].map((d, i) => (
+              <motion.div
+                key={d.titre}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true, amount: 0.3 }}
+                variants={floatIn(i * 0.07, { y: 40 }, { damping: 26, mass: 2 })}
+              >
+                <Card tone="ivory" padding="md" className="flex h-full flex-col">
+                  <span className={cn("mx-auto flex size-11 items-center justify-center rounded-md", d.chip)}>
+                    <Icon icon={d.icone} className="size-5" />
+                  </span>
+                  <p className="mt-5 text-eyebrow uppercase text-accent-strong">{d.poids}</p>
+                  <h3 className="mt-2 font-heading text-h3 text-text">{d.titre}</h3>
+                  <p className="mt-3 text-small text-text-secondary">{d.texte}</p>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
+
+          <p className="measure mx-auto mt-10 text-center text-small text-text-muted">
+            Une dimension qui ne peut pas être mesurée sur votre page ne compte pas zéro : elle
+            sort du calcul, et le bilan est annoncé comme partiel.
+          </p>
+        </div>
+      </Section>
+
+      {/* ---- D. Fonctionnement ------------------------------------------ */}
+      <Section className="bg-surface" spacing="default">
         <div className="mx-auto max-w-4xl">
           <p className="text-center text-eyebrow uppercase text-text-muted">Comment ça marche</p>
           <Heading variant="h2" className="mt-4 text-center">
-            Trois minutes, trois étapes
+            Trois étapes, une minute
           </Heading>
           <div className="mt-[var(--section-gap)] grid grid-cols-1 gap-5 md:grid-cols-3">
-            {ETAPES.map((etape, index) => (
+            {[
+              { icone: Link2, titre: "Vous collez votre adresse", texte: "Pas de compte, rien à installer." },
+              { icone: Gauge, titre: "J'analyse les deux versions", texte: "Mobile et ordinateur, via l'API Google PageSpeed Insights." },
+              { icone: Download, titre: "Vous lisez le bilan", texte: "La note et la priorité principale tout de suite. Le rapport complet et son PDF avec vos coordonnées." },
+            ].map((e, i) => (
               <motion.div
-                key={etape.titre}
+                key={e.titre}
                 initial="hidden"
                 whileInView="visible"
                 viewport={{ once: true, amount: 0.3 }}
-                variants={floatIn(index * 0.08, { y: 40 }, { damping: 26, mass: 2 })}
-              >
-                <Card tone="ivory" padding="md" className="group flex h-full flex-col">
-                  <CardIndex value={String(index + 1).padStart(2, "0")} />
-                  <span
-                    className={cn(
-                      "mx-auto mt-6 flex size-11 items-center justify-center rounded-md",
-                      etape.chip
-                    )}
-                  >
-                    <Icon icon={etape.icon} className="size-5" />
-                  </span>
-                  <h3 className="mt-5 font-heading text-h3 text-text">{etape.titre}</h3>
-                  <p className="mt-3 text-small text-text-secondary">{etape.texte}</p>
-                </Card>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </Section>
-
-      {/* Le barème, annoncé avant même l'analyse */}
-      <Section className="bg-surface" spacing="default">
-        <div className="mx-auto max-w-3xl">
-          <p className="text-center text-eyebrow uppercase text-text-muted">Ma notation</p>
-          <Heading variant="h2" className="mt-4 text-center">
-            Pourquoi ma note est plus basse que celle de Google
-          </Heading>
-          <p className="measure mx-auto mt-6 text-center text-lead text-text-secondary">
-            Parce que Google note la conformité technique, et moi{" "}
-            <strong className="font-semibold text-text">un site livrable</strong>. La mesure est la
-            même — c&apos;est l&apos;exigence qui change. Le barème est public, le voici.
-          </p>
-
-          <div className="mt-[var(--section-gap)] grid grid-cols-1 gap-5 md:grid-cols-2">
-            <Card padding="md">
-              <p className="text-eyebrow uppercase text-text-muted">La pondération</p>
-              <DrawRule className="mt-4" />
-              <ul className="card-list mt-6 flex flex-col gap-3">
-                {PONDERATION.map((part) => (
-                  <li key={part.label} className="flex items-baseline gap-3 text-small text-text-secondary">
-                    <span className="w-10 shrink-0 text-right font-heading tabular-nums text-accent-strong">
-                      {part.poids} %
-                    </span>
-                    {part.label}
-                  </li>
-                ))}
-              </ul>
-              <p className="measure mx-auto mt-6 text-small text-text-muted">
-                Le confort visuel domine parce que c&apos;est ce qui décide un visiteur avant
-                qu&apos;il ait lu une ligne.
-              </p>
-            </Card>
-
-            <Card padding="md">
-              <p className="text-eyebrow uppercase text-text-muted">Le barème</p>
-              <DrawRule className="mt-4" />
-              <ul className="card-list mt-6 flex flex-col gap-2">
-                {[...BAREME].reverse().map((palier) => (
-                  <li
-                    key={palier.brut}
-                    className="flex items-baseline gap-4 text-small tabular-nums text-text-secondary"
-                  >
-                    <span className="w-24 shrink-0">Mesure {palier.brut}</span>
-                    <Icon icon={ArrowRight} className="size-3 shrink-0 text-accent" />
-                    <span className="font-heading text-text">note {palier.note}</span>
-                  </li>
-                ))}
-              </ul>
-              <p className="measure mx-auto mt-6 text-small text-text-muted">
-                Croissant : un meilleur site obtient toujours une meilleure note. Vous pouvez
-                recouper la mesure brute sur pagespeed.web.dev.
-              </p>
-            </Card>
-          </div>
-        </div>
-      </Section>
-
-      {/* Ce que je retrouve le plus souvent */}
-      <Section spacing="default">
-        <div className="mx-auto max-w-4xl">
-          <p className="text-center text-eyebrow uppercase text-text-muted">Sur le terrain</p>
-          <Heading variant="h2" className="mt-4 text-center">
-            Ce que je retrouve le plus souvent
-          </Heading>
-          <p className="measure mx-auto mt-6 text-center text-lead text-text-secondary">
-            Quatre défauts reviennent presque systématiquement sur les sites de TPE. Chacun est
-            détecté par l&apos;analyse ci-dessus.
-          </p>
-          <div className="mt-[var(--section-gap)] grid grid-cols-1 gap-5 sm:grid-cols-2">
-            {DEFAUTS_COURANTS.map((defaut, index) => (
-              <motion.div
-                key={defaut.titre}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true, amount: 0.3 }}
-                variants={floatIn(index * 0.06, { y: 40 }, { damping: 26, mass: 2 })}
+                variants={floatIn(i * 0.07, { y: 40 }, { damping: 26, mass: 2 })}
               >
                 <Card padding="md" className="flex h-full flex-col">
-                  <CardIndex value={String(index + 1).padStart(2, "0")} />
-                  <h3 className="mt-5 font-heading text-h3 text-text">{defaut.titre}</h3>
-                  <p className="mt-3 text-small text-text-secondary">{defaut.effet}</p>
-                  <DrawRule className="mt-6" />
-                  <p className="mt-5 text-small text-text">
-                    <span className="text-eyebrow uppercase text-accent-strong">Ce que je fais</span>
-                    <br />
-                    <span className="text-text-secondary">{defaut.remede}</span>
-                  </p>
+                  <CardIndex value={String(i + 1).padStart(2, "0")} />
+                  <span className="mx-auto mt-6 flex size-11 items-center justify-center rounded-md border border-border-strong text-text-secondary">
+                    <Icon icon={e.icone} className="size-5" />
+                  </span>
+                  <h3 className="mt-5 font-heading text-h3 text-text">{e.titre}</h3>
+                  <p className="mt-3 text-small text-text-secondary">{e.texte}</p>
                 </Card>
               </motion.div>
             ))}
@@ -1881,95 +1323,64 @@ function AuditContent() {
         </div>
       </Section>
 
-      {/* Ce que l'outil ne fait pas */}
-      <Section className="bg-surface" spacing="default">
-        <div className="mx-auto max-w-4xl">
-          <p className="text-center text-eyebrow uppercase text-text-muted">Les limites</p>
-          <Heading variant="h2" className="mt-4 text-center">
-            Ce que l&apos;outil mesure, et ce qu&apos;il ne verra jamais
-          </Heading>
-          <div className="mt-[var(--section-gap)] grid grid-cols-1 gap-5 md:grid-cols-2">
-            <Card tone="ivory" padding="md" className="flex h-full flex-col">
-              <span className={cn("mx-auto flex size-11 items-center justify-center rounded-md", CHIP.sage)}>
-                <Icon icon={Check} className="size-5" />
-              </span>
-              <h3 className="mt-5 font-heading text-h3 text-text">L&apos;analyse automatique</h3>
-              <p className="mt-3 text-small text-text-secondary">
-                Gratuite, immédiate, sur une page.
+      {/* ---- Méthodologie, repliée ------------------------------------- */}
+      <Section spacing="sm">
+        <div className="mx-auto max-w-3xl">
+          <details className="group rounded-xl border border-border bg-surface p-6 text-left">
+            <summary className="flex cursor-pointer items-center justify-between gap-4 font-heading text-h3 text-text outline-none marker:content-[''] focus-visible:ring-3 focus-visible:ring-ring/35">
+              Comment la note est calculée
+              <Icon
+                icon={ArrowRight}
+                className="size-4 shrink-0 text-accent transition-transform duration-300 ease-nova group-open:rotate-90"
+              />
+            </summary>
+            <div className="mt-6 flex flex-col gap-4 text-small text-text-secondary">
+              <p>
+                La mesure vient de l&apos;API Google PageSpeed Insights, la même que
+                pagespeed.web.dev. Je ne la modifie pas : je la repondère.
               </p>
-              <DrawRule className="mt-6" />
-              <ul className="card-list mt-6 flex flex-col gap-3">
-                {[
-                  "Vitesse réelle de chargement",
-                  "Confort visuel mesurable",
-                  "Bases techniques du référencement",
-                  "Accessibilité et bonnes pratiques",
-                  "Rapport PDF à conserver",
-                ].map((point) => (
-                  <li key={point} className="flex items-baseline gap-3 text-small text-text-secondary">
-                    <Icon icon={Check} className="size-3 shrink-0 translate-y-0.5 text-accent" />
-                    {point}
+              <ul className="card-list flex flex-col gap-2">
+                {Object.values(DIMENSIONS).map((d) => (
+                  <li key={d.libelle} className="flex items-baseline gap-3 tabular-nums">
+                    <span className="w-12 shrink-0 text-right font-heading text-accent-strong">
+                      {Math.round(d.poids * 100)} %
+                    </span>
+                    {d.libelle}
                   </li>
                 ))}
               </ul>
-            </Card>
-
-            <Card tone="ink" padding="md" className="grain-ink relative flex h-full flex-col overflow-hidden">
-              <span className="relative mx-auto flex size-11 items-center justify-center rounded-md border border-border-ink text-accent">
-                <Icon icon={Eye} className="size-5" />
-              </span>
-              <h3 className="relative mt-5 font-heading text-h3 text-on-ink">
-                Ce que la machine ne voit pas
-              </h3>
-              <p className="relative mt-3 text-small text-on-ink-soft">
-                Aucun outil ne mesure ces points-là. Il faut les lire soi-même.
+              <p>
+                Les audits qui alimentent « apparence » sont volontairement <em>disjoints</em> de
+                la catégorie Performance de Google : sans cela, un même défaut serait compté deux
+                fois.
               </p>
-              <DrawRule className="relative mt-6" tone="ink" />
-              <ul className="card-list relative mt-6 flex flex-col gap-3">
-                {[
-                  "Si votre offre se comprend en dix secondes",
-                  "Si vos textes parlent à vos clients",
-                  "Si le parcours mène vraiment à vous contacter",
-                  "Ce que font vos concurrents, et mieux",
-                  "L'ensemble de vos pages, pas une seule",
-                ].map((point) => (
-                  <li key={point} className="flex items-baseline gap-3 text-small text-on-ink-soft">
-                    <Icon icon={ArrowRight} className="size-3 shrink-0 translate-y-0.5 text-accent" />
-                    {point}
-                  </li>
-                ))}
-              </ul>
-              <div className="relative mt-8">
-                <Link href="/#contact" className="group/cta">
-                  <Button variant="primary" className="bg-paper text-ink hover:bg-accent hover:text-ink">
-                    Demander un regard humain
-                    <Icon
-                      icon={ArrowRight}
-                      className="transition-transform duration-200 ease-nova group-hover/cta:translate-x-0.5"
-                    />
-                  </Button>
-                </Link>
-              </div>
-            </Card>
-          </div>
+              <p>
+                Chaque constat porte sa nature — <strong className="text-text">mesuré</strong>,{" "}
+                <strong className="text-text">apprécié</strong> ou{" "}
+                <strong className="text-text">non vérifié</strong>. L&apos;analyse ne juge ni vos
+                textes, ni votre offre, ni vos concurrents : ces points sont listés à part, sans
+                note.
+              </p>
+            </div>
+          </details>
         </div>
       </Section>
 
-      {/* Questions sur l'audit */}
-      <Section spacing="default">
+      {/* ---- E. FAQ ------------------------------------------------------ */}
+      <Section className="bg-surface" spacing="default">
         <div className="mx-auto max-w-3xl">
           <p className="text-center text-eyebrow uppercase text-text-muted">Questions fréquentes</p>
           <Heading variant="h2" className="mt-4 text-center">
-            Ce qu&apos;on me demande avant de lancer l&apos;analyse
+            Ce qu&apos;on me demande avant de lancer
           </Heading>
           <div className="mt-[var(--section-gap)] flex flex-col gap-3">
-            {QUESTIONS_AUDIT.map((item, index) => (
+            {QUESTIONS_AUDIT.map((item, i) => (
               <motion.div
                 key={item.question}
                 initial="hidden"
                 whileInView="visible"
                 viewport={{ once: true, amount: 0.3 }}
-                variants={floatIn(index * 0.05, { y: 30 }, { damping: 26, mass: 2 })}
+                variants={floatIn(i * 0.05, { y: 30 }, { damping: 26, mass: 2 })}
               >
                 <Card padding="md">
                   <h3 className="font-heading text-h3 text-text">{item.question}</h3>
@@ -1981,34 +1392,36 @@ function AuditContent() {
         </div>
       </Section>
 
-      {/* Ce que ça dit de mon travail */}
-      <Section className="bg-surface" spacing="default">
-        <div className="mx-auto flex max-w-3xl flex-col items-center text-center">
-          <Heading variant="h2">Et si on repartait sur des bases saines ?</Heading>
-          <p className="measure mt-6 text-lead text-text-secondary">
-            Les points que cet outil relève, je les traite tous les jours : vitesse, référencement
-            technique, lisibilité, mobile. Que ce soit pour{" "}
-            <strong className="font-semibold text-text">corriger l&apos;existant</strong> ou pour{" "}
-            <strong className="font-semibold text-text">repartir de zéro</strong>, on en parle sans
-            engagement.
-          </p>
-          <div className="mt-9 flex flex-col gap-4 sm:flex-row">
-            <Link href="/#tarifs" className="group">
-              <Button variant="outline">
-                Voir les tarifs
-                <Icon
-                  icon={ArrowRight}
-                  className="transition-transform duration-200 ease-nova group-hover:translate-x-0.5"
-                />
-              </Button>
-            </Link>
-            <Link href="/#contact" className="group">
-              <Button variant="primary">
-                <Icon icon={Mail} />
-                Parlons de votre projet
-              </Button>
-            </Link>
-          </div>
+      {/* ---- F. Contact -------------------------------------------------- */}
+      <Section spacing="default">
+        <div className="mx-auto max-w-3xl">
+          <Card tone="ink" padding="md" className="grain-ink relative overflow-hidden lg:p-9">
+            <span aria-hidden className="relative mb-4 flex items-center justify-center gap-2 text-accent">
+              <span className="h-px w-8 bg-accent/50" />
+              <NovaMark className="size-3" />
+              <span className="h-px w-8 bg-accent/50" />
+            </span>
+            <Heading variant="h2" className="text-on-ink">
+              On corrige tout ça ensemble ?
+            </Heading>
+            <p className="measure relative mx-auto mt-6 text-lead text-on-ink-soft">
+              L&apos;analyse vous dit quoi corriger. Si vous préférez que je m&apos;en charge,
+              parlons-en à partir de vos résultats — devis clair sous 24 heures, sans engagement.
+            </p>
+            <div className="relative mt-9 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
+              <Link href="/#contact" className="group">
+                <Button variant="primary" className="bg-paper text-ink hover:bg-accent hover:text-ink">
+                  Demander un devis
+                  <Icon icon={ArrowRight} className="transition-transform duration-200 ease-nova group-hover:translate-x-0.5" />
+                </Button>
+              </Link>
+              <Link href="/#tarifs" className="group">
+                <Button variant="outline" className="border-border-ink text-on-ink hover:border-accent hover:text-accent">
+                  Voir les tarifs
+                </Button>
+              </Link>
+            </div>
+          </Card>
         </div>
       </Section>
     </>
